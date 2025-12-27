@@ -178,7 +178,7 @@ router.post('/login', async (req: Request, res: Response) => {
 });
 
 /**
- * GET /auth/me - Get current user
+ * GET /auth/me - Get current user with profile
  */
 router.get('/me', async (req: Request, res: Response) => {
     const userId = (req as any).user?.userId;
@@ -199,6 +199,11 @@ router.get('/me', async (req: Request, res: Response) => {
                 profilePicture: true,
                 status: true,
                 createdAt: true,
+                profile: {
+                    select: {
+                        nationalId: true,
+                    },
+                },
             },
         });
 
@@ -206,7 +211,15 @@ router.get('/me', async (req: Request, res: Response) => {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        res.json({ success: true, user });
+        // Flatten the response to include nationalId at top level
+        res.json({
+            success: true,
+            user: {
+                ...user,
+                nationalId: user.profile?.nationalId || null,
+                profile: undefined, // Remove nested profile object
+            },
+        });
     } catch (error) {
         res.status(500).json({ error: 'Failed to get user' });
     }

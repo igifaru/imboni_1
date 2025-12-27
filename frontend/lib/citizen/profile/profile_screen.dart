@@ -125,12 +125,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(user?.displayName ?? 'Umukiriya', style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
-                      Text(user?.isCitizen == true ? 'Umuturage' : 'Umuyobozi', style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant)),
+                      Text(user?.roleDisplayName ?? 'Umuturage', style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant)),
                     ],
                   ),
                 ),
               ],
             ),
+            const SizedBox(height: 16),
+            // User Details Section
+            _buildInfoRow(theme, colorScheme, Icons.badge_outlined, 'Indangamuntu', user?.nationalId ?? 'Ntiyanditswe'),
+            _buildInfoRow(theme, colorScheme, Icons.verified_user_outlined, 'Urwego', user?.roleDisplayName ?? '-'),
+            _buildInfoRow(theme, colorScheme, Icons.check_circle_outlined, 'Imiterere', user?.statusDisplayName ?? '-'),
+            _buildInfoRow(theme, colorScheme, Icons.calendar_today_outlined, 'Yiyandikishije', _formatDate(user?.createdAt)),
             if (_isEditing) ...[
               const SizedBox(height: 16),
               TextFormField(
@@ -159,6 +165,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildInfoRow(ThemeData theme, ColorScheme colorScheme, IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Icon(icon, color: colorScheme.primary, size: 20),
+          const SizedBox(width: 12),
+          Text(label, style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant)),
+          const Spacer(),
+          Text(value, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime? date) {
+    if (date == null) return '-';
+    return '${date.day}/${date.month}/${date.year}';
   }
 
   Widget _buildPreferencesSection(ThemeData theme, ColorScheme colorScheme) {

@@ -98,6 +98,8 @@ class UserModel {
   final String? email;
   final String? profilePicture;
   final String status;
+  final DateTime? createdAt;
+  final String? nationalId;
 
   const UserModel({
     required this.id,
@@ -107,6 +109,8 @@ class UserModel {
     this.email,
     this.profilePicture,
     required this.status,
+    this.createdAt,
+    this.nationalId,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -118,6 +122,8 @@ class UserModel {
       email: json['email'] as String?,
       profilePicture: json['profilePicture'] as String?,
       status: json['status'] as String? ?? 'ACTIVE',
+      createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt'] as String) : null,
+      nationalId: json['nationalId'] as String?,
     );
   }
 
@@ -133,6 +139,28 @@ class UserModel {
     }
     if (phone != null && phone!.length >= 2) return phone!.substring(0, 2).toUpperCase();
     return 'U';
+  }
+
+  /// Role display name
+  String get roleDisplayName {
+    switch (role) {
+      case 'CITIZEN': return 'Umuturage';
+      case 'LEADER': return 'Umuyobozi';
+      case 'ADMIN': return 'Umuyobozi Mukuru';
+      case 'OVERSIGHT': return 'Umugenzuzi';
+      case 'NGO': return 'ONG';
+      default: return role;
+    }
+  }
+
+  /// Status display name
+  String get statusDisplayName {
+    switch (status) {
+      case 'ACTIVE': return 'Irakora';
+      case 'SUSPENDED': return 'Yahagaritswe';
+      case 'INACTIVE': return 'Ntikora';
+      default: return status;
+    }
   }
 
   bool get isCitizen => role == 'CITIZEN';
