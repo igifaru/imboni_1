@@ -20,6 +20,15 @@ class SettingsService extends ChangeNotifier {
   bool get smsNotifications => _smsNotifications;
   bool get isDarkMode => _isDarkMode;
   ThemeMode get themeMode => _isDarkMode ? ThemeMode.dark : ThemeMode.light;
+  
+  /// Get Locale from language name
+  Locale get locale {
+    switch (_language) {
+      case 'English': return const Locale('en');
+      case 'Français': return const Locale('fr');
+      default: return const Locale('rw'); // Kinyarwanda default
+    }
+  }
 
   /// Initialize settings from SharedPreferences
   Future<void> initialize() async {

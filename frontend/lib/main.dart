@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'shared/theme/app_theme.dart';
 import 'shared/localization/app_localizations.dart';
@@ -39,7 +40,6 @@ class _ImboniAppState extends State<ImboniApp> {
     if (_isAuthenticated && authService.currentUser != null) {
       _isLeader = authService.currentUser!.isLeader;
     }
-    // Listen to settings changes for theme
     settingsService.addListener(_onSettingsChanged);
   }
 
@@ -75,15 +75,26 @@ class _ImboniAppState extends State<ImboniApp> {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: settingsService.themeMode, // Now connected to settingsService!
-      locale: const Locale('en'),
+      themeMode: settingsService.themeMode,
+      locale: settingsService.locale,
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+      // Only include locales that Flutter natively supports
       supportedLocales: const [Locale('en'), Locale('fr')],
+      // For unsupported locales (like rw), fall back to en for Material widgets
+      localeResolutionCallback: (locale, supportedLocales) {
+        // Our AppLocalizations handles rw, but Material/Cupertino need en/fr
+        final code = locale?.languageCode ?? 'en';
+        if (code == 'rw') return const Locale('en'); // Use en for Material widgets
+        for (var l in supportedLocales) {
+          if (l.languageCode == code) return l;
+        }
+        return const Locale('en');
+      },
       home: _buildHome(),
     );
   }

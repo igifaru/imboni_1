@@ -12,10 +12,11 @@ class AppLocalizations {
 
   static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
 
+  // Note: rw (Kinyarwanda) is not in Flutter's Material library
+  // We use en/fr for Material widgets but our translations handle rw
   static const List<Locale> supportedLocales = [
-    Locale('rw'), // Kinyarwanda
-    Locale('en'), // English
-    Locale('fr'), // French
+    Locale('en'),
+    Locale('fr'),
   ];
 
   String get(String key) => _translations[locale.languageCode]?[key] ?? _translations['rw']![key] ?? key;
