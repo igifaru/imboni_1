@@ -94,8 +94,11 @@ router.post('/register', async (req: Request, res: Response) => {
             user: {
                 id: user.id,
                 role: user.role,
+                name: user.name,
                 phone: user.phone,
                 email: user.email,
+                profilePicture: user.profilePicture,
+                status: user.status,
             },
         });
     } catch (error) {
@@ -161,8 +164,11 @@ router.post('/login', async (req: Request, res: Response) => {
             user: {
                 id: user.id,
                 role: user.role,
+                name: user.name,
                 phone: user.phone,
                 email: user.email,
+                profilePicture: user.profilePicture,
+                status: user.status,
             },
         });
     } catch (error) {
@@ -187,8 +193,10 @@ router.get('/me', async (req: Request, res: Response) => {
             select: {
                 id: true,
                 role: true,
+                name: true,
                 phone: true,
                 email: true,
+                profilePicture: true,
                 status: true,
                 createdAt: true,
             },
