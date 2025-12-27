@@ -136,7 +136,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _buildInfoRow(theme, colorScheme, Icons.badge_outlined, 'Indangamuntu', user?.nationalId ?? 'Ntiyanditswe'),
             _buildInfoRow(theme, colorScheme, Icons.verified_user_outlined, 'Urwego', user?.roleDisplayName ?? '-'),
             _buildInfoRow(theme, colorScheme, Icons.check_circle_outlined, 'Imiterere', user?.statusDisplayName ?? '-'),
-            _buildInfoRow(theme, colorScheme, Icons.calendar_today_outlined, 'Yiyandikishije', _formatDate(user?.createdAt)),
+            _buildInfoRow(theme, colorScheme, Icons.calendar_today_outlined, 'Yiyandikishije', _formatDateTime(user?.createdAt)),
+            _buildInfoRow(theme, colorScheme, Icons.location_on_outlined, 'Aho abarizwa', user?.fullLocation ?? 'Ntabwo yuzuye'),
             if (_isEditing) ...[
               const SizedBox(height: 16),
               TextFormField(
@@ -182,9 +183,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  String _formatDate(DateTime? date) {
+  String _formatDateTime(DateTime? date) {
     if (date == null) return '-';
-    return '${date.day}/${date.month}/${date.year}';
+    final d = '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+    final t = '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+    return '$d $t';
   }
 
   Widget _buildPreferencesSection(ThemeData theme, ColorScheme colorScheme) {

@@ -179,6 +179,12 @@ router.get('/me', async (req, res) => {
                 profile: {
                     select: {
                         nationalId: true,
+                        country: true,
+                        province: true,
+                        district: true,
+                        sector: true,
+                        cell: true,
+                        village: true,
                     },
                 },
             },
@@ -186,13 +192,19 @@ router.get('/me', async (req, res) => {
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
-        // Flatten the response to include nationalId at top level
+        // Flatten the response to include profile fields at top level
         res.json({
             success: true,
             user: {
                 ...user,
                 nationalId: user.profile?.nationalId || null,
-                profile: undefined, // Remove nested profile object
+                country: user.profile?.country || 'Rwanda',
+                province: user.profile?.province || null,
+                district: user.profile?.district || null,
+                sector: user.profile?.sector || null,
+                cell: user.profile?.cell || null,
+                village: user.profile?.village || null,
+                profile: undefined,
             },
         });
     }

@@ -150,6 +150,13 @@ model CitizenProfile {
   user            User            @relation(fields: [userId], references: [id])
   nationalId      String?         @unique @map("national_id")
   protectionLevel ProtectionLevel @default(ANONYMOUS) @map("protection_level")
+  // Location hierarchy
+  country         String?         @default("Rwanda")
+  province        String?
+  district        String?
+  sector          String?
+  cell            String?
+  village         String?
 
   @@map("citizen_profiles")
 }

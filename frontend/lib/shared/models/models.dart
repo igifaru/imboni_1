@@ -100,6 +100,13 @@ class UserModel {
   final String status;
   final DateTime? createdAt;
   final String? nationalId;
+  // Location hierarchy
+  final String? country;
+  final String? province;
+  final String? district;
+  final String? sector;
+  final String? cell;
+  final String? village;
 
   const UserModel({
     required this.id,
@@ -111,6 +118,12 @@ class UserModel {
     required this.status,
     this.createdAt,
     this.nationalId,
+    this.country,
+    this.province,
+    this.district,
+    this.sector,
+    this.cell,
+    this.village,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -124,7 +137,25 @@ class UserModel {
       status: json['status'] as String? ?? 'ACTIVE',
       createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt'] as String) : null,
       nationalId: json['nationalId'] as String?,
+      country: json['country'] as String? ?? 'Rwanda',
+      province: json['province'] as String?,
+      district: json['district'] as String?,
+      sector: json['sector'] as String?,
+      cell: json['cell'] as String?,
+      village: json['village'] as String?,
     );
+  }
+
+  /// Full location string from country to village
+  String get fullLocation {
+    final parts = <String>[];
+    if (country != null) parts.add(country!);
+    if (province != null) parts.add(province!);
+    if (district != null) parts.add(district!);
+    if (sector != null) parts.add(sector!);
+    if (cell != null) parts.add(cell!);
+    if (village != null) parts.add(village!);
+    return parts.isNotEmpty ? parts.join(' → ') : 'Ntabwo yuzuye';
   }
 
   /// Display name - prefer name, fallback to phone, then email
