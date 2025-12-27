@@ -1,0 +1,110 @@
+version: '3.8'
+
+services:
+  # Infrastructure
+  postgres:
+    image: postgres:15-alpine
+    container_name: imboni-postgres
+    environment:
+      POSTGRES_USER: imboni
+      POSTGRES_PASSWORD: imboni_secure_password
+      POSTGRES_DB: imboni_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U imboni -d imboni_db" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: imboni-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: imboni-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: imboni
+      RABBITMQ_DEFAULT_PASS: imboni_mq_password
+
+  # Backend Services
+  api-gateway:
+    build: ./apps/api-gateway
+    container_name: imboni-api-gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://imboni:imboni_secure_password@postgres:5432/imboni_db
+    depends_on:
+      - postgres
+      - redis
+
+  case-service:
+    build: ./apps/case-service
+    container_name: imboni-case-service
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://imboni:imboni_secure_password@postgres:5432/imboni_db
+    depends_on:
+      - postgres
+      - rabbitmq
+
+  escalation-service:
+    build: ./apps/escalation-service
+    container_name: imboni-escalation-service
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://imboni:imboni_secure_password@postgres:5432/imboni_db
+    depends_on:
+      - postgres
+      - rabbitmq
+
+  notification-service:
+    build: ./apps/notification-service
+    container_name: imboni-notification-service
+    ports:
+      - "3003:3003"
+    depends_on:
+      - rabbitmq
+
+  audit-service:
+    build: ./apps/audit-service
+    container_name: imboni-audit-service
+    ports:
+      - "3004:3004"
+    environment:
+      - DATABASE_URL=postgresql://imboni:imboni_secure_password@postgres:5432/imboni_db
+    depends_on:
+      - postgres
+
+  integration-service:
+    build: ./apps/integration-service
+    container_name: imboni-integration-service
+    ports:
+      - "3005:3005"
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+  redis_data:
+
+
+networks:
+  default:
+    name: imboni-network
