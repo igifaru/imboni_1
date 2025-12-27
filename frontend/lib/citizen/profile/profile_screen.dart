@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../shared/theme/colors.dart';
 import '../../shared/theme/responsive.dart';
 import '../../shared/services/auth_service.dart';
 import '../../shared/widgets/location_selector.dart';
 import '../../shared/services/admin_units_service.dart';
 
-/// Profile Screen - User profile management
+/// Profile Screen - User profile management (Theme Compliant)
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -39,11 +38,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final user = authService.currentUser;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Umwirondoro wanjye'),
+        title: const Text('Igenamiterere'),
         actions: [
           if (_isEditing)
             TextButton(onPressed: _saveProfile, child: const Text('Bika'))
@@ -55,160 +55,205 @@ class _ProfileScreenState extends State<ProfileScreen> {
         padding: EdgeInsets.all(Responsive.horizontalPadding(context)),
         child: Form(
           key: _formKey,
-          child: Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
-            const SizedBox(height: 24),
-            // Avatar
-            Stack(
-              children: [
-                Container(
-                  width: 120, height: 120,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(colors: [ImboniColors.primary, ImboniColors.primaryDark]),
-                    shape: BoxShape.circle,
-                    boxShadow: [BoxShadow(color: ImboniColors.primary.withAlpha(75), blurRadius: 20, offset: const Offset(0, 8))],
-                  ),
-                  child: Center(
-                    child: Text(
-                      user?.phone?.substring(0, 2).toUpperCase() ?? 'U',
-                      style: const TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-                if (_isEditing)
-                  Positioned(
-                    right: 0, bottom: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(color: ImboniColors.secondary, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)),
-                      child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            Text(user?.phone ?? 'Umukiriya', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(color: ImboniColors.primary.withAlpha(25), borderRadius: BorderRadius.circular(12)),
-              child: Text(user?.isCitizen == true ? 'Umuturage' : 'Umuyobozi', style: const TextStyle(color: ImboniColors.primary, fontWeight: FontWeight.w600, fontSize: 12)),
-            ),
-            const SizedBox(height: 32),
-
-            // Profile sections
-            _buildSectionCard(theme, 'Amakuru y\'umuntu', [
-              _buildInfoRow(theme, 'Telefoni', user?.phone ?? '-', Icons.phone_outlined, editable: false),
-              if (_isEditing) ...[
-                const SizedBox(height: 16),
-                _buildEditableField('Amazina yombi', _namesController, Icons.person_outlined),
-                const SizedBox(height: 16),
-                _buildEditableField('Imeli', _emailController, Icons.email_outlined),
-              ] else ...[
-                if (user?.email != null) _buildInfoRow(theme, 'Imeli', user!.email!, Icons.email_outlined),
-              ],
-            ]),
-            const SizedBox(height: 16),
-
-            _buildSectionCard(theme, 'Aho ntuye', [
-              if (_isEditing)
-                LocationSelector(initialSelection: _location, onLocationChanged: (loc) => setState(() => _location = loc), showVillage: true)
-              else
-                _buildInfoRow(theme, 'Aderesi', _location.isComplete ? _location.fullAddress : 'Ntiyuzuzwa', Icons.location_on_outlined),
-            ]),
-            const SizedBox(height: 16),
-
-            _buildSectionCard(theme, 'Ibyerekeye konti', [
-              _buildInfoRow(theme, 'Yafunguwe', '-', Icons.calendar_today_outlined),
-              _buildInfoRow(theme, 'Imimerere', user?.status ?? 'ACTIVE', Icons.verified_outlined, color: ImboniColors.success),
-            ]),
-            const SizedBox(height: 24),
-
-            // Actions
-            Card(
-              child: Column(children: [
-                _buildActionTile(theme, 'Hindura ijambo ry\'ibanga', Icons.lock_outlined, () {}),
-                const Divider(height: 1),
-                _buildActionTile(theme, 'Ubutumwa', Icons.notifications_outlined, () {}, badge: 3),
-                const Divider(height: 1),
-                _buildActionTile(theme, 'Ubufasha', Icons.help_outline, () {}),
-                const Divider(height: 1),
-                _buildActionTile(theme, 'Sohoka', Icons.logout, _logout, isDestructive: true),
-              ]),
-            ),
-            const SizedBox(height: 32),
-
-            Text('Imboni v1.0.0', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-            const SizedBox(height: 48),
-          ]),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth > 800;
+              
+              if (isWide) {
+                // Desktop: 3-column layout
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: _buildAccountSection(theme, colorScheme, user)),
+                    const SizedBox(width: 16),
+                    Expanded(child: _buildPreferencesSection(theme, colorScheme)),
+                    const SizedBox(width: 16),
+                    Expanded(child: _buildAboutSection(theme, colorScheme)),
+                  ],
+                );
+              } else {
+                // Mobile: Single column
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildAccountSection(theme, colorScheme, user),
+                    const SizedBox(height: 16),
+                    _buildPreferencesSection(theme, colorScheme),
+                    const SizedBox(height: 16),
+                    _buildAboutSection(theme, colorScheme),
+                    const SizedBox(height: 32),
+                  ],
+                );
+              }
+            },
+          ),
         ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _saveProfile,
+        icon: const Icon(Icons.save),
+        label: const Text('Bika Ibyahinduwe'),
+        backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onPrimary,
       ),
     );
   }
 
-  Widget _buildSectionCard(ThemeData theme, String title, List<Widget> children) {
+  Widget _buildAccountSection(ThemeData theme, ColorScheme colorScheme, dynamic user) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 16),
-          ...children,
-        ]),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Konti Yanjye', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            // Avatar row
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 28,
+                  backgroundColor: colorScheme.primary,
+                  child: Text(
+                    user?.phone?.substring(0, 2).toUpperCase() ?? 'U',
+                    style: TextStyle(color: colorScheme.onPrimary, fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(user?.phone ?? 'Umukiriya', style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
+                      Text(user?.isCitizen == true ? 'Umuturage' : 'Umuyobozi', style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Divider(),
+            _buildActionTile(theme, colorScheme, 'Hindura Umwirondoro', Icons.edit_outlined, () => setState(() => _isEditing = true)),
+            _buildActionTile(theme, colorScheme, 'Hindura Ijambo ry\'Ibanga', Icons.lock_outlined, () {}),
+            _buildActionTile(theme, colorScheme, 'Umutekano', Icons.security_outlined, () {}),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildInfoRow(ThemeData theme, String label, String value, IconData icon, {bool editable = true, Color? color}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(color: (color ?? ImboniColors.primary).withAlpha(25), borderRadius: BorderRadius.circular(10)),
-          child: Icon(icon, color: color ?? ImboniColors.primary, size: 20),
+  Widget _buildPreferencesSection(ThemeData theme, ColorScheme colorScheme) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Ibyo Mhitamo', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            _buildDropdownRow(theme, colorScheme, 'Ururimi', Icons.language_outlined, 'Kinyarwanda', ['Kinyarwanda', 'English', 'Français']),
+            const SizedBox(height: 12),
+            _buildSwitchRow(theme, colorScheme, 'Menyesha', Icons.notifications_outlined, null),
+            _buildSwitchRow(theme, colorScheme, 'Imeli', null, true, indent: true),
+            _buildSwitchRow(theme, colorScheme, 'SMS', null, false, indent: true),
+            const SizedBox(height: 12),
+            _buildSwitchRow(theme, colorScheme, 'Insanganyamatsiko', Icons.dark_mode_outlined, null),
+            _buildSwitchRow(theme, colorScheme, 'Light Mode', null, true, indent: true),
+          ],
         ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(label, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-            const SizedBox(height: 2),
-            Text(value, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
-          ]),
-        ),
-      ]),
+      ),
     );
   }
 
-  Widget _buildEditableField(String label, TextEditingController controller, IconData icon) {
-    return TextFormField(
-      controller: controller,
-      decoration: InputDecoration(labelText: label, prefixIcon: Icon(icon)),
+  Widget _buildAboutSection(ThemeData theme, ColorScheme colorScheme) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Ibyerekeye Porogaramu', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            _buildActionTile(theme, colorScheme, 'Amategeko n\'Amabwiriza', Icons.description_outlined, () {}),
+            _buildActionTile(theme, colorScheme, 'Ubufasha', Icons.help_outline, () {}),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Text('Verisiyo', style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant)),
+                const Spacer(),
+                Text('1.2.0 (MVP)', style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildActionTile(ThemeData theme, String title, IconData icon, VoidCallback onTap, {bool isDestructive = false, int? badge}) {
+  Widget _buildActionTile(ThemeData theme, ColorScheme colorScheme, String title, IconData icon, VoidCallback onTap) {
     return ListTile(
+      contentPadding: EdgeInsets.zero,
       leading: Container(
         padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(color: (isDestructive ? ImboniColors.error : ImboniColors.primary).withAlpha(25), borderRadius: BorderRadius.circular(8)),
-        child: Icon(icon, color: isDestructive ? ImboniColors.error : ImboniColors.primary, size: 20),
+        decoration: BoxDecoration(color: colorScheme.primary.withAlpha(25), borderRadius: BorderRadius.circular(8)),
+        child: Icon(icon, color: colorScheme.primary, size: 20),
       ),
-      title: Text(title, style: TextStyle(color: isDestructive ? ImboniColors.error : null)),
-      trailing: badge != null
-          ? Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(color: ImboniColors.error, borderRadius: BorderRadius.circular(10)),
-              child: Text('$badge', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-            )
-          : const Icon(Icons.chevron_right),
+      title: Text(title),
+      trailing: const Icon(Icons.chevron_right),
       onTap: onTap,
     );
   }
 
+  Widget _buildDropdownRow(ThemeData theme, ColorScheme colorScheme, String label, IconData icon, String value, List<String> options) {
+    return Row(
+      children: [
+        Icon(icon, color: colorScheme.primary, size: 22),
+        const SizedBox(width: 12),
+        Text(label, style: theme.textTheme.bodyMedium),
+        const Spacer(),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            border: Border.all(color: colorScheme.outline),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: value,
+              isDense: true,
+              items: options.map((o) => DropdownMenuItem(value: o, child: Text(o, style: theme.textTheme.bodySmall))).toList(),
+              onChanged: (v) {},
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSwitchRow(ThemeData theme, ColorScheme colorScheme, String label, IconData? icon, bool? value, {bool indent = false}) {
+    return Padding(
+      padding: EdgeInsets.only(left: indent ? 34 : 0, top: 8),
+      child: Row(
+        children: [
+          if (icon != null) ...[
+            Icon(icon, color: colorScheme.primary, size: 22),
+            const SizedBox(width: 12),
+          ],
+          Text(label, style: theme.textTheme.bodyMedium),
+          const Spacer(),
+          if (value != null)
+            Switch(value: value, onChanged: (v) {}, activeColor: colorScheme.primary),
+        ],
+      ),
+    );
+  }
+
   void _saveProfile() {
-    if (_formKey.currentState!.validate()) {
+    if (_formKey.currentState?.validate() ?? true) {
       setState(() => _isEditing = false);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Umwirondoro wabitswe!'), backgroundColor: ImboniColors.success));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: const Text('Umwirondoro wabitswe!'), backgroundColor: Theme.of(context).colorScheme.primary),
+      );
     }
   }
 
@@ -226,7 +271,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               authService.logout();
               Navigator.of(context).popUntil((route) => route.isFirst);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: ImboniColors.error),
+            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
             child: const Text('Yego, sohoka'),
           ),
         ],

@@ -257,15 +257,18 @@ class _DashboardHomeState extends State<_DashboardHome> {
       backgroundColor: theme.scaffoldBackgroundColor,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
-      title: Responsive.isDesktop(context) ? null : Row(children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(gradient: const LinearGradient(colors: [ImboniColors.primary, ImboniColors.primaryDark]), borderRadius: BorderRadius.circular(10)),
-          child: const Icon(Icons.shield, color: Colors.white, size: 20),
-        ),
-        const SizedBox(width: 10),
-        Text('Imboni Admin', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-      ]),
+      title: Responsive.isDesktop(context) ? null : Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(gradient: const LinearGradient(colors: [ImboniColors.primary, ImboniColors.primaryDark]), borderRadius: BorderRadius.circular(10)),
+            child: const Icon(Icons.shield, color: Colors.white, size: 20),
+          ),
+          const SizedBox(width: 10),
+          Flexible(child: Text('Imboni Admin', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
+        ],
+      ),
       actions: [
         Container(
           width: 200,
