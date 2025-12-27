@@ -40,6 +40,22 @@ export declare class CaseService {
      */
     private getDeadlineHours;
     /**
+     * Get escalation alerts for leader
+     */
+    getEscalationAlerts(leaderId: string): Promise<CaseResponseDto[]>;
+    /**
+     * Get performance metrics for leader
+     */
+    getPerformanceMetrics(leaderId: string): Promise<{
+        totalCases: number;
+        resolvedCases: number;
+        pendingCases: number;
+        escalatedCases: number;
+        resolutionRate: number;
+        avgResponseTimeHours: number;
+        casesByCategory: Record<string, number>;
+    }>;
+    /**
      * Transform entity to response DTO
      */
     private toResponseDto;

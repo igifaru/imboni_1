@@ -64,6 +64,62 @@ router.get('/track/:reference', async (req, res, next) => {
     }
 });
 /**
+ * GET /cases/assigned - Get assigned cases for logged-in leader
+ */
+router.get('/assigned', async (req, res, next) => {
+    try {
+        const userId = req.user?.userId;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        if (!userId) {
+            return res.status(401).json({ error: 'Authentication required' });
+        }
+        const result = await case_service_1.caseService.getLeaderCases(userId, page, limit);
+        res.json({
+            success: true,
+            data: result,
+        });
+    }
+    catch (error) {
+        logger.error('Failed to get assigned cases', error);
+        next(error);
+    }
+});
+/**
+ * GET /cases/escalation-alerts - Get escalation alerts
+ */
+router.get('/escalation-alerts', async (req, res, next) => {
+    try {
+        const userId = req.user?.userId;
+        const result = await case_service_1.caseService.getEscalationAlerts(userId);
+        res.json({
+            success: true,
+            data: result,
+        });
+    }
+    catch (error) {
+        logger.error('Failed to get escalation alerts', error);
+        next(error);
+    }
+});
+/**
+ * GET /cases/metrics - Get performance metrics
+ */
+router.get('/metrics', async (req, res, next) => {
+    try {
+        const userId = req.user?.userId;
+        const result = await case_service_1.caseService.getPerformanceMetrics(userId);
+        res.json({
+            success: true,
+            data: result,
+        });
+    }
+    catch (error) {
+        logger.error('Failed to get metrics', error);
+        next(error);
+    }
+});
+/**
  * GET /cases/:id - Get case details
  */
 router.get('/:id', async (req, res, next) => {

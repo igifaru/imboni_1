@@ -199,6 +199,80 @@ export class CaseService {
     }
 
     /**
+     * Get escalation alerts for leader
+     */
+    async getEscalationAlerts(leaderId: string): Promise<CaseResponseDto[]> {
+        // Find active assignments with approaching deadlines (< 24 hours)
+        const now = new Date();
+        const tomorrow = new Date();
+        tomorrow.setHours(tomorrow.getHours() + 24);
+
+        const assignments = await prisma.caseAssignment.findMany({
+            where: {
+                leaderId,
+                isActive: true,
+                deadlineAt: {
+                    lte: tomorrow, // Deadline is before tomorrow (so it's today or past due)
+                },
+            },
+            include: {
+                case: true,
+            },
+            orderBy: {
+                deadlineAt: 'asc',
+            },
+        });
+
+        return assignments.map(a => this.toResponseDto(a.case as unknown as CaseEntity));
+    }
+
+    /**
+     * Get performance metrics for leader
+     */
+    async getPerformanceMetrics(leaderId: string) {
+        // Get all assignments for this leader (active and inactive)
+        const assignments = await prisma.caseAssignment.findMany({
+            where: { leaderId },
+            include: { case: true },
+        });
+
+        const total = assignments.length;
+        if (total === 0) {
+            return {
+                totalCases: 0,
+                resolvedCases: 0,
+                pendingCases: 0,
+                escalatedCases: 0,
+                resolutionRate: 0,
+                avgResponseTimeHours: 0,
+                casesByCategory: {},
+            };
+        }
+
+        let resolved = 0;
+        let escalated = 0;
+        const byCategory: Record<string, number> = {};
+
+        for (const a of assignments) {
+            const c = a.case as unknown as CaseEntity;
+            if (c.status === 'RESOLVED') resolved++;
+            if (c.status === 'ESCALATED') escalated++;
+
+            byCategory[c.category] = (byCategory[c.category] || 0) + 1;
+        }
+
+        return {
+            totalCases: total,
+            resolvedCases: resolved,
+            pendingCases: total - resolved,
+            escalatedCases: escalated,
+            resolutionRate: Math.round((resolved / total) * 100),
+            avgResponseTimeHours: 4.5, // Mock for now, would need action logs
+            casesByCategory: byCategory,
+        };
+    }
+
+    /**
      * Transform entity to response DTO
      */
     private toResponseDto(entity: CaseEntity): CaseResponseDto {
