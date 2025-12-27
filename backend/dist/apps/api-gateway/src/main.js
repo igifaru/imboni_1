@@ -50,6 +50,7 @@ const config_service_1 = require("../../../libs/config/config.service");
 const logger_service_1 = require("../../../libs/logging/logger.service");
 const prisma_service_1 = require("../../../libs/database/prisma.service");
 const auth_routes_1 = require("./auth/auth.routes");
+const user_routes_1 = require("./user/user.routes");
 const jwt_middleware_1 = require("./auth/jwt.middleware");
 const rate_limit_middleware_1 = require("./rate-limit/rate-limit.middleware");
 const logger = (0, logger_service_1.createServiceLogger)('api-gateway');
@@ -73,6 +74,8 @@ app.get('/health', (req, res) => {
 });
 // Auth routes (with stricter rate limiting)
 app.use('/api/auth', rate_limit_middleware_1.authRateLimiter, auth_routes_1.authRoutes);
+// User routes (require auth)
+app.use('/api/user', jwt_middleware_1.authMiddleware, user_routes_1.userRoutes);
 // Case routes - some require auth, some don't
 app.use('/api/cases/track', jwt_middleware_1.optionalAuthMiddleware); // Track by reference - no auth needed
 app.use('/api/cases', jwt_middleware_1.optionalAuthMiddleware, rate_limit_middleware_1.emergencyBypass);

@@ -83,8 +83,11 @@ router.post('/register', async (req, res) => {
             user: {
                 id: user.id,
                 role: user.role,
+                name: user.name,
                 phone: user.phone,
                 email: user.email,
+                profilePicture: user.profilePicture,
+                status: user.status,
             },
         });
     }
@@ -140,8 +143,11 @@ router.post('/login', async (req, res) => {
             user: {
                 id: user.id,
                 role: user.role,
+                name: user.name,
                 phone: user.phone,
                 email: user.email,
+                profilePicture: user.profilePicture,
+                status: user.status,
             },
         });
     }
@@ -164,8 +170,10 @@ router.get('/me', async (req, res) => {
             select: {
                 id: true,
                 role: true,
+                name: true,
                 phone: true,
                 email: true,
+                profilePicture: true,
                 status: true,
                 createdAt: true,
             },
