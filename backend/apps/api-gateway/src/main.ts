@@ -12,6 +12,7 @@ import { config } from '../../../libs/config/config.service';
 import { createServiceLogger } from '../../../libs/logging/logger.service';
 import { disconnectPrisma } from '../../../libs/database/prisma.service';
 import { authRoutes } from './auth/auth.routes';
+import { userRoutes } from './user/user.routes';
 import { authMiddleware, optionalAuthMiddleware } from './auth/jwt.middleware';
 import { generalRateLimiter, authRateLimiter, emergencyBypass } from './rate-limit/rate-limit.middleware';
 
@@ -40,6 +41,9 @@ app.get('/health', (req, res) => {
 
 // Auth routes (with stricter rate limiting)
 app.use('/api/auth', authRateLimiter, authRoutes);
+
+// User routes (require auth)
+app.use('/api/user', authMiddleware, userRoutes);
 
 // Case routes - some require auth, some don't
 app.use('/api/cases/track', optionalAuthMiddleware); // Track by reference - no auth needed

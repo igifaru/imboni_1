@@ -79,6 +79,35 @@ class AuthService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
   }
+
+  /// Update user profile (phone/email)
+  Future<ApiResponse<UserModel>> updateProfile({String? phone, String? email}) async {
+    final body = <String, dynamic>{};
+    if (phone != null) body['phone'] = phone;
+    if (email != null) body['email'] = email;
+    
+    final response = await _client.patch<Map<String, dynamic>>('/user/profile', body);
+    if (response.isSuccess && response.data != null) {
+      final userData = response.data!['user'] as Map<String, dynamic>?;
+      if (userData != null) {
+        _currentUser = UserModel.fromJson(userData);
+        return ApiResponse.success(_currentUser!);
+      }
+    }
+    return ApiResponse.error(response.error ?? 'Profile update failed');
+  }
+
+  /// Change user password
+  Future<ApiResponse<bool>> changePassword({required String currentPassword, required String newPassword}) async {
+    final response = await _client.post<Map<String, dynamic>>(
+      '/user/change-password',
+      {'currentPassword': currentPassword, 'newPassword': newPassword},
+    );
+    if (response.isSuccess) {
+      return ApiResponse.success(true);
+    }
+    return ApiResponse.error(response.error ?? 'Password change failed');
+  }
 }
 
 final authService = AuthService();

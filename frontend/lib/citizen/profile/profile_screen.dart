@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../shared/theme/responsive.dart';
 import '../../shared/services/auth_service.dart';
-import '../../shared/widgets/location_selector.dart';
-import '../../shared/services/admin_units_service.dart';
+import '../../shared/services/settings_service.dart';
 
-/// Profile/Settings Screen - Fully functional with state management
+/// Settings Screen - Fully functional with real backend integration
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -14,16 +13,10 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _isEditing = false;
+  bool _isLoading = false;
   final _formKey = GlobalKey<FormState>();
   final _namesController = TextEditingController();
   final _emailController = TextEditingController();
-  LocationSelection _location = const LocationSelection();
-
-  // Settings State
-  String _selectedLanguage = 'Kinyarwanda';
-  bool _emailNotifications = true;
-  bool _smsNotifications = false;
-  bool _isDarkMode = false;
 
   @override
   void initState() {
@@ -37,12 +30,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _namesController.text = user.phone ?? '';
       _emailController.text = user.email ?? '';
     }
-    // Check current theme brightness
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      setState(() {
-        _isDarkMode = Theme.of(context).brightness == Brightness.dark;
-      });
-    });
   }
 
   @override
@@ -59,49 +46,49 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: const Text('Igenamiterere'),
         actions: [
           if (_isEditing)
-            TextButton(onPressed: _saveProfile, child: const Text('Bika'))
+            TextButton(onPressed: _isLoading ? null : _saveProfile, child: const Text('Bika'))
           else
             IconButton(icon: const Icon(Icons.edit_outlined), onPressed: () => setState(() => _isEditing = true)),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(Responsive.horizontalPadding(context)),
-        child: Form(
-          key: _formKey,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final isWide = constraints.maxWidth > 800;
-              
-              if (isWide) {
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(child: _buildAccountSection(theme, colorScheme, user)),
-                    const SizedBox(width: 16),
-                    Expanded(child: _buildPreferencesSection(theme, colorScheme)),
-                    const SizedBox(width: 16),
-                    Expanded(child: _buildAboutSection(theme, colorScheme)),
-                  ],
-                );
-              } else {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _buildAccountSection(theme, colorScheme, user),
-                    const SizedBox(height: 16),
-                    _buildPreferencesSection(theme, colorScheme),
-                    const SizedBox(height: 16),
-                    _buildAboutSection(theme, colorScheme),
-                    const SizedBox(height: 32),
-                  ],
-                );
-              }
-            },
-          ),
-        ),
-      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: EdgeInsets.all(Responsive.horizontalPadding(context)),
+              child: Form(
+                key: _formKey,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isWide = constraints.maxWidth > 800;
+                    if (isWide) {
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(child: _buildAccountSection(theme, colorScheme, user)),
+                          const SizedBox(width: 16),
+                          Expanded(child: _buildPreferencesSection(theme, colorScheme)),
+                          const SizedBox(width: 16),
+                          Expanded(child: _buildAboutSection(theme, colorScheme)),
+                        ],
+                      );
+                    }
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildAccountSection(theme, colorScheme, user),
+                        const SizedBox(height: 16),
+                        _buildPreferencesSection(theme, colorScheme),
+                        const SizedBox(height: 16),
+                        _buildAboutSection(theme, colorScheme),
+                        const SizedBox(height: 32),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _saveProfile,
+        onPressed: _isLoading ? null : _saveProfile,
         icon: const Icon(Icons.save),
         label: const Text('Bika Ibyahinduwe'),
         backgroundColor: colorScheme.primary,
@@ -145,7 +132,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _namesController,
-                decoration: const InputDecoration(labelText: 'Amazina yombi', prefixIcon: Icon(Icons.person_outlined)),
+                decoration: const InputDecoration(labelText: 'Telefoni', prefixIcon: Icon(Icons.phone_outlined)),
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -166,77 +153,50 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildPreferencesSection(ThemeData theme, ColorScheme colorScheme) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Ibyo Mhitamo', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
-            // Language Dropdown
-            Row(
-              children: [
-                Icon(Icons.language_outlined, color: colorScheme.primary, size: 22),
-                const SizedBox(width: 12),
-                Text('Ururimi', style: theme.textTheme.bodyMedium),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(border: Border.all(color: colorScheme.outline), borderRadius: BorderRadius.circular(8)),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: _selectedLanguage,
-                      isDense: true,
-                      items: ['Kinyarwanda', 'English', 'Français'].map((o) => DropdownMenuItem(value: o, child: Text(o, style: theme.textTheme.bodySmall))).toList(),
-                      onChanged: (v) {
-                        if (v != null) {
-                          setState(() => _selectedLanguage = v);
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ururimi: $v'), duration: const Duration(seconds: 1)));
-                        }
-                      },
+    return ListenableBuilder(
+      listenable: settingsService,
+      builder: (context, _) => Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Ibyo Mhitamo', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              // Language
+              Row(
+                children: [
+                  Icon(Icons.language_outlined, color: colorScheme.primary, size: 22),
+                  const SizedBox(width: 12),
+                  Text('Ururimi', style: theme.textTheme.bodyMedium),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(border: Border.all(color: colorScheme.outline), borderRadius: BorderRadius.circular(8)),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: settingsService.language,
+                        isDense: true,
+                        items: ['Kinyarwanda', 'English', 'Français'].map((o) => DropdownMenuItem(value: o, child: Text(o, style: theme.textTheme.bodySmall))).toList(),
+                        onChanged: (v) {
+                          if (v != null) settingsService.setLanguage(v);
+                        },
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            // Notifications Section
-            Row(
-              children: [
-                Icon(Icons.notifications_outlined, color: colorScheme.primary, size: 22),
-                const SizedBox(width: 12),
-                Text('Menyesha', style: theme.textTheme.bodyMedium),
-              ],
-            ),
-            const SizedBox(height: 8),
-            _buildFunctionalSwitch(theme, colorScheme, 'Imeli', _emailNotifications, (v) => setState(() => _emailNotifications = v), indent: true),
-            _buildFunctionalSwitch(theme, colorScheme, 'SMS', _smsNotifications, (v) => setState(() => _smsNotifications = v), indent: true),
-            const SizedBox(height: 16),
-            // Theme Section
-            Row(
-              children: [
-                Icon(Icons.palette_outlined, color: colorScheme.primary, size: 22),
-                const SizedBox(width: 12),
-                Text('Insanganyamatsiko', style: theme.textTheme.bodyMedium),
-              ],
-            ),
-            const SizedBox(height: 8),
-            _buildFunctionalSwitch(
-              theme, colorScheme, 'Ijoro (Dark Mode)', _isDarkMode,
-              (v) {
-                setState(() => _isDarkMode = v);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(v ? 'Insanganyamatsiko y\'ijoro' : 'Insanganyamatsiko y\'umunsi'),
-                    duration: const Duration(seconds: 1),
-                  ),
-                );
-                // Note: Actual theme change requires app-level state management (Provider/Riverpod)
-              },
-              indent: true,
-            ),
-          ],
+                ],
+              ),
+              const SizedBox(height: 16),
+              // Notifications
+              Row(children: [Icon(Icons.notifications_outlined, color: colorScheme.primary, size: 22), const SizedBox(width: 12), Text('Menyesha', style: theme.textTheme.bodyMedium)]),
+              _buildSwitch('Imeli', settingsService.emailNotifications, (v) => settingsService.setEmailNotifications(v), theme, colorScheme),
+              _buildSwitch('SMS', settingsService.smsNotifications, (v) => settingsService.setSmsNotifications(v), theme, colorScheme),
+              const SizedBox(height: 16),
+              // Theme
+              Row(children: [Icon(Icons.palette_outlined, color: colorScheme.primary, size: 22), const SizedBox(width: 12), Text('Insanganyamatsiko', style: theme.textTheme.bodyMedium)]),
+              _buildSwitch('Ijoro (Dark Mode)', settingsService.isDarkMode, (v) => settingsService.setDarkMode(v), theme, colorScheme),
+            ],
+          ),
         ),
       ),
     );
@@ -251,20 +211,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             Text('Ibyerekeye Porogaramu', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
-            _buildActionTile(theme, colorScheme, 'Amategeko n\'Amabwiriza', Icons.description_outlined, () {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Amategeko n\'Amabwiriza...'), duration: Duration(seconds: 1)));
-            }),
-            _buildActionTile(theme, colorScheme, 'Ubufasha', Icons.help_outline, () {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ubufasha...'), duration: Duration(seconds: 1)));
-            }),
+            _buildActionTile(theme, colorScheme, 'Amategeko n\'Amabwiriza', Icons.description_outlined, () {}),
+            _buildActionTile(theme, colorScheme, 'Ubufasha', Icons.help_outline, () {}),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Text('Verisiyo', style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant)),
-                const Spacer(),
-                Text('1.2.0 (MVP)', style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
-              ],
-            ),
+            Row(children: [Text('Verisiyo', style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant)), const Spacer(), Text('1.2.0 (MVP)', style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500))]),
           ],
         ),
       ),
@@ -275,50 +225,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final color = isDestructive ? colorScheme.error : colorScheme.primary;
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(color: color.withAlpha(25), borderRadius: BorderRadius.circular(8)),
-        child: Icon(icon, color: color, size: 20),
-      ),
+      leading: Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: color.withAlpha(25), borderRadius: BorderRadius.circular(8)), child: Icon(icon, color: color, size: 20)),
       title: Text(title, style: TextStyle(color: isDestructive ? colorScheme.error : null)),
       trailing: const Icon(Icons.chevron_right),
       onTap: onTap,
     );
   }
 
-  Widget _buildFunctionalSwitch(ThemeData theme, ColorScheme colorScheme, String label, bool value, ValueChanged<bool> onChanged, {bool indent = false}) {
+  Widget _buildSwitch(String label, bool value, ValueChanged<bool> onChanged, ThemeData theme, ColorScheme colorScheme) {
     return Padding(
-      padding: EdgeInsets.only(left: indent ? 34 : 0, top: 4),
-      child: Row(
-        children: [
-          Expanded(child: Text(label, style: theme.textTheme.bodyMedium)),
-          Switch(value: value, onChanged: onChanged, activeColor: colorScheme.primary),
-        ],
-      ),
+      padding: const EdgeInsets.only(left: 34, top: 4),
+      child: Row(children: [Expanded(child: Text(label, style: theme.textTheme.bodyMedium)), Switch(value: value, onChanged: onChanged, activeColor: colorScheme.primary)]),
     );
   }
 
   void _showChangePasswordDialog() {
-    final oldPwdController = TextEditingController();
-    final newPwdController = TextEditingController();
+    final oldPwd = TextEditingController();
+    final newPwd = TextEditingController();
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Hindura Ijambo ry\'Ibanga'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: oldPwdController, obscureText: true, decoration: const InputDecoration(labelText: 'Ijambo ry\'Ibanga rya kera')),
-            const SizedBox(height: 12),
-            TextField(controller: newPwdController, obscureText: true, decoration: const InputDecoration(labelText: 'Ijambo ry\'Ibanga rishya')),
-          ],
-        ),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(controller: oldPwd, obscureText: true, decoration: const InputDecoration(labelText: 'Ijambo ry\'Ibanga rya kera')),
+          const SizedBox(height: 12),
+          TextField(controller: newPwd, obscureText: true, decoration: const InputDecoration(labelText: 'Ijambo ry\'Ibanga rishya')),
+        ]),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Reka')),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ijambo ry\'Ibanga ryahinduwe!'), backgroundColor: Colors.green));
+              setState(() => _isLoading = true);
+              final result = await authService.changePassword(currentPassword: oldPwd.text, newPassword: newPwd.text);
+              setState(() => _isLoading = false);
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text(result.isSuccess ? 'Ijambo ry\'Ibanga ryahinduwe!' : result.error ?? 'Byanze'),
+                  backgroundColor: result.isSuccess ? Colors.green : Colors.red,
+                ));
+              }
             },
             child: const Text('Emeza'),
           ),
@@ -327,12 +273,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _saveProfile() {
-    if (_formKey.currentState?.validate() ?? true) {
-      setState(() => _isEditing = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: const Text('Igenamiterere ryabitswe!'), backgroundColor: Theme.of(context).colorScheme.primary),
-      );
+  Future<void> _saveProfile() async {
+    if (!_isEditing || !(_formKey.currentState?.validate() ?? true)) return;
+    setState(() => _isLoading = true);
+    final result = await authService.updateProfile(phone: _namesController.text.isNotEmpty ? _namesController.text : null, email: _emailController.text.isNotEmpty ? _emailController.text : null);
+    setState(() { _isLoading = false; _isEditing = false; });
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(result.isSuccess ? 'Umwirondoro wabitswe!' : result.error ?? 'Byanze'),
+        backgroundColor: result.isSuccess ? Colors.green : Colors.red,
+      ));
     }
   }
 
@@ -345,11 +295,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Oya')),
           ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              authService.logout();
-              Navigator.of(context).popUntil((route) => route.isFirst);
-            },
+            onPressed: () { Navigator.pop(ctx); authService.logout(); Navigator.of(context).popUntil((route) => route.isFirst); },
             style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
             child: const Text('Yego, sohoka'),
           ),
