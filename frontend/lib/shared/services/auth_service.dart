@@ -54,11 +54,33 @@ class AuthService {
     return ApiResponse.error(response.error ?? 'Login failed');
   }
 
-  Future<ApiResponse<UserModel>> register({String? phone, String? email, required String password}) async {
-    final response = await _client.post<Map<String, dynamic>>(
-      '/auth/register',
-      {if (phone != null) 'phone': phone, if (email != null) 'email': email, 'password': password, 'role': 'CITIZEN'},
-    );
+  Future<ApiResponse<UserModel>> register({
+    String? phone,
+    String? email,
+    required String password,
+    String? name,
+    String? nationalId,
+    String? province,
+    String? district,
+    String? sector,
+    String? cell,
+    String? village,
+  }) async {
+    final body = <String, dynamic>{
+      'password': password,
+      'role': 'CITIZEN',
+    };
+    if (phone != null) body['phone'] = phone;
+    if (email != null) body['email'] = email;
+    if (name != null) body['name'] = name;
+    if (nationalId != null) body['nationalId'] = nationalId;
+    if (province != null) body['province'] = province;
+    if (district != null) body['district'] = district;
+    if (sector != null) body['sector'] = sector;
+    if (cell != null) body['cell'] = cell;
+    if (village != null) body['village'] = village;
+
+    final response = await _client.post<Map<String, dynamic>>('/auth/register', body);
     if (response.isSuccess && response.data != null) {
       final token = response.data!['token'] as String?;
       final userData = response.data!['user'] as Map<String, dynamic>?;

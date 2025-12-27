@@ -18,13 +18,20 @@ const RegisterSchema = zod_1.z.object({
     email: zod_1.z.string().email().optional(),
     password: zod_1.z.string().min(6),
     role: zod_1.z.enum(['CITIZEN', 'LEADER', 'ADMIN', 'OVERSIGHT', 'NGO']).default('CITIZEN'),
+    name: zod_1.z.string().min(2).optional(),
+    nationalId: zod_1.z.string().length(16).optional(),
+    province: zod_1.z.string().optional(),
+    district: zod_1.z.string().optional(),
+    sector: zod_1.z.string().optional(),
+    cell: zod_1.z.string().optional(),
+    village: zod_1.z.string().optional(),
 });
 const LoginSchema = zod_1.z.object({
     identifier: zod_1.z.string(), // phone or email
     password: zod_1.z.string(),
 });
 /**
- * POST /auth/register - Register new user
+ * POST /auth/register - Register new user with profile
  */
 router.post('/register', async (req, res) => {
     try {
@@ -35,7 +42,7 @@ router.post('/register', async (req, res) => {
                 details: validation.error.errors,
             });
         }
-        const { phone, email, password, role } = validation.data;
+        const { phone, email, password, role, name, nationalId, province, district, sector, cell, village } = validation.data;
         // Check if user exists
         const existing = await prisma_service_1.prisma.user.findFirst({
             where: {
@@ -48,24 +55,41 @@ router.post('/register', async (req, res) => {
         if (existing) {
             return res.status(409).json({ error: 'User already exists' });
         }
+        // Check if national ID is already registered
+        if (nationalId) {
+            const existingNationalId = await prisma_service_1.prisma.citizenProfile.findUnique({
+                where: { nationalId },
+            });
+            if (existingNationalId) {
+                return res.status(409).json({ error: 'National ID already registered' });
+            }
+        }
         // Hash password
         const hashedPassword = await (0, password_service_1.hashPassword)(password);
-        // Create user
+        // Create user with name
         const user = await prisma_service_1.prisma.user.create({
             data: {
                 phone,
                 email,
+                name,
                 password: hashedPassword,
                 role,
                 status: 'ACTIVE',
             },
         });
-        // Create citizen profile
+        // Create citizen profile with location
         if (role === 'CITIZEN') {
             await prisma_service_1.prisma.citizenProfile.create({
                 data: {
                     userId: user.id,
+                    nationalId,
                     protectionLevel: 'ANONYMOUS',
+                    country: 'Rwanda',
+                    province,
+                    district,
+                    sector,
+                    cell,
+                    village,
                 },
             });
         }
@@ -88,6 +112,13 @@ router.post('/register', async (req, res) => {
                 email: user.email,
                 profilePicture: user.profilePicture,
                 status: user.status,
+                nationalId,
+                country: 'Rwanda',
+                province,
+                district,
+                sector,
+                cell,
+                village,
             },
         });
     }

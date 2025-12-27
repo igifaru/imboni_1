@@ -17,6 +17,13 @@ const RegisterSchema = z.object({
     email: z.string().email().optional(),
     password: z.string().min(6),
     role: z.enum(['CITIZEN', 'LEADER', 'ADMIN', 'OVERSIGHT', 'NGO']).default('CITIZEN'),
+    name: z.string().min(2).optional(),
+    nationalId: z.string().length(16).optional(),
+    province: z.string().optional(),
+    district: z.string().optional(),
+    sector: z.string().optional(),
+    cell: z.string().optional(),
+    village: z.string().optional(),
 });
 
 const LoginSchema = z.object({
@@ -25,7 +32,7 @@ const LoginSchema = z.object({
 });
 
 /**
- * POST /auth/register - Register new user
+ * POST /auth/register - Register new user with profile
  */
 router.post('/register', async (req: Request, res: Response) => {
     try {
@@ -38,7 +45,7 @@ router.post('/register', async (req: Request, res: Response) => {
             });
         }
 
-        const { phone, email, password, role } = validation.data;
+        const { phone, email, password, role, name, nationalId, province, district, sector, cell, village } = validation.data;
 
         // Check if user exists
         const existing = await prisma.user.findFirst({
@@ -54,26 +61,44 @@ router.post('/register', async (req: Request, res: Response) => {
             return res.status(409).json({ error: 'User already exists' });
         }
 
+        // Check if national ID is already registered
+        if (nationalId) {
+            const existingNationalId = await prisma.citizenProfile.findUnique({
+                where: { nationalId },
+            });
+            if (existingNationalId) {
+                return res.status(409).json({ error: 'National ID already registered' });
+            }
+        }
+
         // Hash password
         const hashedPassword = await hashPassword(password);
 
-        // Create user
+        // Create user with name
         const user = await prisma.user.create({
             data: {
                 phone,
                 email,
+                name,
                 password: hashedPassword,
                 role,
                 status: 'ACTIVE',
             },
         });
 
-        // Create citizen profile
+        // Create citizen profile with location
         if (role === 'CITIZEN') {
             await prisma.citizenProfile.create({
                 data: {
                     userId: user.id,
+                    nationalId,
                     protectionLevel: 'ANONYMOUS',
+                    country: 'Rwanda',
+                    province,
+                    district,
+                    sector,
+                    cell,
+                    village,
                 },
             });
         }
@@ -99,6 +124,13 @@ router.post('/register', async (req: Request, res: Response) => {
                 email: user.email,
                 profilePicture: user.profilePicture,
                 status: user.status,
+                nationalId,
+                country: 'Rwanda',
+                province,
+                district,
+                sector,
+                cell,
+                village,
             },
         });
     } catch (error) {

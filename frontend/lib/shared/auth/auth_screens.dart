@@ -138,6 +138,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _namesController = TextEditingController();
+  final _nationalIdController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
   int _currentStep = 0;
@@ -149,6 +150,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _namesController.dispose();
+    _nationalIdController.dispose();
     super.dispose();
   }
 
@@ -206,6 +208,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
           keyboardType: TextInputType.phone,
           decoration: const InputDecoration(hintText: '07X XXX XXXX', prefixIcon: Icon(Icons.phone_outlined)),
           validator: (v) => (v == null || v.length < 10) ? 'Nimero ya telefoni ntabwo yuzuye' : null,
+        ),
+        const SizedBox(height: 24),
+
+        // National ID
+        Text('Indangamuntu', style: theme.textTheme.labelLarge),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _nationalIdController,
+          keyboardType: TextInputType.number,
+          maxLength: 16,
+          decoration: const InputDecoration(hintText: '1 XXXX X XXXXXXX X XX', prefixIcon: Icon(Icons.badge_outlined), counterText: ''),
+          validator: (v) => (v == null || v.length < 16) ? 'Indangamuntu igomba kuba imibare 16' : null,
         ),
         const SizedBox(height: 24),
 
@@ -305,7 +319,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _register() async {
     setState(() => _isLoading = true);
     try {
-      final response = await authService.register(phone: _phoneController.text.trim(), password: _passwordController.text);
+      final response = await authService.register(
+        phone: _phoneController.text.trim(),
+        password: _passwordController.text,
+        name: _namesController.text.trim(),
+        nationalId: _nationalIdController.text.trim(),
+        province: _location.province,
+        district: _location.district,
+        sector: _location.sector,
+        cell: _location.cell,
+        village: _location.village,
+      );
       if (!mounted) return;
       if (response.isSuccess) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Kwiyandikisha byagenze neza!'), backgroundColor: ImboniColors.success));
