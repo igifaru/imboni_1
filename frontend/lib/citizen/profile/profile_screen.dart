@@ -306,33 +306,177 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _showChangePasswordDialog() {
     final oldPwd = TextEditingController();
     final newPwd = TextEditingController();
+    final confirmPwd = TextEditingController();
+    bool obscureOld = true;
+    bool obscureNew = true;
+    bool obscureConfirm = true;
+    final formKey = GlobalKey<FormState>();
+    
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Hindura Ijambo ry\'Ibanga'),
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
-          TextField(controller: oldPwd, obscureText: true, decoration: const InputDecoration(labelText: 'Ijambo ry\'Ibanga rya kera')),
-          const SizedBox(height: 12),
-          TextField(controller: newPwd, obscureText: true, decoration: const InputDecoration(labelText: 'Ijambo ry\'Ibanga rishya')),
-        ]),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Reka')),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              setState(() => _isLoading = true);
-              final result = await authService.changePassword(currentPassword: oldPwd.text, newPassword: newPwd.text);
-              setState(() => _isLoading = false);
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  content: Text(result.isSuccess ? 'Ijambo ry\'Ibanga ryahinduwe!' : result.error ?? 'Byanze'),
-                  backgroundColor: result.isSuccess ? Colors.green : Colors.red,
-                ));
-              }
-            },
-            child: const Text('Emeza'),
-          ),
-        ],
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          final theme = Theme.of(context);
+          final colorScheme = theme.colorScheme;
+          
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            titlePadding: EdgeInsets.zero,
+            contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+            title: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [colorScheme.primary, colorScheme.primary.withAlpha(200)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withAlpha(50),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.lock_outline, color: Colors.white, size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Hindura Ijambo ry\'Ibanga', style: theme.textTheme.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 2),
+                        Text('Injiza ijambo rishya', style: theme.textTheme.bodySmall?.copyWith(color: Colors.white70)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            content: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 20),
+                  // Current password
+                  TextFormField(
+                    controller: oldPwd,
+                    obscureText: obscureOld,
+                    decoration: InputDecoration(
+                      labelText: 'Ijambo ry\'Ibanga rya kera',
+                      prefixIcon: Icon(Icons.lock_clock_outlined, color: colorScheme.primary),
+                      suffixIcon: IconButton(
+                        icon: Icon(obscureOld ? Icons.visibility_outlined : Icons.visibility_off_outlined, color: colorScheme.onSurfaceVariant),
+                        onPressed: () => setDialogState(() => obscureOld = !obscureOld),
+                      ),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      filled: true,
+                      fillColor: colorScheme.surfaceContainerHighest.withAlpha(100),
+                    ),
+                    validator: (v) => (v == null || v.isEmpty) ? 'Injiza ijambo rya kera' : null,
+                  ),
+                  const SizedBox(height: 16),
+                  // New password
+                  TextFormField(
+                    controller: newPwd,
+                    obscureText: obscureNew,
+                    decoration: InputDecoration(
+                      labelText: 'Ijambo ry\'Ibanga rishya',
+                      prefixIcon: Icon(Icons.lock_outline, color: colorScheme.primary),
+                      suffixIcon: IconButton(
+                        icon: Icon(obscureNew ? Icons.visibility_outlined : Icons.visibility_off_outlined, color: colorScheme.onSurfaceVariant),
+                        onPressed: () => setDialogState(() => obscureNew = !obscureNew),
+                      ),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      filled: true,
+                      fillColor: colorScheme.surfaceContainerHighest.withAlpha(100),
+                    ),
+                    validator: (v) => (v == null || v.length < 6) ? 'Nibura inyuguti 6' : null,
+                  ),
+                  const SizedBox(height: 16),
+                  // Confirm password
+                  TextFormField(
+                    controller: confirmPwd,
+                    obscureText: obscureConfirm,
+                    decoration: InputDecoration(
+                      labelText: 'Emeza ijambo rishya',
+                      prefixIcon: Icon(Icons.lock_reset_outlined, color: colorScheme.primary),
+                      suffixIcon: IconButton(
+                        icon: Icon(obscureConfirm ? Icons.visibility_outlined : Icons.visibility_off_outlined, color: colorScheme.onSurfaceVariant),
+                        onPressed: () => setDialogState(() => obscureConfirm = !obscureConfirm),
+                      ),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      filled: true,
+                      fillColor: colorScheme.surfaceContainerHighest.withAlpha(100),
+                    ),
+                    validator: (v) => (v != newPwd.text) ? 'Amagambo ntahura' : null,
+                  ),
+                  const SizedBox(height: 24),
+                  // Buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            side: BorderSide(color: colorScheme.outline),
+                          ),
+                          child: const Text('Reka'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            if (!formKey.currentState!.validate()) return;
+                            Navigator.pop(ctx);
+                            setState(() => _isLoading = true);
+                            final result = await authService.changePassword(currentPassword: oldPwd.text, newPassword: newPwd.text);
+                            setState(() => _isLoading = false);
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                content: Row(children: [
+                                  Icon(result.isSuccess ? Icons.check_circle : Icons.error, color: Colors.white),
+                                  const SizedBox(width: 8),
+                                  Text(result.isSuccess ? 'Ijambo ry\'Ibanga ryahinduwe!' : result.error ?? 'Byanze'),
+                                ]),
+                                backgroundColor: result.isSuccess ? Colors.green : Colors.red,
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ));
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.check, size: 20),
+                              SizedBox(width: 8),
+                              Text('Emeza'),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
