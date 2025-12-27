@@ -16,13 +16,19 @@ const UpdateProfileSchema = zod_1.z.object({
     name: zod_1.z.string().min(2).max(100).optional(),
     phone: zod_1.z.string().min(10).max(15).optional(),
     email: zod_1.z.string().email().optional(),
+    nationalId: zod_1.z.string().length(16).optional(),
+    province: zod_1.z.string().optional(),
+    district: zod_1.z.string().optional(),
+    sector: zod_1.z.string().optional(),
+    cell: zod_1.z.string().optional(),
+    village: zod_1.z.string().optional(),
 });
 const ChangePasswordSchema = zod_1.z.object({
     currentPassword: zod_1.z.string(),
     newPassword: zod_1.z.string().min(6),
 });
 /**
- * PATCH /user/profile - Update user profile
+ * PATCH /user/profile - Update user profile with location
  */
 router.patch('/profile', async (req, res) => {
     const userId = req.user?.userId;
@@ -37,7 +43,7 @@ router.patch('/profile', async (req, res) => {
                 details: validation.error.errors,
             });
         }
-        const { name, phone, email } = validation.data;
+        const { name, phone, email, nationalId, province, district, sector, cell, village } = validation.data;
         // Check for duplicates
         if (phone || email) {
             const existing = await prisma_service_1.prisma.user.findFirst({
@@ -57,6 +63,7 @@ router.patch('/profile', async (req, res) => {
                 return res.status(409).json({ error: 'Phone or email already in use' });
             }
         }
+        // Update user basic info
         const user = await prisma_service_1.prisma.user.update({
             where: { id: userId },
             data: {
@@ -72,10 +79,60 @@ router.patch('/profile', async (req, res) => {
                 email: true,
                 profilePicture: true,
                 status: true,
+                createdAt: true,
+            },
+        });
+        // Update or create citizen profile with location
+        if (nationalId || province || district || sector || cell || village) {
+            await prisma_service_1.prisma.citizenProfile.upsert({
+                where: { userId },
+                update: {
+                    ...(nationalId && { nationalId }),
+                    ...(province && { province }),
+                    ...(district && { district }),
+                    ...(sector && { sector }),
+                    ...(cell && { cell }),
+                    ...(village && { village }),
+                },
+                create: {
+                    userId,
+                    nationalId,
+                    province,
+                    district,
+                    sector,
+                    cell,
+                    village,
+                    protectionLevel: 'ANONYMOUS',
+                },
+            });
+        }
+        // Fetch updated profile for response
+        const profile = await prisma_service_1.prisma.citizenProfile.findUnique({
+            where: { userId },
+            select: {
+                nationalId: true,
+                country: true,
+                province: true,
+                district: true,
+                sector: true,
+                cell: true,
+                village: true,
             },
         });
         logger.info('Profile updated', { userId });
-        res.json({ success: true, user });
+        res.json({
+            success: true,
+            user: {
+                ...user,
+                nationalId: profile?.nationalId || null,
+                country: profile?.country || 'Rwanda',
+                province: profile?.province || null,
+                district: profile?.district || null,
+                sector: profile?.sector || null,
+                cell: profile?.cell || null,
+                village: profile?.village || null,
+            },
+        });
     }
     catch (error) {
         logger.error('Profile update failed', error);

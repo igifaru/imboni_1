@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../shared/theme/responsive.dart';
 import '../../shared/services/auth_service.dart';
 import '../../shared/services/settings_service.dart';
+import '../../shared/widgets/location_selector.dart';
+import '../../shared/services/admin_units_service.dart';
 
 /// Settings Screen - Fully functional with real backend integration
 class ProfileScreen extends StatefulWidget {
@@ -18,6 +20,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
+  final _nationalIdController = TextEditingController();
+  LocationSelection _location = const LocationSelection();
 
   @override
   void initState() {
@@ -31,11 +35,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _nameController.text = user.name ?? '';
       _phoneController.text = user.phone ?? '';
       _emailController.text = user.email ?? '';
+      _nationalIdController.text = user.nationalId ?? '';
+      _location = LocationSelection(
+        province: user.province,
+        district: user.district,
+        sector: user.sector,
+        cell: user.cell,
+        village: user.village,
+      );
     }
   }
 
   @override
-  void dispose() { _nameController.dispose(); _phoneController.dispose(); _emailController.dispose(); super.dispose(); }
+  void dispose() { _nameController.dispose(); _phoneController.dispose(); _emailController.dispose(); _nationalIdController.dispose(); super.dispose(); }
 
   @override
   Widget build(BuildContext context) {
@@ -155,6 +167,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 controller: _emailController,
                 decoration: const InputDecoration(labelText: 'Imeli', prefixIcon: Icon(Icons.email_outlined)),
                 keyboardType: TextInputType.emailAddress,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _nationalIdController,
+                decoration: const InputDecoration(labelText: 'Indangamuntu', prefixIcon: Icon(Icons.badge_outlined)),
+                keyboardType: TextInputType.number,
+                maxLength: 16,
+              ),
+              const SizedBox(height: 16),
+              Text('Aho utuye', style: theme.textTheme.titleSmall),
+              const SizedBox(height: 8),
+              LocationSelector(
+                initialSelection: _location,
+                onLocationChanged: (loc) => setState(() => _location = loc),
               ),
             ],
             const SizedBox(height: 16),
@@ -318,6 +344,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       name: _nameController.text.isNotEmpty ? _nameController.text : null,
       phone: _phoneController.text.isNotEmpty ? _phoneController.text : null,
       email: _emailController.text.isNotEmpty ? _emailController.text : null,
+      nationalId: _nationalIdController.text.isNotEmpty ? _nationalIdController.text : null,
+      province: _location.province,
+      district: _location.district,
+      sector: _location.sector,
+      cell: _location.cell,
+      village: _location.village,
     );
     setState(() { _isLoading = false; _isEditing = false; });
     if (mounted) {

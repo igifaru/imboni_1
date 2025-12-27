@@ -102,12 +102,28 @@ class AuthService {
     await prefs.remove(_tokenKey);
   }
 
-  /// Update user profile (name/phone/email)
-  Future<ApiResponse<UserModel>> updateProfile({String? name, String? phone, String? email}) async {
+  /// Update user profile with all fields
+  Future<ApiResponse<UserModel>> updateProfile({
+    String? name,
+    String? phone,
+    String? email,
+    String? nationalId,
+    String? province,
+    String? district,
+    String? sector,
+    String? cell,
+    String? village,
+  }) async {
     final body = <String, dynamic>{};
     if (name != null) body['name'] = name;
     if (phone != null) body['phone'] = phone;
     if (email != null) body['email'] = email;
+    if (nationalId != null) body['nationalId'] = nationalId;
+    if (province != null) body['province'] = province;
+    if (district != null) body['district'] = district;
+    if (sector != null) body['sector'] = sector;
+    if (cell != null) body['cell'] = cell;
+    if (village != null) body['village'] = village;
     
     final response = await _client.patch<Map<String, dynamic>>('/user/profile', body);
     if (response.isSuccess && response.data != null) {
