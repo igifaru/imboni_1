@@ -10,6 +10,7 @@ import '../../shared/widgets/rwanda_map/rwanda_map.dart';
 import 'assigned_cases/assigned_cases_screen.dart';
 import 'escalation_alerts/escalation_alerts_screen.dart';
 import 'performance/performance_screen.dart';
+import 'settings/leader_settings_screen.dart';
 
 /// Leader Dashboard Screen - Professional responsive design
 class LeaderDashboardScreen extends StatefulWidget {
@@ -75,10 +76,15 @@ class _LeaderDashboardScreenState extends State<LeaderDashboardScreen> {
             ..._buildNavItems(theme, isDark),
             const Spacer(),
             const Divider(),
+// Add import at top of file (this tool call can't do both easily, I'll do imports in a separate call or use multi_replace if possible, but replace_file_content works for contiguous blocks. I'll split this.)
+// Let's effectively replace the ListTile.
             ListTile(
               leading: Icon(Icons.settings_outlined, color: theme.colorScheme.onSurfaceVariant),
               title: Text('Settings', style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
-              onTap: () {},
+              onTap: () => Navigator.push(
+                context, 
+                MaterialPageRoute(builder: (_) => const LeaderSettingsScreen()),
+              ),
             ),
             const SizedBox(height: 16),
           ]),

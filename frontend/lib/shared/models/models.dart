@@ -12,6 +12,9 @@ class CaseModel {
   final DateTime createdAt;
   final DateTime? resolvedAt;
   final DateTime? deadline;
+  final String? audioUrl;
+  final String? imageUrl;
+  final String? citizenName;
 
   const CaseModel({
     required this.id,
@@ -26,6 +29,9 @@ class CaseModel {
     required this.createdAt,
     this.resolvedAt,
     this.deadline,
+    this.audioUrl,
+    this.imageUrl,
+    this.citizenName,
   });
 
   factory CaseModel.fromJson(Map<String, dynamic> json) {
@@ -42,6 +48,9 @@ class CaseModel {
       createdAt: DateTime.parse(json['createdAt'] as String),
       resolvedAt: json['resolvedAt'] != null ? DateTime.parse(json['resolvedAt'] as String) : null,
       deadline: json['deadline'] != null ? DateTime.parse(json['deadline'] as String) : null,
+      audioUrl: json['audioUrl'] as String?,
+      imageUrl: json['imageUrl'] as String?,
+      citizenName: json['citizenName'] as String?,
     );
   }
 
@@ -58,6 +67,9 @@ class CaseModel {
     'createdAt': createdAt.toIso8601String(),
     'resolvedAt': resolvedAt?.toIso8601String(),
     'deadline': deadline?.toIso8601String(),
+    'audioUrl': audioUrl,
+    'imageUrl': imageUrl,
+    'citizenName': citizenName,
   };
 }
 

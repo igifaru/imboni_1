@@ -3,6 +3,7 @@ import '../../../shared/theme/colors.dart';
 import '../../../shared/services/case_service.dart';
 import '../../../shared/services/api_client.dart';
 import '../../../shared/models/models.dart';
+import '../case_detail/case_detail_screen.dart';
 
 /// Assigned Cases Screen - Professional design matching Figma
 class AssignedCasesScreen extends StatefulWidget {
@@ -61,8 +62,18 @@ class _AssignedCasesScreenState extends State<AssignedCasesScreen> {
         title: const Text('Assigned Cases'),
         centerTitle: true,
         actions: [
-          IconButton(icon: const Icon(Icons.search), onPressed: () {}),
-          IconButton(icon: const Icon(Icons.filter_list), onPressed: () {}),
+          IconButton(
+            icon: const Icon(Icons.search), 
+            onPressed: () {
+              showSearch(context: context, delegate: _CaseSearchDelegate(_cases));
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.filter_list), 
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Use the chips below to filter cases')));
+            },
+          ),
         ],
       ),
       body: Column(children: [
@@ -213,6 +224,74 @@ class _AssignedCasesScreenState extends State<AssignedCasesScreen> {
   }
 
   void _openCaseDetails(CaseModel c) {
-    // Navigate to case details for resolution
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => CaseDetailScreen(caseModel: c)),
+    );
+  }
+}
+
+class _CaseSearchDelegate extends SearchDelegate {
+  final List<CaseModel> cases;
+
+  _CaseSearchDelegate(this.cases);
+
+  @override
+  List<Widget>? buildActions(BuildContext context) {
+    return [
+      IconButton(
+        icon: const Icon(Icons.clear),
+        onPressed: () => query = '',
+      ),
+    ];
+  }
+
+  @override
+  Widget? buildLeading(BuildContext context) {
+    return IconButton(
+      icon: const Icon(Icons.arrow_back),
+      onPressed: () => close(context, null),
+    );
+  }
+
+  @override
+  Widget buildResults(BuildContext context) {
+    return _buildList(context);
+  }
+
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    return _buildList(context);
+  }
+
+  Widget _buildList(BuildContext context) {
+    final theme = Theme.of(context);
+    final results = cases.where((c) => 
+      c.title.toLowerCase().contains(query.toLowerCase()) || 
+      c.caseReference.toLowerCase().contains(query.toLowerCase()) ||
+      c.description.toLowerCase().contains(query.toLowerCase())
+    ).toList();
+
+    if (results.isEmpty) {
+      return Center(child: Text('No cases found', style: theme.textTheme.bodyLarge));
+    }
+
+    return ListView.builder(
+      itemCount: results.length,
+      itemBuilder: (context, index) {
+        final c = results[index];
+        return ListTile(
+          title: Text(c.title),
+          subtitle: Text('${c.caseReference} • ${c.status}'),
+          onTap: () {
+            close(context, null);
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => CaseDetailScreen(caseModel: c)),
+            );
+          },
+        );
+      },
+    );
   }
 }

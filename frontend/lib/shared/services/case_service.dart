@@ -109,7 +109,7 @@ class CaseService {
 
   /// Get performance metrics (for leaders)
   Future<ApiResponse<PerformanceMetrics>> getPerformanceMetrics() async {
-    final response = await apiClient.get('/api/performance/metrics');
+    final response = await apiClient.get('/api/cases/metrics');
     if (response.isSuccess && response.data != null) {
       return ApiResponse.success(PerformanceMetrics.fromJson(response.data));
     }
