@@ -4,6 +4,7 @@ import 'shared/theme/app_theme.dart';
 import 'shared/localization/app_localizations.dart';
 import 'shared/services/auth_service.dart';
 import 'shared/services/admin_units_service.dart';
+import 'shared/services/settings_service.dart';
 import 'shared/auth/auth_screens.dart';
 import 'citizen/home/citizen_home_screen.dart';
 import 'leader/dashboard/leader_dashboard_screen.dart';
@@ -13,6 +14,7 @@ void main() async {
   await Future.wait([
     authService.initialize(),
     adminUnitsService.load(),
+    settingsService.initialize(),
   ]);
   runApp(const ImboniApp());
 }
@@ -26,7 +28,6 @@ class ImboniApp extends StatefulWidget {
 }
 
 class _ImboniAppState extends State<ImboniApp> {
-  ThemeMode _themeMode = ThemeMode.system;
   bool _isAuthenticated = false;
   bool _showRegister = false;
   bool _isLeader = false;
@@ -38,7 +39,17 @@ class _ImboniAppState extends State<ImboniApp> {
     if (_isAuthenticated && authService.currentUser != null) {
       _isLeader = authService.currentUser!.isLeader;
     }
+    // Listen to settings changes for theme
+    settingsService.addListener(_onSettingsChanged);
   }
+
+  @override
+  void dispose() {
+    settingsService.removeListener(_onSettingsChanged);
+    super.dispose();
+  }
+
+  void _onSettingsChanged() => setState(() {});
 
   void _onLoginSuccess() {
     setState(() {
@@ -64,7 +75,7 @@ class _ImboniAppState extends State<ImboniApp> {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: _themeMode,
+      themeMode: settingsService.themeMode, // Now connected to settingsService!
       locale: const Locale('en'),
       localizationsDelegates: const [
         AppLocalizations.delegate,

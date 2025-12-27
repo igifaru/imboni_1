@@ -15,7 +15,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isEditing = false;
   bool _isLoading = false;
   final _formKey = GlobalKey<FormState>();
-  final _namesController = TextEditingController();
+  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
 
   @override
@@ -27,13 +28,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _loadUserData() {
     final user = authService.currentUser;
     if (user != null) {
-      _namesController.text = user.phone ?? '';
+      _nameController.text = user.name ?? '';
+      _phoneController.text = user.phone ?? '';
       _emailController.text = user.email ?? '';
     }
   }
 
   @override
-  void dispose() { _namesController.dispose(); _emailController.dispose(); super.dispose(); }
+  void dispose() { _nameController.dispose(); _phoneController.dispose(); _emailController.dispose(); super.dispose(); }
 
   @override
   Widget build(BuildContext context) {
@@ -111,17 +113,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 CircleAvatar(
                   radius: 28,
                   backgroundColor: colorScheme.primary,
-                  child: Text(
-                    user?.phone?.substring(0, 2).toUpperCase() ?? 'U',
+                  backgroundImage: user?.profilePicture != null ? NetworkImage(user!.profilePicture!) : null,
+                  child: user?.profilePicture == null ? Text(
+                    user?.initials ?? 'U',
                     style: TextStyle(color: colorScheme.onPrimary, fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
+                  ) : null,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(user?.phone ?? 'Umukiriya', style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
+                      Text(user?.displayName ?? 'Umukiriya', style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
                       Text(user?.isCitizen == true ? 'Umuturage' : 'Umuyobozi', style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant)),
                     ],
                   ),
@@ -131,8 +134,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
             if (_isEditing) ...[
               const SizedBox(height: 16),
               TextFormField(
-                controller: _namesController,
+                controller: _nameController,
+                decoration: const InputDecoration(labelText: 'Amazina yombi', prefixIcon: Icon(Icons.person_outlined)),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _phoneController,
                 decoration: const InputDecoration(labelText: 'Telefoni', prefixIcon: Icon(Icons.phone_outlined)),
+                keyboardType: TextInputType.phone,
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -276,7 +285,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _saveProfile() async {
     if (!_isEditing || !(_formKey.currentState?.validate() ?? true)) return;
     setState(() => _isLoading = true);
-    final result = await authService.updateProfile(phone: _namesController.text.isNotEmpty ? _namesController.text : null, email: _emailController.text.isNotEmpty ? _emailController.text : null);
+    final result = await authService.updateProfile(
+      name: _nameController.text.isNotEmpty ? _nameController.text : null,
+      phone: _phoneController.text.isNotEmpty ? _phoneController.text : null,
+      email: _emailController.text.isNotEmpty ? _emailController.text : null,
+    );
     setState(() { _isLoading = false; _isEditing = false; });
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(

@@ -93,15 +93,19 @@ class CreateCaseRequest {
 class UserModel {
   final String id;
   final String role;
+  final String? name;
   final String? phone;
   final String? email;
+  final String? profilePicture;
   final String status;
 
   const UserModel({
     required this.id,
     required this.role,
+    this.name,
     this.phone,
     this.email,
+    this.profilePicture,
     required this.status,
   });
 
@@ -109,10 +113,26 @@ class UserModel {
     return UserModel(
       id: json['id'] as String,
       role: json['role'] as String,
+      name: json['name'] as String?,
       phone: json['phone'] as String?,
       email: json['email'] as String?,
+      profilePicture: json['profilePicture'] as String?,
       status: json['status'] as String? ?? 'ACTIVE',
     );
+  }
+
+  /// Display name - prefer name, fallback to phone, then email
+  String get displayName => name ?? phone ?? email ?? 'User';
+  
+  /// Initials for avatar
+  String get initials {
+    if (name != null && name!.isNotEmpty) {
+      final parts = name!.split(' ');
+      if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+      return name!.substring(0, 2).toUpperCase();
+    }
+    if (phone != null && phone!.length >= 2) return phone!.substring(0, 2).toUpperCase();
+    return 'U';
   }
 
   bool get isCitizen => role == 'CITIZEN';

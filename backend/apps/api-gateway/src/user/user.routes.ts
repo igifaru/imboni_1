@@ -12,6 +12,7 @@ const router = Router();
 
 // Validation schemas
 const UpdateProfileSchema = z.object({
+    name: z.string().min(2).max(100).optional(),
     phone: z.string().min(10).max(15).optional(),
     email: z.string().email().optional(),
 });
@@ -41,7 +42,7 @@ router.patch('/profile', async (req: Request, res: Response) => {
             });
         }
 
-        const { phone, email } = validation.data;
+        const { name, phone, email } = validation.data;
 
         // Check for duplicates
         if (phone || email) {
@@ -67,14 +68,17 @@ router.patch('/profile', async (req: Request, res: Response) => {
         const user = await prisma.user.update({
             where: { id: userId },
             data: {
+                ...(name && { name }),
                 ...(phone && { phone }),
                 ...(email && { email }),
             },
             select: {
                 id: true,
                 role: true,
+                name: true,
                 phone: true,
                 email: true,
+                profilePicture: true,
                 status: true,
             },
         });

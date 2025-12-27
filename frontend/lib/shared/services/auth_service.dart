@@ -80,9 +80,10 @@ class AuthService {
     await prefs.remove(_tokenKey);
   }
 
-  /// Update user profile (phone/email)
-  Future<ApiResponse<UserModel>> updateProfile({String? phone, String? email}) async {
+  /// Update user profile (name/phone/email)
+  Future<ApiResponse<UserModel>> updateProfile({String? name, String? phone, String? email}) async {
     final body = <String, dynamic>{};
+    if (name != null) body['name'] = name;
     if (phone != null) body['phone'] = phone;
     if (email != null) body['email'] = email;
     
