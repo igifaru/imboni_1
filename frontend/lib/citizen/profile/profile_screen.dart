@@ -332,15 +332,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Gradient Header
+                    // Header
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [colorScheme.primary, colorScheme.primary.withAlpha(180)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
+                        color: colorScheme.surfaceContainerHighest,
                         borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(24),
                           topRight: Radius.circular(24),
@@ -351,10 +347,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: Colors.white.withAlpha(40),
+                              color: colorScheme.primaryContainer,
                               borderRadius: BorderRadius.circular(14),
                             ),
-                            child: const Icon(Icons.lock_outline_rounded, color: Colors.white, size: 28),
+                            child: Icon(Icons.lock_outline_rounded, color: colorScheme.onPrimaryContainer, size: 28),
                           ),
                           const SizedBox(width: 16),
                           Expanded(
@@ -363,13 +359,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               children: [
                                 Text('Hindura Ijambo ry\'Ibanga', 
                                   style: theme.textTheme.titleLarge?.copyWith(
-                                    color: Colors.white, 
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text('Injiza ijambo rishya kugirango uhindure', 
-                                  style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white70),
+                                  style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
                                 ),
                               ],
                             ),
