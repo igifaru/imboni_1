@@ -1,9 +1,16 @@
+import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 /// API Client for backend communication
 class ApiClient {
-  static const String _baseUrl = 'http://localhost:3000/api';
+  static String get _baseUrl {
+    if (kIsWeb) return 'http://localhost:3000/api';
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return 'http://10.0.2.2:3000/api';
+    }
+    return 'http://localhost:3000/api';
+  }
   final http.Client _client;
   String? _authToken;
 
