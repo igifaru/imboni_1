@@ -5,10 +5,9 @@ import 'package:http/http.dart' as http;
 /// API Client for backend communication
 class ApiClient {
   static String get _baseUrl {
+    // NOTE: For Android, run 'adb reverse tcp:3000 tcp:3000' to allow localhost access.
+    // 10.0.2.2 can be flaky. ADB reverse is more reliable.
     if (kIsWeb) return 'http://localhost:3000/api';
-    if (defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2:3000/api';
-    }
     return 'http://localhost:3000/api';
   }
   final http.Client _client;
@@ -27,7 +26,7 @@ class ApiClient {
 
   Future<ApiResponse<T>> get<T>(String endpoint, {T Function(dynamic)? fromJson}) async {
     try {
-      final response = await _client.get(Uri.parse('$_baseUrl$endpoint'), headers: _headers);
+      final response = await _client.get(Uri.parse('$_baseUrl$endpoint'), headers: _headers).timeout(const Duration(seconds: 15));
       return _handleResponse(response, fromJson: fromJson);
     } catch (e) {
       return ApiResponse.error('Network error: $e');
@@ -40,7 +39,7 @@ class ApiClient {
         Uri.parse('$_baseUrl$endpoint'),
         headers: _headers,
         body: jsonEncode(body),
-      );
+      ).timeout(const Duration(seconds: 15));
       return _handleResponse(response, fromJson: fromJson);
     } catch (e) {
       return ApiResponse.error('Network error: $e');
@@ -53,7 +52,7 @@ class ApiClient {
         Uri.parse('$_baseUrl$endpoint'),
         headers: _headers,
         body: jsonEncode(body),
-      );
+      ).timeout(const Duration(seconds: 15));
       return _handleResponse(response, fromJson: fromJson);
     } catch (e) {
       return ApiResponse.error('Network error: $e');
