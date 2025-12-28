@@ -360,6 +360,22 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
   }
 
   Widget _buildRoleLocationSection(ThemeData theme, AppLocalizations l10n) {
+    // Map roles to localized strings
+    final Map<String, String> roleDisplayNames = {
+      'VILLAGE': 'Umuyobozi w\'Umudugudu (Village Leader)',
+      'CELL': 'Umunyamabanga Nshingwabikorwa w\'Akagari',
+      'SECTOR': 'Umunyamabanga Nshingwabikorwa w\'Umurenge',
+      'DISTRICT': 'Umuyobozi w\'Akarere (Mayor)',
+    };
+    
+    // Reverse map for logic
+    final Map<String, String> displayToKey = {
+      'Umuyobozi w\'Umudugudu (Village Leader)': 'VILLAGE',
+      'Umunyamabanga Nshingwabikorwa w\'Akagari': 'CELL',
+      'Umunyamabanga Nshingwabikorwa w\'Umurenge': 'SECTOR',
+      'Umuyobozi w\'Akarere (Mayor)': 'DISTRICT',
+    };
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -376,18 +392,22 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
             children: [
               _buildLabel(l10n.leadershipRole),
               _buildDropdown(
-                value: _selectedRole,
+                value: _selectedRole, // This stores the Display Name
                 hint: l10n.selectRole,
                 icon: Icons.work_outline,
-                items: ['Village Leader', 'Cell Executive', 'Sector Executive', 'District Mayor'],
-                onChanged: _onRoleChanged,
+                items: roleDisplayNames.values.toList(),
+                onChanged: (val) {
+                   final key = displayToKey[val];
+                   _onRoleChanged(key); // Pass internal key logic
+                   setState(() => _selectedRole = val);
+                },
                 theme: theme,
               ),
               Text(l10n.hintRoleSelect, style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey)),
 
               const SizedBox(height: 16),
               _buildLabel(l10n.workLocation),
-              _buildHierarchy(theme),
+              _buildHierarchy(theme, l10n),
               _buildLabel(l10n.startDate),
               InkWell(
                 onTap: () => _selectDate(context),
@@ -521,7 +541,8 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
                  Text(hint, style: theme.textTheme.bodyMedium?.copyWith(
                     color: enabled ? null : theme.disabledColor
                  )),
-                 Icon(Icons.keyboard_arrow_down, size: 20, color: theme.iconTheme.color),
+                 if (!enabled) Icon(Icons.lock, size: 16, color: theme.disabledColor)
+                 else Icon(Icons.keyboard_arrow_down, size: 20, color: theme.iconTheme.color),
                ],
              ),
            )
@@ -561,9 +582,14 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
   }) {
     return DropdownButtonFormField<String>(
       value: value,
+      isExpanded: true,
       items: items.map((name) => DropdownMenuItem(
         value: name,
-        child: Text(name),
+        child: Text(
+          name, 
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
+        ),
       )).toList(),
       onChanged: onChanged,
       decoration: InputDecoration(
@@ -572,18 +598,26 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
       ),
     );
   }
-  Widget _buildHierarchy(ThemeData theme) {
-    // Determine parent level based on target level
-    String parentLabel = 'Urwego rw\'Ibanze';
+  
+  Widget _buildHierarchy(ThemeData theme, AppLocalizations l10n) {
+    // Determine the label for OUR (User's) level
+    // We don't know our own level explicitly from `getMyJurisdiction` result directly in the UI state
+    // BUT, we know `_targetLevel`. 
+    // And logically:
+    // If target is VILLAGE -> We are CELL
+    // If target is CELL -> We are SECTOR
+    // If target is SECTOR -> We are DISTRICT
+    // If target is DISTRICT -> We are PROVINCE (or NATIONAL)
     
-    // Logic: If target is CELL, parent is SECTOR.
-    switch (_targetLevel) {
-      case 'DISTRICT': parentLabel = 'Intara (Province)'; break;
-      case 'SECTOR': parentLabel = 'Akarere (District)'; break;
-      case 'CELL': parentLabel = 'Umurenge (Sector)'; break;
-      case 'VILLAGE': parentLabel = 'Akagari (Cell)'; break;
-      default: parentLabel = 'Urwego rw\'Ibanze'; // Fallback
-    }
+    // HOWEVER, correct labels should come from `_targetLevel` Logic.
+    
+    String parentLabel = 'Urwego rw\'Ibanze (Parent Level)';
+    if (_targetLevel == 'VILLAGE') parentLabel = 'Akagari (Cell)';
+    else if (_targetLevel == 'CELL') parentLabel = 'Umurenge (Sector)';
+    else if (_targetLevel == 'SECTOR') parentLabel = 'Akarere (District)';
+    else if (_targetLevel == 'DISTRICT') parentLabel = 'Intara (Province)';
+    
+    String targetLabel = _formatLevel(_targetLevel);
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -593,7 +627,7 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
       ),
       child: Column(
         children: [
-           // Row 1: Context (Where we are)
+           // Row 1: Context (Where we are / Parent Unit)
            Row(
              children: [
                 Expanded(
@@ -615,11 +649,11 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(_formatLevel(_targetLevel), style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor)),
+                      Text(targetLabel, style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor)),
                       const SizedBox(height: 4),
                       _buildDropdown(
                         value: _selectedUnitName,
-                        hint: 'Hitamo ${_formatLevel(_targetLevel)}',
+                        hint: 'Hitamo location',
                         icon: Icons.location_on_outlined,
                         items: _availableChildren,
                         onChanged: (v) => setState(() => _selectedUnitName = v),
@@ -635,31 +669,21 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
     );
   }
 
-  void _onRoleChanged(String? role) {
-    if (role == null) return;
+  void _onRoleChanged(String? roleKey) {
+    if (roleKey == null) return;
     setState(() {
-      _selectedRole = role;
-      if (role.contains('Village') || role.contains('Umudugudu')) {
-        _targetLevel = 'VILLAGE';
-      } else if (role.contains('Cell') || role.contains('Akagari')) {
-        _targetLevel = 'CELL';
-      } else if (role.contains('Sector') || role.contains('Umurenge')) {
-        _targetLevel = 'SECTOR';
-      } else if (role.contains('District') || role.contains('Akarere')) {
-        _targetLevel = 'DISTRICT';
-      } else if (role.contains('Province') || role.contains('Intara')) {
-        _targetLevel = 'PROVINCE';
-      }
+      _targetLevel = roleKey;
+      _selectedUnitName = null; // Reset selection when role changes
     });
   }
 
   String _formatLevel(String level) {
     switch (level) {
-      case 'PROVINCE': return 'Intara';
-      case 'DISTRICT': return 'Akarere';
-      case 'SECTOR': return 'Umurenge';
-      case 'CELL': return 'Akagari';
-      case 'VILLAGE': return 'Umudugudu';
+      case 'PROVINCE': return 'Intara (Province)';
+      case 'DISTRICT': return 'Akarere (District)';
+      case 'SECTOR': return 'Umurenge (Sector)';
+      case 'CELL': return 'Akagari (Cell)';
+      case 'VILLAGE': return 'Umudugudu (Village)';
       default: return level;
     }
   }
