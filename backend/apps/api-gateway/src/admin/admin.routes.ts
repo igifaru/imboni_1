@@ -4,6 +4,7 @@ import { prisma } from '../../../../libs/database/prisma.service';
 import { hashPassword } from '../../../../libs/auth/password.service';
 import { createServiceLogger } from '../../../../libs/logging/logger.service';
 import { UserRole, AdministrativeLevel } from '@prisma/client';
+import { authMiddleware, roleMiddleware } from '../auth/jwt.middleware';
 
 const logger = createServiceLogger('admin-routes');
 const router = Router();
@@ -167,6 +168,147 @@ router.post('/register-subordinate', async (req: Request, res: Response) => {
     } catch (error) {
         logger.error('Failed to register subordinate', error);
         res.status(500).json({ error: 'Internal server error while registering subordinate' });
+    }
+});
+
+/**
+ * GET /users
+ * List all users with optional filtering.
+ */
+router.get('/users', async (req: Request, res: Response) => {
+    try {
+        const { role, status, search, page = '1', limit = '50' } = req.query;
+
+        const where: any = {};
+
+        if (role) {
+            const roles = String(role).split(',');
+            if (roles.length > 1) {
+                where.role = { in: roles };
+            } else {
+                where.role = role;
+            }
+        }
+        if (status) where.status = status;
+
+        if (search) {
+            where.OR = [
+                { name: { contains: String(search), mode: 'insensitive' } },
+                { email: { contains: String(search), mode: 'insensitive' } },
+            ];
+        }
+
+        const skip = (Number(page) - 1) * Number(limit);
+
+        const [users, total] = await Promise.all([
+            prisma.user.findMany({
+                where,
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    role: true,
+                    status: true,
+                    createdAt: true
+                },
+                skip,
+                take: Number(limit),
+                orderBy: { createdAt: 'desc' }
+            }),
+            prisma.user.count({ where })
+        ]);
+
+        res.json({
+            data: users,
+            meta: {
+                total,
+                page: Number(page),
+                limit: Number(limit),
+                pages: Math.ceil(total / Number(limit))
+            }
+        });
+    } catch (error) {
+        logger.error('Failed to items users', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+/**
+ * PATCH /users/:id/status
+ * Activate or Deactivate a user.
+ */
+router.patch('/users/:id/status', async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        if (!['ACTIVE', 'INACTIVE'].includes(status)) {
+            return res.status(400).json({ error: 'Invalid status. Use ACTIVE or INACTIVE.' });
+        }
+
+        const user = await prisma.user.update({
+            where: { id },
+            data: { status },
+            select: { id: true, status: true }
+        });
+
+        logger.info(`User ${id} status updated to ${status} by ${(req as any).user?.userId}`);
+        res.json({ success: true, user });
+    } catch (error) {
+        logger.error('Failed to update user status', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+/**
+ * GET /stats/users-by-province
+ * Aggregate user counts by Province and Status
+ */
+router.get('/stats/users-by-province', authMiddleware, roleMiddleware('ADMIN'), async (req, res) => {
+    try {
+        const stats = await prisma.$queryRaw`
+            SELECT 
+                cp.province,
+                u.status,
+                COUNT(u.id)::int as count
+            FROM citizen_profiles cp
+            JOIN users u ON u.id = cp.user_id
+            WHERE cp.province IS NOT NULL
+            GROUP BY cp.province, u.status
+            ORDER BY cp.province ASC;
+        `;
+
+        // Process data into a reliable format { province: string, active: number, inactive: number }
+        const formattedStats: Record<string, { active: number, inactive: number }> = {};
+
+        (stats as any[]).forEach(row => {
+            const province = row.province;
+            const status = row.status as string; // 'ACTIVE', 'INACTIVE', 'SUSPENDED'
+            const count = Number(row.count);
+
+            if (!formattedStats[province]) {
+                formattedStats[province] = { active: 0, inactive: 0 };
+            }
+
+            if (status === 'ACTIVE') {
+                formattedStats[province].active += count;
+            } else {
+                formattedStats[province].inactive += count;
+            }
+        });
+
+        const result = Object.entries(formattedStats).map(([province, counts]) => ({
+            province,
+            ...counts
+        }));
+
+        res.json({
+            success: true,
+            data: result
+        });
+    } catch (error) {
+        logger.error('Failed to fetch user stats by province', error);
+        res.status(500).json({ error: 'Failed to fetch statistics' });
     }
 });
 
