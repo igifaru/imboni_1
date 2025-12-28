@@ -69,7 +69,9 @@ class ApiClient {
           if (fromJson != null) {
             return ApiResponse.success(fromJson(data));
           }
-          return ApiResponse.success(body as T);
+          // Always return the 'data' payload if it exists, otherwise the whole body
+          // This ensures callers who handle their own fromJson receive the correct object
+          return ApiResponse.success(data as T);
         }
         return ApiResponse.success(body as T);
       }
