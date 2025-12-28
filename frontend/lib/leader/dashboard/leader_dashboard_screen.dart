@@ -6,6 +6,7 @@ import '../../shared/theme/responsive.dart';
 import '../../shared/services/case_service.dart';
 import '../../shared/models/models.dart';
 import '../../shared/widgets/rwanda_map/rwanda_map.dart';
+import 'widgets/district_cases_widget.dart';
 import '../../shared/widgets/forms/register_leader_form.dart';
 import 'assigned_cases/assigned_cases_screen.dart';
 import 'escalation_alerts/escalation_alerts_screen.dart';
@@ -212,15 +213,20 @@ class _DashboardHomeState extends State<_DashboardHome> {
                   const SizedBox(height: 32),
                   if (isDesktop)
                     Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      // Left: Rwanda Map
                       Expanded(
-                        flex: 3,
+                        flex: 5,
                         child: RwandaMapWidget(
                           casesByDistrict: _casesByDistrict,
                           onDistrictSelected: (d) => debugPrint('Selected District: $d'),
                         ),
                       ),
                       const SizedBox(width: 24),
-                      Expanded(flex: 4, child: _buildSearchAndTable(theme, isDark)),
+                      // Right: Districts in Province
+                      const Expanded(
+                        flex: 3,
+                        child: DistrictCasesWidget(),
+                      ),
                     ])
                   else ...[
                     RwandaMapWidget(
@@ -228,8 +234,11 @@ class _DashboardHomeState extends State<_DashboardHome> {
                       onDistrictSelected: (d) => debugPrint('Selected District: $d'),
                     ),
                     const SizedBox(height: 24),
-                    _buildSearchAndTable(theme, isDark),
+                    const DistrictCasesWidget(),
                   ],
+                  const SizedBox(height: 32),
+                  // Case search and table below
+                  _buildSearchAndTable(theme, isDark),
                 ]),
               ),
       ),
