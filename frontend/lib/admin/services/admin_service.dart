@@ -34,7 +34,13 @@ class AdminService extends ChangeNotifier {
       final response = await _apiClient.get('/admin/users', queryParameters: queryParams);
 
       if (response.isSuccess && response.data != null) {
-        final List data = response.data['data'];
+        List data;
+        if (response.data is List) {
+           data = response.data;
+        } else {
+           data = response.data['data'] ?? [];
+        }
+        
         final users = data.map((e) => UserModel.fromJson(e)).toList();
         _isLoading = false;
         notifyListeners();

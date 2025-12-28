@@ -97,6 +97,29 @@ class CaseService {
     return ApiResponse.success([]);
   }
 
+  /// Get ALL cases (for Admin)
+  Future<ApiResponse<List<CaseModel>>> getAllCases({int page = 1, int limit = 50, String? query}) async {
+    String endpoint = '/cases?page=$page&limit=$limit';
+    if (query != null && query.isNotEmpty) endpoint += '&search=$query';
+
+    final response = await apiClient.get(endpoint);
+    if (response.isSuccess && response.data != null) {
+      final List<dynamic> casesJson = response.data['data'] ?? response.data ?? [];
+      final cases = casesJson.map((json) => CaseModel.fromJson(json)).toList();
+      return ApiResponse.success(cases);
+    }
+    return ApiResponse.success([]);
+  }
+
+  /// Get global stats (for Admin)
+  Future<ApiResponse<Map<String, dynamic>>> getGlobalStats() async {
+    final response = await apiClient.get('/cases/stats/global');
+    if (response.isSuccess && response.data != null) {
+      return ApiResponse.success(Map<String, dynamic>.from(response.data));
+    }
+    return ApiResponse.error(response.error ?? 'Failed to load stats');
+  }
+
   /// Get escalation alerts (for leaders)
   Future<ApiResponse<List<CaseModel>>> getEscalationAlerts() async {
     final response = await apiClient.get('/cases/escalation-alerts');

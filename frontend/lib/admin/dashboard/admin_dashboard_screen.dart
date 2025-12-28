@@ -229,18 +229,22 @@ class _AdminHomeState extends State<_AdminHome> {
     return map;
   }
 
+  Map<String, dynamic> _globalStats = {};
+
   Future<void> _loadDashboardData() async {
     setState(() => _isLoading = true);
     try {
       await LocationService().load();
       final results = await Future.wait([
-        caseService.getAssignedCases(limit: 50),
+        caseService.getAllCases(limit: 50),
+        caseService.getGlobalStats(),
         caseService.getEscalationAlerts(),
       ]);
       if (mounted) {
         setState(() {
-          _assignedCases = results[0].data ?? [];
-          _escalationAlerts = results[1].data ?? [];
+          _assignedCases = (results[0].data as List).cast<CaseModel>();
+          _globalStats = results[1].data as Map<String, dynamic>;
+          _escalationAlerts = (results[2].data as List).cast<CaseModel>();
           _isLoading = false;
         });
       }
@@ -343,13 +347,12 @@ class _AdminHomeState extends State<_AdminHome> {
   }
 
   Widget _buildStatsRow(ThemeData theme) {
-    final urgentCount = _assignedCases.where((c) => c.urgency == 'EMERGENCY' || c.urgency == 'HIGH').length;
     return Row(children: [
-      Expanded(child: StatCard(icon: Icons.circle, iconColor: ImboniColors.urgencyEmergency, label: 'Urgent', value: '$urgentCount')),
+      Expanded(child: StatCard(icon: Icons.assignment_late, iconColor: ImboniColors.urgencyEmergency, label: 'Urgent', value: '${_globalStats['urgent'] ?? 0}')),
       const SizedBox(width: 12),
-      Expanded(child: StatCard(icon: Icons.circle, iconColor: ImboniColors.info, label: 'Active', value: '${_assignedCases.length}')),
+      Expanded(child: StatCard(icon: Icons.radio_button_checked, iconColor: ImboniColors.info, label: 'Active', value: '${_globalStats['active'] ?? 0}')),
       const SizedBox(width: 12),
-      Expanded(child: StatCard(icon: Icons.circle, iconColor: ImboniColors.warning, label: 'Escalated', value: '${_escalationAlerts.length}')),
+      Expanded(child: StatCard(icon: Icons.warning_amber, iconColor: ImboniColors.warning, label: 'Escalated', value: '${_globalStats['escalated'] ?? 0}')),
     ]);
   }
 
