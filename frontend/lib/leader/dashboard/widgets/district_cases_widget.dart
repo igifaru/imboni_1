@@ -23,6 +23,7 @@ class _DistrictCasesWidgetState extends State<DistrictCasesWidget> {
   String? _error;
   String? _provinceName;
   List<String> _districts = [];
+  Map<String, int> _districtSectors = {};
 
   @override
   void initState() {
@@ -47,6 +48,18 @@ class _DistrictCasesWidgetState extends State<DistrictCasesWidget> {
           setState(() {
             _provinceName = data['assignment']?['province'] ?? 'Unknown';
             _districts = List<String>.from(data['districts'] ?? []);
+            
+            // Extract sector counts from jurisdiction data
+            final jurData = data['data'] as Map<String, dynamic>?;
+            _districtSectors = {};
+            if (jurData != null) {
+              for (final district in _districts) {
+                if (jurData[district] is Map) {
+                  _districtSectors[district] = (jurData[district] as Map).length;
+                }
+              }
+            }
+            
             _isLoadingJurisdiction = false;
           });
           debugPrint('[DistrictCasesWidget] Loaded ${_districts.length} districts for $_provinceName');
@@ -239,12 +252,13 @@ class _DistrictCasesWidgetState extends State<DistrictCasesWidget> {
       itemBuilder: (context, index) {
         final district = _districts[index];
         final stats = caseData[district] ?? {'open': 0, 'resolved': 0, 'total': 0};
-        return _buildDistrictCard(context, district, stats['open']!, stats['resolved']!, stats['total']!);
+        final sectorCount = _districtSectors[district] ?? 0;
+        return _buildDistrictCard(context, district, stats['open']!, stats['resolved']!, stats['total']!, sectorCount);
       },
     );
   }
 
-  Widget _buildDistrictCard(BuildContext context, String districtName, int open, int resolved, int total) {
+  Widget _buildDistrictCard(BuildContext context, String districtName, int open, int resolved, int total, int sectorCount) {
     final theme = Theme.of(context);
 
     Color statusColor;
@@ -277,7 +291,16 @@ class _DistrictCasesWidgetState extends State<DistrictCasesWidget> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(districtName, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+                Row(
+                  children: [
+                    Text(districtName, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+                    const SizedBox(width: 8),
+                    Text(
+                      '($sectorCount Sectors)',
+                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant.withAlpha(150), fontSize: 10),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
