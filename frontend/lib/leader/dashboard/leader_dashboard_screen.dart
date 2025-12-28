@@ -222,10 +222,10 @@ class _DashboardHomeState extends State<_DashboardHome> {
                         ),
                       ),
                       const SizedBox(width: 24),
-                      // Right: Districts in Province
-                      const Expanded(
+                      // Right: Districts in Province with case counts
+                      Expanded(
                         flex: 3,
-                        child: DistrictCasesWidget(),
+                        child: DistrictCasesWidget(cases: _assignedCases, isLoading: _isLoading),
                       ),
                     ])
                   else ...[
@@ -234,7 +234,7 @@ class _DashboardHomeState extends State<_DashboardHome> {
                       onDistrictSelected: (d) => debugPrint('Selected District: $d'),
                     ),
                     const SizedBox(height: 24),
-                    const DistrictCasesWidget(),
+                    DistrictCasesWidget(cases: _assignedCases, isLoading: _isLoading),
                   ],
                   const SizedBox(height: 32),
                   // Case search and table below
@@ -250,37 +250,29 @@ class _DashboardHomeState extends State<_DashboardHome> {
       backgroundColor: theme.scaffoldBackgroundColor,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
-      title: Responsive.isDesktop(context) ? null : Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(gradient: const LinearGradient(colors: [ImboniColors.primary, ImboniColors.primaryDark]), borderRadius: BorderRadius.circular(10)),
-            child: const Icon(Icons.shield, color: Colors.white, size: 20),
-          ),
-          const SizedBox(width: 10),
-          Flexible(child: Text('Imboni Admin', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
-        ],
-      ),
-      actions: [
-        Container(
-          width: 200,
-          height: 40,
-          margin: const EdgeInsets.only(right: 12),
-          child: TextField(
-            decoration: InputDecoration(
-              hintText: 'Q Search',
-              prefixIcon: const Icon(Icons.search, size: 20),
-              contentPadding: EdgeInsets.zero,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide(color: theme.dividerColor)),
-              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide(color: theme.dividerColor)),
-              filled: true,
-              fillColor: theme.cardColor,
+      title: SizedBox(
+        height: 44,
+        child: TextField(
+          onChanged: (v) => setState(() => _searchQuery = v),
+          decoration: InputDecoration(
+            hintText: 'Search cases...',
+            prefixIcon: const Icon(Icons.search),
+            filled: true,
+            fillColor: theme.cardColor,
+            contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: theme.dividerColor),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: theme.dividerColor),
             ),
           ),
         ),
-        IconButton(icon: Icon(Icons.notifications_outlined, color: theme.colorScheme.onSurface), onPressed: () {}),
-        IconButton(icon: Icon(Icons.help_outline, color: theme.colorScheme.onSurface), onPressed: () {}),
+      ),
+      actions: [
+        IconButton(icon: Icon(Icons.refresh, color: theme.colorScheme.onSurface), onPressed: _loadDashboardData),
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 12),
           width: 40, height: 40,
@@ -309,31 +301,6 @@ class _DashboardHomeState extends State<_DashboardHome> {
     return Container(
       decoration: BoxDecoration(color: theme.cardColor, borderRadius: BorderRadius.circular(16), border: Border.all(color: theme.dividerColor)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(children: [
-            Expanded(
-              child: TextField(
-                onChanged: (v) => setState(() => _searchQuery = v),
-                decoration: InputDecoration(
-                  hintText: 'Q Search...',
-                  prefixIcon: const Icon(Icons.search, size: 20),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: theme.dividerColor)),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: theme.dividerColor)),
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            ElevatedButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('View Queue'),
-              style: ElevatedButton.styleFrom(minimumSize: const Size(120, 48)),
-            ),
-          ]),
-        ),
-        const Divider(height: 1),
         _buildDataTable(theme, isDark),
       ]),
     );
