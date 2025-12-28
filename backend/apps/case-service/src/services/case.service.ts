@@ -176,6 +176,26 @@ export class CaseService {
     }
 
     /**
+     * Get all cases (Admin only)
+     */
+    async getAllCases(page = 1, limit = 50, search?: string) {
+        const result = await this.repository.findAll(page, limit, search);
+        return {
+            cases: result.cases.map(c => this.toResponseDto(c)),
+            total: result.total,
+            page,
+            limit
+        };
+    }
+
+    /**
+     * Get global stats (Admin only)
+     */
+    async getGlobalStats() {
+        return this.repository.getGlobalStats();
+    }
+
+    /**
      * Update case status (for leaders)
      */
     async updateCase(caseId: string, dto: UpdateCaseDto, userId: string): Promise<CaseResponseDto> {
