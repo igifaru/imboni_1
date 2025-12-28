@@ -10,17 +10,17 @@ export declare const CreateCaseSchema: z.ZodObject<{
     administrativeUnitId: z.ZodString;
     submittedAnonymously: z.ZodDefault<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
+    administrativeUnitId: string;
     category: "JUSTICE" | "HEALTH" | "LAND" | "INFRASTRUCTURE" | "SECURITY" | "SOCIAL" | "EDUCATION" | "OTHER";
     urgency: "EMERGENCY" | "NORMAL" | "HIGH";
     title: string;
     description: string;
-    administrativeUnitId: string;
     submittedAnonymously: boolean;
 }, {
+    administrativeUnitId: string;
     category: "JUSTICE" | "HEALTH" | "LAND" | "INFRASTRUCTURE" | "SECURITY" | "SOCIAL" | "EDUCATION" | "OTHER";
     title: string;
     description: string;
-    administrativeUnitId: string;
     urgency?: "EMERGENCY" | "NORMAL" | "HIGH" | undefined;
     submittedAnonymously?: boolean | undefined;
 }>;

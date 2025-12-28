@@ -81,8 +81,9 @@ app.use('/api/cases/track', jwt_middleware_1.optionalAuthMiddleware); // Track b
 app.use('/api/cases', jwt_middleware_1.optionalAuthMiddleware, rate_limit_middleware_1.emergencyBypass);
 // Leader dashboard routes - require auth
 app.use('/api/leader', jwt_middleware_1.authMiddleware);
-// Admin routes - require auth and admin role
-app.use('/api/admin', jwt_middleware_1.authMiddleware);
+// Admin routes - require auth
+const admin_routes_1 = require("./admin/admin.routes");
+app.use('/api/admin', jwt_middleware_1.authMiddleware, admin_routes_1.adminRoutes);
 // Proxy to services (if running as gateway)
 if (config_service_1.config.isProduction) {
     // Case service proxy
