@@ -15,30 +15,35 @@ class PerformanceScreen extends StatefulWidget {
 class _PerformanceScreenState extends State<PerformanceScreen> {
   DateTimeRange? _selectedDateRange;
   PerformanceMetrics? _metrics;
-  bool _isLoading = true;
+  bool _isInitialLoading = true;
+  bool _isRefreshing = false;
   String _locationFilter = 'All Locations';
+  String? _locationFilterId;
   String _categoryFilter = 'All Categories';
 
   @override
   void initState() {
     super.initState();
+    _selectedDateRange = DateTimeRange(
+      start: DateTime.now().subtract(const Duration(days: 30)),
+      end: DateTime.now(),
+    );
     _loadMetrics();
   }
-
-
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    if (_isLoading) {
+    if (_isInitialLoading) {
       return const Center(child: CircularProgressIndicator());
     }
 
     final metrics = _metrics ?? PerformanceMetrics.empty();
+    final width = MediaQuery.of(context).size.width;
+    final isWide = width > 900;
 
-    // NOTE: Using ListView ensures stable viewport constraints vs SingleChildScrollView
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
@@ -56,56 +61,71 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
         ],
       ),
       body: ExcludeSemantics(
-        child: Builder(
-          builder: (context) {
-            final width = MediaQuery.of(context).size.width;
-            final isWide = width > 900;
-            
-            return ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                  Text('System-wide metrics and leader effectiveness.', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-                  const SizedBox(height: 16),
-                  
-                  // Filters Row (Refined)
-                  Container(
+        child: RefreshIndicator(
+          onRefresh: _loadMetrics,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+                Text('System-wide metrics and leader effectiveness.', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                const SizedBox(height: 16),
+                                // Filters Row (Refined)
+                  SizedBox(
                     width: double.infinity,
                     child: Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      alignment: WrapAlignment.start,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                       _buildFilterChip(
-                           theme, 
-                           'Time Range: ${_formatDateRange()}', 
-                           Icons.calendar_today, 
-                           true, 
-                           null, 
-                           onTapDown: (details) => _showDateFilterMenu(context, details)
-                       ),
-                       _buildFilterChip(theme, 'Location: $_locationFilter', Icons.place_outlined, false, () {}),
-                       _buildFilterChip(theme, 'Category: $_categoryFilter', Icons.category_outlined, false, () {}),
-                       if (_isLoading)
-                          const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
-                    ],
-                    ),
+                    spacing: 12,
+                    runSpacing: 12,
+                    alignment: WrapAlignment.start,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                     _buildFilterChip(
+                         theme, 
+                         'Time Range: ${_formatDateRange()}', 
+                         Icons.calendar_today, 
+                         true, 
+                         null, 
+                         onTapDown: (details) => _showDateFilterMenu(context, details)
+                     ),
+                     _buildFilterChip(
+                         theme, 
+                         'Location: $_locationFilter', 
+                         Icons.place_outlined, 
+                         _locationFilterId != null, 
+                         null,
+                         onTapDown: (details) => _showLocationFilterMenu(context, details)
+                     ),
+                     _buildFilterChip(
+                         theme, 
+                         'Category: $_categoryFilter', 
+                         Icons.category_outlined, 
+                         _categoryFilter != 'All Categories', 
+                         null,
+                         onTapDown: (details) => _showCategoryFilterMenu(context, details)
+                     ),
+                  ],
                   ),
-                  const SizedBox(height: 24),
+                ),
+                
+                if (_isRefreshing) ...[
+                   const SizedBox(height: 12),
+                   const LinearProgressIndicator(minHeight: 2),
+                ],
 
-                  // Top Key Metrics Grid
-                  _buildMetricsGrid(theme, width, metrics, isDark),
+                const SizedBox(height: 24),
 
-                  const SizedBox(height: 24),
+                // Top Key Metrics Grid
+                _buildMetricsGrid(theme, width, metrics, isDark),
 
-                  // Charts Section
-                  _buildChartsSection(theme, width, isWide, metrics, isDark),
-                  
-                   const SizedBox(height: 24),
-                   _buildRegionalBreakdownTable(theme, metrics, isDark),
-              ],
-            );
-          }
+                const SizedBox(height: 24),
+
+                // Charts Section
+                _buildChartsSection(theme, width, isWide, metrics, isDark),
+                
+                const SizedBox(height: 24),
+                _buildRegionalBreakdownTable(theme, metrics, isDark),
+                
+                const SizedBox(height: 40), // Extra space at bottom
+            ],
+          ),
         ),
       ),
     );
@@ -262,7 +282,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                     );
                   }).toList(),
                 ),
-                swapAnimationDuration: Duration.zero, // SAFE MODE: No animation
+                duration: Duration.zero, // SAFE MODE: No animation
               ),
             ),
           ),
@@ -350,7 +370,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                       return _makeBarGroup(entry.key, entry.value.newCases.toDouble(), entry.value.resolvedCases.toDouble(), isDark);
                   }).toList(),
                 ),
-                swapAnimationDuration: Duration.zero, // SAFE MODE
+                duration: Duration.zero, // SAFE MODE
               ),
             ),
           ),
@@ -553,29 +573,128 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
       ],
     );
   }
-  
+
   Future<void> _loadMetrics() async {
-    setState(() => _isLoading = true);
+    if (_metrics == null) {
+      setState(() => _isInitialLoading = true);
+    } else {
+      setState(() => _isRefreshing = true);
+    }
+
     try {
       final response = await caseService.getPerformanceMetrics(
         dateRange: _selectedDateRange,
         category: _categoryFilter,
-        location: _locationFilter
+        location: _locationFilterId
       );
+      
       if (mounted) {
-        setState(() {
-          _metrics = response.data;
-          _isLoading = false;
-        });
+        final theme = Theme.of(context);
+        if (response.isSuccess) {
+          setState(() {
+            _metrics = response.data;
+            _isInitialLoading = false;
+            _isRefreshing = false;
+          });
+        } else {
+          setState(() {
+             // _isInitialLoading = false; // Moved to finally
+             // _isRefreshing = false; // Moved to finally
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(response.error ?? 'Failed to load metrics'),
+              backgroundColor: theme.colorScheme.error,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       }
     } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        final theme = Theme.of(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: theme.colorScheme.error),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isInitialLoading = false;
+          _isRefreshing = false;
+        });
+      }
     }
   }
 
-  void _onFilterChanged() {
-      _loadMetrics();
+  Future<void> _showLocationFilterMenu(BuildContext context, TapDownDetails details) async {
+      final position = RelativeRect.fromLTRB(
+        details.globalPosition.dx,
+        details.globalPosition.dy + 30,
+        details.globalPosition.dx + 200,
+        details.globalPosition.dy + 400,
+      );
+
+      final breakdown = _metrics?.subUnitBreakdown ?? [];
+      
+      final result = await showMenu<Map<String, String?>>(
+        context: context,
+        position: position,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        items: [
+           PopupMenuItem(
+             value: {'id': null, 'name': 'All Locations'}, 
+             child: const Text('All Locations')
+           ),
+           ...breakdown.map((u) => PopupMenuItem(
+             value: {'id': u.unitId, 'name': u.unitName}, 
+             child: Text(u.unitName)
+           )),
+        ]
+      );
+
+      if (result == null) return;
+
+      setState(() {
+        _locationFilter = result['name']!;
+        _locationFilterId = result['id'];
+        _loadMetrics();
+      });
   }
+
+  Future<void> _showCategoryFilterMenu(BuildContext context, TapDownDetails details) async {
+      final position = RelativeRect.fromLTRB(
+        details.globalPosition.dx,
+        details.globalPosition.dy + 30,
+        details.globalPosition.dx + 200,
+        details.globalPosition.dy + 400,
+      );
+
+      // Extract categories from metrics or use defaults if empty
+      final keys = _metrics?.casesByCategory.keys.toList() ?? [];
+      final categories = keys.isEmpty 
+          ? ['General', 'Infrastructure', 'Security', 'Health', 'Education'] 
+          : keys;
+      
+      final result = await showMenu<String>(
+        context: context,
+        position: position,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        items: [
+           const PopupMenuItem(value: 'All Categories', child: Text('All Categories')),
+           ...categories.map((c) => PopupMenuItem(value: c, child: Text(c))),
+        ]
+      );
+
+      if (result == null) return;
+
+      setState(() {
+        _categoryFilter = result;
+        _loadMetrics();
+      });
+  }
+
+
 
   Future<void> _showDateFilterMenu(BuildContext context, TapDownDetails details) async {
       final position = RelativeRect.fromLTRB(
@@ -649,23 +768,26 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                     secondary: ImboniColors.primary,
                   ),
                   scaffoldBackgroundColor: dialogBg,
-                  dialogBackgroundColor: dialogBg,
+                  dialogTheme: DialogThemeData(
+                    backgroundColor: dialogBg,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                  ),
                   datePickerTheme: DatePickerThemeData(
                     backgroundColor: dialogBg,
                     headerBackgroundColor: dialogBg,
                     headerForegroundColor: onBg,
                     surfaceTintColor: Colors.transparent,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                    rangeSelectionBackgroundColor: ImboniColors.primary.withOpacity(0.2),
+                    rangeSelectionBackgroundColor: ImboniColors.primary.withAlpha(50), // Standard replacement for withOpacity
                     rangePickerBackgroundColor: dialogBg,
                     rangePickerHeaderBackgroundColor: dialogBg,
                     rangePickerHeaderForegroundColor: onBg,
                     rangePickerSurfaceTintColor: Colors.transparent,
                     dayStyle: TextStyle(color: onBg),
-                    weekdayStyle: TextStyle(color: onBg.withOpacity(0.7)),
+                    weekdayStyle: TextStyle(color: onBg.withAlpha(180)),
                     yearStyle: TextStyle(color: onBg),
-                    dayOverlayColor:  MaterialStateProperty.all(ImboniColors.primary.withOpacity(0.1)),
-                    headerHeadlineStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: onBg), // Reduce massive header text
+                    dayOverlayColor:  WidgetStateProperty.all(ImboniColors.primary.withAlpha(25)),
+                    headerHeadlineStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: onBg),
                   ),
                   textButtonTheme: TextButtonThemeData(
                     style: TextButton.styleFrom(
