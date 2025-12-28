@@ -8,8 +8,92 @@ import { publishEvent, CHANNELS } from '../../../../libs/messaging/messaging.ser
 import { createServiceLogger } from '../../../../libs/logging/logger.service';
 import { prisma } from '../../../../libs/database/prisma.service';
 import { config } from '../../../../libs/config/config.service';
+import { AdministrativeLevel } from '@prisma/client';
 
 const logger = createServiceLogger('case-service');
+
+// Professionalization: Pre-load static hierarchy once
+const rwandaAdminData = require('../../../api-gateway/src/data/rwanda-admin.json');
+const ADMIN_JSON = rwandaAdminData.default || rwandaAdminData;
+
+/**
+ * Province name mapping: Kinyarwanda -> data.json keys
+ */
+const provinceMapping: Record<string, string> = {
+    'Kigali': 'Kigali',
+    'City of Kigali': 'Kigali',
+    'Kigali City': 'Kigali',
+    'Amajyaruguru': 'North',
+    'Northern Province': 'North',
+    'Amajyepfo': 'South',
+    'Southern Province': 'South',
+    'Iburasirazuba': 'East',
+    'Eastern Province': 'East',
+    'Iburengerazuba': 'West',
+    'Western Province': 'West',
+};
+
+/**
+ * Find the unit's path in the database to traverse JSON
+ */
+async function getUnitFullPath(unitId: string): Promise<any[]> {
+    const path: any[] = [];
+    let currId: string | null = unitId;
+    while (currId) {
+        const u: any = await prisma.administrativeUnit.findUnique({ where: { id: currId } });
+        if (!u) break;
+        path.unshift(u);
+        currId = u.parentId;
+    }
+    return path;
+}
+
+/**
+ * Navigate through Rwanda Admin JSON using the unit path
+ */
+function getDataAtUnitPath(path: any[], data: any) {
+    let current = data;
+    for (const unit of path) {
+        let nameToFind = unit.name;
+        if (unit.level === AdministrativeLevel.PROVINCE) {
+            nameToFind = provinceMapping[unit.name] || unit.name;
+        }
+
+        if (Array.isArray(current)) {
+            const found = current.find(item => item.name === nameToFind);
+            if (!found) return null;
+            current = found;
+        } else if (current && typeof current === 'object') {
+            current = current[nameToFind];
+        } else {
+            return null;
+        }
+    }
+    return current;
+}
+
+/**
+ * Extract names of children from the administrative data structure
+ */
+function getChildrenFromJson(path: any[], data: any): string[] {
+    const container = getDataAtUnitPath(path, data);
+    if (!container) return [];
+
+    // The JSON structure:
+    // Province/District level: objects where keys are child names
+    // Sector level: objects where keys are cell names
+    // Cell level: objects/arrays for villages
+
+    if (Array.isArray(container)) {
+        return container.map(c => typeof c === 'string' ? c : c.name).filter(Boolean);
+    }
+
+    if (container && typeof container === 'object') {
+        return Object.keys(container);
+    }
+
+    return [];
+}
 
 export class CaseService {
     private repository: CaseRepository;
@@ -240,19 +324,23 @@ export class CaseService {
             }
         });
 
+        logger.info('DEBUG getPerformanceMetrics', { leaderId, leadership: !!leadership });
+
+        // Initialize trends early to be available in all return paths
+        const weeklyTrends = Array(7).fill(0).map((_, i) => {
+            const d = new Date();
+            d.setDate(d.getDate() - (6 - i));
+            return {
+                day: d.toLocaleDateString('en-US', { weekday: 'short' }),
+                date: d.toISOString().split('T')[0],
+                newCases: 0,
+                resolvedCases: 0,
+                activeCases: 0
+            };
+        });
+
         if (!leadership) {
-            // Return empty structure if no leadership assignment found
-            const weeklyTrends = Array(7).fill(0).map((_, i) => {
-                const d = new Date();
-                d.setDate(d.getDate() - (6 - i));
-                return {
-                    day: d.toLocaleDateString('en-US', { weekday: 'short' }),
-                    date: d.toISOString().split('T')[0],
-                    newCases: 0,
-                    resolvedCases: 0,
-                    activeCases: 0
-                };
-            });
+            logger.warn('No active leader assignment for user', { leaderId });
             return {
                 totalCases: 0,
                 resolvedCases: 0,
@@ -269,20 +357,75 @@ export class CaseService {
         }
 
         const myUnit = leadership.administrativeUnit;
-        const subUnits = myUnit.children;
-        const relevantUnitIds = [myUnit.id, ...subUnits.map(u => u.id)];
+        const dbSubUnits = myUnit.children;
 
-        // Build Where Clause
+        // Use pre-loaded JSON
+        const unitPath = await getUnitFullPath(myUnit.id);
+        const jsonChildrenNames = getChildrenFromJson(unitPath, ADMIN_JSON);
+
+        logger.info('DEBUG Hierarchy Info', {
+            unitName: myUnit.name,
+            unitLevel: myUnit.level,
+            dbSubUnitsCount: dbSubUnits.length,
+            unitPath: unitPath.map(u => u.name),
+            jsonChildrenCount: jsonChildrenNames.length,
+            jsonChildren: jsonChildrenNames.slice(0, 5)
+        });
+
+        // Merge: Use DB children where they exist, and JSON children as fallbacks
+        const subUnitsForBreakdown: Array<{ id: string, name: string }> = [];
+        const dbNames = new Set(dbSubUnits.map(u => u.name));
+
+        // Add DB units first
+        subUnitsForBreakdown.push(...dbSubUnits.map(u => ({ id: u.id, name: u.name })));
+
+        // Add JSON-only units as virtual units
+        jsonChildrenNames.forEach(name => {
+            if (!dbNames.has(name)) {
+                subUnitsForBreakdown.push({ id: name, name });
+            }
+        });
+
+        logger.info('DEBUG FINAL merged subunits', {
+            count: subUnitsForBreakdown.length,
+            names: subUnitsForBreakdown.map(s => s.name)
+        });
+
+        // For case filtering, we use hierarchical codes for subtree fetch
         const whereClause: any = {
-            administrativeUnitId: { in: relevantUnitIds }
+            administrativeUnit: {
+                code: { startsWith: myUnit.code }
+            }
         };
 
         if (filters?.locationId && filters.locationId !== 'All Locations') {
-            // If a specific location is selected, override the general scope
-            // Assuming locationId is one of the valid unit IDs 
-            // (In real app, we should verify specific location is within scope, but for now we trust the ID if it's in list)
-            if (relevantUnitIds.includes(filters.locationId)) {
-                whereClause.administrativeUnitId = filters.locationId;
+            const selectedUnit = dbSubUnits.find(u => u.id === filters.locationId || u.name === filters.locationId);
+            if (selectedUnit) {
+                whereClause.administrativeUnit = { code: { startsWith: selectedUnit.code } };
+            } else if (filters.locationId === myUnit.id) {
+                whereClause.administrativeUnit = { code: { startsWith: myUnit.code } };
+            } else {
+                return {
+                    totalCases: 0,
+                    resolvedCases: 0,
+                    pendingCases: 0,
+                    escalatedCases: 0,
+                    resolutionRate: 0,
+                    avgResponseTimeHours: 0,
+                    escalationRate: 0,
+                    overdueCases: 0,
+                    casesByCategory: {},
+                    weeklyTrends,
+                    subUnitBreakdown: subUnitsForBreakdown.map(u => ({
+                        unitId: u.id,
+                        unitName: u.name,
+                        totalCases: 0,
+                        resolutionRate: 0,
+                        avgResponseTimeHours: 0,
+                        escalationRate: 0,
+                        status: 'On Track'
+                    }))
+                };
             }
         }
 
@@ -296,10 +439,10 @@ export class CaseService {
             if (filters.endDate) whereClause.createdAt.lte = filters.endDate;
         }
 
-        // 2. Fetch all cases in this jurisdiction scope (My Unit + Direct Children) filtered
         const cases = await prisma.case.findMany({
             where: whereClause,
             include: {
+                administrativeUnit: true,
                 assignments: {
                     where: { isActive: true }
                 }
@@ -308,20 +451,6 @@ export class CaseService {
 
         const total = cases.length;
 
-        // Initialize trends
-        const weeklyTrends = Array(7).fill(0).map((_, i) => {
-            const d = new Date();
-            d.setDate(d.getDate() - (6 - i));
-            return {
-                day: d.toLocaleDateString('en-US', { weekday: 'short' }),
-                date: d.toISOString().split('T')[0],
-                newCases: 0,
-                resolvedCases: 0,
-                activeCases: 0
-            };
-        });
-
-        // Initialize empty breakdown if no cases, but we should list units
         if (total === 0) {
             return {
                 totalCases: 0,
@@ -334,7 +463,8 @@ export class CaseService {
                 overdueCases: 0,
                 casesByCategory: {},
                 weeklyTrends,
-                subUnitBreakdown: subUnits.map(u => ({
+                subUnitBreakdown: subUnitsForBreakdown.map(u => ({
+                    unitId: u.id,
                     unitName: u.name,
                     totalCases: 0,
                     resolutionRate: 0,
@@ -355,11 +485,58 @@ export class CaseService {
 
         const getTrendIndex = (date: Date) => {
             const dateString = date.toISOString().split('T')[0];
-            return weeklyTrends.findIndex(t => t.date === dateString);
+            return weeklyTrends.findIndex((t: any) => t.date === dateString);
         };
 
-        // Helper to calc single unit stats
-        const calcUnitStats = (unitCases: typeof cases) => {
+        const rollupMap = new Map<string, typeof cases>();
+        subUnitsForBreakdown.forEach(u => rollupMap.set(u.id, []));
+
+        for (const c of cases) {
+            if (c.status === 'RESOLVED') {
+                resolved++;
+                if (c.resolvedAt) {
+                    const diffMins = (new Date(c.resolvedAt).getTime() - new Date(c.createdAt).getTime()) / 60000;
+                    totalResponseTimeMinutes += diffMins;
+                    casesWithResponseTime++;
+                    const idx = getTrendIndex(new Date(c.resolvedAt));
+                    if (idx !== -1) weeklyTrends[idx].resolvedCases++;
+                }
+            } else if (c.status === 'ESCALATED') {
+                escalated++;
+            }
+
+            if (c.status !== 'RESOLVED' && c.assignments.length > 0) {
+                if (new Date(c.assignments[0].deadlineAt) < now) overdue++;
+            }
+            byCategory[c.category] = (byCategory[c.category] || 0) + 1;
+            const idx = getTrendIndex(new Date(c.createdAt));
+            if (idx !== -1) weeklyTrends[idx].newCases++;
+
+            const caseCode = c.administrativeUnit.code;
+            const myCodeParts = myUnit.code.split(':').length;
+            const parts = caseCode.split(':');
+
+            if (parts.length > myCodeParts) {
+                const childCode = parts.slice(0, myCodeParts + 1).join(':');
+                const directChild = dbSubUnits.find(u => u.code === childCode);
+                if (directChild) {
+                    rollupMap.get(directChild.id)?.push(c);
+                } else {
+                    const childNameToken = parts[myCodeParts].replace(/_/g, ' ');
+                    if (rollupMap.has(childNameToken)) {
+                        rollupMap.get(childNameToken)?.push(c);
+                    }
+                }
+            }
+        }
+
+        weeklyTrends.forEach(t => {
+            t.activeCases = Math.max(0, t.newCases - t.resolvedCases);
+        });
+
+        const subUnitBreakdown = subUnitsForBreakdown.map(unit => {
+            const unitCases = rollupMap.get(unit.id) || [];
+
             let uResolved = 0;
             let uEscalated = 0;
             let uResponseTime = 0;
@@ -377,68 +554,15 @@ export class CaseService {
                 if (c.status === 'ESCALATED') uEscalated++;
             });
 
+            const uTotal = unitCases.length;
             return {
-                total: unitCases.length,
-                resolved: uResolved,
-                escalated: uEscalated,
-                resolutionRate: unitCases.length > 0 ? (uResolved / unitCases.length) * 100 : 0,
-                escalationRate: unitCases.length > 0 ? (uEscalated / unitCases.length) * 100 : 0,
-                avgTime: uTimeCount > 0 ? (uResponseTime / uTimeCount / 60) : 0
-            };
-        };
-
-        // 3. Process Cases
-        for (const c of cases) {
-            // Global Stats
-            if (c.status === 'RESOLVED') {
-                resolved++;
-                if (c.resolvedAt) {
-                    const diffMins = (new Date(c.resolvedAt).getTime() - new Date(c.createdAt).getTime()) / 60000;
-                    totalResponseTimeMinutes += diffMins;
-                    casesWithResponseTime++;
-
-                    const idx = getTrendIndex(new Date(c.resolvedAt));
-                    if (idx !== -1) weeklyTrends[idx].resolvedCases++;
-                }
-            } else if (c.status === 'ESCALATED') {
-                escalated++;
-            }
-
-            // Check Overdue (using active assignment deadline)
-            if (c.status !== 'RESOLVED' && c.assignments.length > 0) {
-                if (new Date(c.assignments[0].deadlineAt) < now) {
-                    overdue++;
-                }
-            }
-
-            byCategory[c.category] = (byCategory[c.category] || 0) + 1;
-
-            const idx = getTrendIndex(new Date(c.createdAt));
-            if (idx !== -1) weeklyTrends[idx].newCases++;
-        }
-
-        // Active cases trend
-        weeklyTrends.forEach(t => {
-            t.activeCases = Math.max(0, t.newCases - t.resolvedCases);
-        });
-
-        // 4. Build Regional Breakdown
-        const subUnitBreakdown = subUnits.map(unit => {
-            const unitCases = cases.filter(c => c.administrativeUnitId === unit.id);
-            const stats = calcUnitStats(unitCases);
-
-            // Determine status based on resolution rate
-            let status = 'On Track';
-            if (stats.resolutionRate < 50) status = 'Behind';
-            else if (stats.resolutionRate < 80) status = 'At Risk';
-
-            return {
+                unitId: unit.id,
                 unitName: unit.name,
-                totalCases: stats.total,
-                resolutionRate: Math.round(stats.resolutionRate),
-                avgResponseTimeHours: Number(stats.avgTime.toFixed(1)),
-                escalationRate: Number(stats.escalationRate.toFixed(1)),
-                status
+                totalCases: uTotal,
+                resolutionRate: uTotal > 0 ? (uResolved / uTotal) * 100 : 0,
+                avgResponseTimeHours: uTimeCount > 0 ? (uResponseTime / uTimeCount / 60) : 0,
+                escalationRate: uTotal > 0 ? (uEscalated / uTotal) * 100 : 0,
+                status: (uTotal > 0 && (uResolved / uTotal) < 0.5) ? 'Critical' : 'On Track'
             };
         });
 
@@ -447,11 +571,9 @@ export class CaseService {
             resolvedCases: resolved,
             pendingCases: total - resolved,
             escalatedCases: escalated,
-            resolutionRate: Math.round((resolved / total) * 100),
-            avgResponseTimeHours: casesWithResponseTime > 0
-                ? Number((totalResponseTimeMinutes / casesWithResponseTime / 60).toFixed(1))
-                : 0,
-            escalationRate: Number(((escalated / total) * 100).toFixed(1)),
+            resolutionRate: total > 0 ? (resolved / total) * 100 : 0,
+            avgResponseTimeHours: casesWithResponseTime > 0 ? (totalResponseTimeMinutes / casesWithResponseTime) / 60 : 0,
+            escalationRate: total > 0 ? (escalated / total) * 100 : 0,
             overdueCases: overdue,
             casesByCategory: byCategory,
             weeklyTrends,
