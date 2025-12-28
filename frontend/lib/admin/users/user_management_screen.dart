@@ -45,21 +45,31 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     if (_currentFilter == 'LEADER') roleParam = 'LEADER,VILLAGE_LEADER,CELL_LEADER,SECTOR_LEADER,DISTRICT_LEADER,PROVINCE_LEADER';
     else if (_currentFilter == 'CITIZEN') roleParam = 'CITIZEN';
     
-    final response = await adminService.getUsers(
-      role: roleParam, 
-      query: _searchController.text,
-      page: targetPage,
-      limit: _limit,
-    );
+    try {
+      final response = await adminService.getUsers(
+        role: roleParam, 
+        query: _searchController.text,
+        page: targetPage,
+        limit: _limit,
+      );
 
-    if (mounted) {
-      setState(() {
-        _users = response.data;
-        _totalItems = response.total;
-        _currentPage = response.page;
-        _totalPages = response.totalPages;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _users = response.data;
+          _totalItems = response.total;
+          _currentPage = response.page;
+          _totalPages = response.totalPages;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading users: $e');
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading users: $e'), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 

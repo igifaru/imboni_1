@@ -333,6 +333,17 @@ const Map<String, Map<String, String>> _translations = {
     'connection_error': 'Connection error',
     'select_level': 'Select',
     'hint_role_select': 'Select Role (e.g., Village Leader)',
+    // User Management EN
+    'user_management': 'User Management',
+    'search_users_hint': 'Search by name, email, or role...',
+    'no_users_found': 'No users found',
+    'all_users': 'All Users',
+    'leaders': 'Leaders',
+    'citizens': 'Citizens',
+    'name': 'Name',
+    'status': 'Status',
+    'actions': 'Actions',
+    'imboni_admin': 'Admin',
     // Settings EN
     'settings': 'Settings',
     'my_account': 'My Account',

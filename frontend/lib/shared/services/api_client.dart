@@ -65,6 +65,10 @@ class ApiClient {
       final body = jsonDecode(response.body);
       if (response.statusCode >= 200 && response.statusCode < 300) {
         if (body is Map<String, dynamic>) {
+          // If the response contains pagination metadata, return the whole body
+          if (body.containsKey('meta')) {
+            return ApiResponse.success(body as T);
+          }
           final data = body['data'] ?? body;
           if (fromJson != null) {
             return ApiResponse.success(fromJson(data));
