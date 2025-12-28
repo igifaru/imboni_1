@@ -210,3 +210,77 @@ class UserModel {
   bool get isLeader => role == 'LEADER';
   bool get isAdmin => role == 'ADMIN';
 }
+
+/// Performance Metrics model
+class PerformanceMetrics {
+  final int totalCases;
+  final int resolvedCases;
+  final int pendingCases;
+  final int escalatedCases;
+  final int resolutionRate;
+  final double avgResponseTimeHours;
+  final Map<String, int> casesByCategory;
+  final List<DailyTrend> weeklyTrends;
+
+  PerformanceMetrics({
+    required this.totalCases,
+    required this.resolvedCases,
+    required this.pendingCases,
+    required this.escalatedCases,
+    required this.resolutionRate,
+    required this.avgResponseTimeHours,
+    required this.casesByCategory,
+    required this.weeklyTrends,
+  });
+
+  factory PerformanceMetrics.fromJson(Map<String, dynamic> json) {
+    var trends = <DailyTrend>[];
+    if (json['weeklyTrends'] != null) {
+      json['weeklyTrends'].forEach((v) {
+        trends.add(DailyTrend.fromJson(v));
+      });
+    }
+    
+    return PerformanceMetrics(
+      totalCases: json['totalCases'] ?? 0,
+      resolvedCases: json['resolvedCases'] ?? 0,
+      pendingCases: json['pendingCases'] ?? 0,
+      escalatedCases: json['escalatedCases'] ?? 0,
+      resolutionRate: json['resolutionRate'] ?? 0,
+      avgResponseTimeHours: (json['avgResponseTimeHours'] ?? 0).toDouble(),
+      casesByCategory: Map<String, int>.from(json['casesByCategory'] ?? {}),
+      weeklyTrends: trends,
+    );
+  }
+
+  factory PerformanceMetrics.empty() {
+    return PerformanceMetrics(
+      totalCases: 0,
+      resolvedCases: 0,
+      pendingCases: 0,
+      escalatedCases: 0,
+      resolutionRate: 0,
+      avgResponseTimeHours: 0,
+      casesByCategory: {},
+      weeklyTrends: [],
+    );
+  }
+}
+
+class DailyTrend {
+  final String day;
+  final String date;
+  final int newCases;
+  final int resolvedCases;
+
+  DailyTrend({required this.day, required this.date, required this.newCases, required this.resolvedCases});
+
+  factory DailyTrend.fromJson(Map<String, dynamic> json) {
+    return DailyTrend(
+      day: json['day'] ?? '',
+      date: json['date'] ?? '',
+      newCases: json['newCases'] ?? 0,
+      resolvedCases: json['resolvedCases'] ?? 0,
+    );
+  }
+}

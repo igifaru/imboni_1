@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart'; // Add fl_chart dependency
 import '../../../shared/theme/colors.dart';
 import '../../../shared/models/models.dart';
 import '../../../shared/services/case_service.dart';
 
-/// Performance Screen - Imihigo metrics
+/// Performance Screen - Professional Analytics Dashboard
 class PerformanceScreen extends StatefulWidget {
   const PerformanceScreen({super.key});
 
@@ -40,49 +41,380 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
-    if (_isLoading) return const Center(child: CircularProgressIndicator());
-    
+    final isDark = theme.brightness == Brightness.dark;
+
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     final metrics = _metrics ?? PerformanceMetrics.empty();
 
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Performance'), 
+        title: const Text('Performance Analytics', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: theme.scaffoldBackgroundColor,
+        foregroundColor: theme.colorScheme.onSurface,
+        elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.date_range), 
-            onPressed: _selectDateRange, 
-            tooltip: 'Select period',
+            icon: const Icon(Icons.calendar_month_outlined),
+            onPressed: _selectDateRange,
+            tooltip: 'Filter by Date',
           ),
+          IconButton(
+            icon: const Icon(Icons.download_outlined),
+            onPressed: () {},
+            tooltip: 'Export Report',
+          ),
+          const SizedBox(width: 8),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16), 
+        padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start, 
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (_selectedDateRange != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Chip(
-                  label: Text('${_formatDate(_selectedDateRange!.start)} - ${_formatDate(_selectedDateRange!.end)}'),
-                  onDeleted: () => setState(() => _selectedDateRange = null),
-                  backgroundColor: ImboniColors.primary.withAlpha(20),
-                  labelStyle: TextStyle(color: ImboniColors.primary),
-                  deleteIconColor: ImboniColors.primary,
-                ),
-              ),
-            _buildOverallScore(theme, metrics),
+              _buildDateFilterChip(theme),
+
+            // Top Key Metrics Row
+            LayoutBuilder(builder: (context, constraints) {
+              final width = constraints.maxWidth;
+              final isWide = width > 600;
+              return Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                children: [
+                  SizedBox(
+                    width: isWide ? (width - 16) / 2 : width,
+                    child: _buildMetricCard(
+                      theme, 
+                      'Resolution Rate', 
+                      '${metrics.resolutionRate.toInt()}%', 
+                      metrics.resolutionRate >= 80 ? Icons.trending_up : Icons.trending_down,
+                      metrics.resolutionRate >= 80 ? ImboniColors.success : ImboniColors.warning,
+                      isDark
+                    )
+                  ),
+                  SizedBox(
+                    width: isWide ? (width - 16) / 2 : width,
+                    child: _buildMetricCard(
+                      theme, 
+                      'Avg Response Time', 
+                      '${metrics.avgResponseTimeHours}h', 
+                      Icons.timer_outlined,
+                      ImboniColors.info,
+                      isDark
+                    )
+                  ),
+                ],
+              );
+            }),
+
             const SizedBox(height: 24),
-            Text('Metrics Breakdown', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 12),
-            _buildMetricsGrid(metrics),
-            const SizedBox(height: 24),
-            Text('Cases by Category', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 12),
-            _buildCategoriesBreakdown(theme, metrics),
+
+            // Charts Section
+            LayoutBuilder(builder: (context, constraints) {
+              final width = constraints.maxWidth;
+              final isWide = width > 900;
+              
+              return Flex(
+                direction: isWide ? Axis.horizontal : Axis.vertical,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Pie Chart: Cases by Category
+                  SizedBox(
+                    width: isWide ? (width * 0.4) : width,
+                    child: _buildCategoryChart(theme, metrics, isDark),
+                  ),
+                  if (isWide) const SizedBox(width: 24) else const SizedBox(height: 24),
+                  
+                  // Bar Chart: Weekly Comparison (Mocked for visual)
+                  Expanded(
+                    flex: isWide ? 1 : 0,
+                    child: SizedBox(
+                      width: isWide ? null : width,
+                      child: _buildTrendsChart(theme, metrics, isDark),
+                    ),
+                  ),
+                ],
+              );
+            }),
+            
+             const SizedBox(height: 24),
+             _buildDetailedStatsTable(theme, metrics, isDark),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildDateFilterChip(ThemeData theme) {
+    return Padding(
+       padding: const EdgeInsets.only(bottom: 16),
+       child: FilterChip(
+         label: Text(
+           '${_formatDate(_selectedDateRange!.start)} - ${_formatDate(_selectedDateRange!.end)}',
+           style: TextStyle(color: theme.colorScheme.primary),
+         ),
+         onSelected: (_) => setState(() => _selectedDateRange = null),
+         selected: true,
+         showCheckmark: false,
+         avatar: Icon(Icons.close, size: 16, color: theme.colorScheme.primary),
+         backgroundColor: theme.colorScheme.primaryContainer.withAlpha(50),
+         selectedColor: theme.colorScheme.primaryContainer.withAlpha(50),
+         shape: RoundedRectangleBorder(
+           borderRadius: BorderRadius.circular(20),
+           side: BorderSide(color: theme.colorScheme.primary.withAlpha(50)),
+         ),
+       ),
+    );
+  }
+
+  Widget _buildMetricCard(ThemeData theme, String title, String value, IconData icon, Color color, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(isDark ? 50 : 5),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
+        ],
+        border: Border.all(color: theme.dividerColor.withAlpha(isDark ? 20 : 50)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withAlpha(30),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 28),
+          ),
+          const SizedBox(width: 16),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title, 
+                style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)
+              ),
+              const SizedBox(height: 4),
+              Text(
+                value, 
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface
+                )
+              ),
+            ],
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryChart(ThemeData theme, PerformanceMetrics m, bool isDark) {
+    if (m.totalCases == 0) return const SizedBox();
+
+    final categoryColors = {
+      'Infrastructure': ImboniColors.categoryInfrastructure,
+      'Health': ImboniColors.categoryHealth,
+      'Land': ImboniColors.categoryLand,
+      'Justice': ImboniColors.categoryJustice,
+      'Security': ImboniColors.categorySecurity,
+    };
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.dividerColor.withAlpha(isDark ? 20 : 50)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Cases by Category', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 24),
+          SizedBox(
+            height: 200,
+            child: PieChart(
+              PieChartData(
+                sectionsSpace: 2,
+                centerSpaceRadius: 40,
+                sections: m.casesByCategory.entries.map((e) {
+                  final color = categoryColors[e.key] ?? ImboniColors.categoryOther;
+                  final value = e.value.toDouble();
+                  return PieChartSectionData(
+                    color: color,
+                    value: value,
+                    title: '${(value / m.totalCases * 100).round()}%',
+                    radius: 50,
+                    titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            children: m.casesByCategory.entries.map((e) {
+              final color = categoryColors[e.key] ?? ImboniColors.categoryOther;
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+                  const SizedBox(width: 6),
+                  Text(e.key, style: theme.textTheme.bodySmall),
+                ],
+              );
+            }).toList(),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTrendsChart(ThemeData theme, PerformanceMetrics m, bool isDark) {
+    if (m.weeklyTrends.isEmpty) {
+        return const Center(child: Text("No trend data available"));
+    }
+
+    // Calculate trend percentage (vs previous period would require more data, but we can just show total new cases for week)
+    final totalNewLastWeek = m.weeklyTrends.fold(0, (sum, item) => sum + item.newCases);
+    
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.dividerColor.withAlpha(isDark ? 20 : 50)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Activity Trends (Last 7 Days)', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(color: ImboniColors.primary.withAlpha(20), borderRadius: BorderRadius.circular(8)),
+                child: Text('$totalNewLastWeek New Cases', style: const TextStyle(color: ImboniColors.primary, fontSize: 10, fontWeight: FontWeight.bold)),
+              )
+            ],
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            height: 200,
+            child: BarChart(
+              BarChartData(
+                gridData: FlGridData(show: false),
+                titlesData: FlTitlesData(
+                  leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 30, getTitlesWidget: (v, m) => Text(v.toInt().toString(), style: const TextStyle(fontSize: 10)))),
+                  bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, getTitlesWidget: (v, meta) {
+                    if (v.toInt() >= 0 && v.toInt() < m.weeklyTrends.length) {
+                        return Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text(m.weeklyTrends[v.toInt()].day, style: const TextStyle(fontSize: 10)),
+                        );
+                    }
+                    return const Text('');
+                  })),
+                  topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                ),
+                borderData: FlBorderData(show: false),
+                barGroups: m.weeklyTrends.asMap().entries.map((entry) {
+                    return _makeBarGroup(entry.key, entry.value.newCases.toDouble(), entry.value.resolvedCases.toDouble(), isDark);
+                }).toList(),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+           Row(
+             mainAxisAlignment: MainAxisAlignment.center,
+             children: [
+               _buildLegendItem('New', isDark ? Colors.white30 : Colors.grey.shade300),
+               const SizedBox(width: 16),
+               _buildLegendItem('Resolved', ImboniColors.primary),
+             ],
+           )
+        ],
+      ),
+    );
+  }
+
+  BarChartGroupData _makeBarGroup(int x, double total, double resolved, bool isDark) {
+    return BarChartGroupData(
+      x: x,
+      barRods: [
+        BarChartRodData(
+          toY: total,
+          color: isDark ? Colors.white30 : Colors.grey.shade300,
+          width: 12,
+          borderRadius: BorderRadius.circular(4),
+          rodStackItems: [
+             BarChartRodStackItem(0, resolved, ImboniColors.primary),
+          ],
+        ),
+      ],
+    );
+  }
+  
+  Widget _buildLegendItem(String label, Color color) {
+    return Row(
+      children: [
+        Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        const SizedBox(width: 4),
+        Text(label, style: const TextStyle(fontSize: 12)),
+      ],
+    );
+  }
+
+  Widget _buildDetailedStatsTable(ThemeData theme, PerformanceMetrics m, bool isDark) {
+     return Container(
+       decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.dividerColor.withAlpha(isDark ? 20 : 50)),
+       ),
+       child: Column(
+         children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(children: [
+                 Text('Detailed Breakdown', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+              ]),
+            ),
+            const Divider(height: 1),
+            _buildStatRow(theme, 'Total Cases', '${m.totalCases}'),
+            _buildStatRow(theme, 'Resolved Cases', '${(m.totalCases * m.resolutionRate / 100).round()}'),
+            _buildStatRow(theme, 'Pending', '${m.pendingCases}'),
+            _buildStatRow(theme, 'Escalated', '${m.escalatedCases}'),
+         ],
+       ),
+     );
+  }
+
+  Widget _buildStatRow(ThemeData theme, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: theme.textTheme.bodyMedium),
+          Text(value, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
+        ],
       ),
     );
   }
@@ -93,101 +425,13 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
       firstDate: DateTime(2023),
       lastDate: DateTime.now(),
       initialDateRange: _selectedDateRange,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context).colorScheme.copyWith(
-              primary: ImboniColors.primary,
-            ),
-          ),
-          child: child!,
-        );
-      },
     );
     if (picked != null) {
       setState(() => _selectedDateRange = picked);
-      // In a real app we would reload metrics with date filter
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Showing data for ${_formatDate(picked.start)} - ${_formatDate(picked.end)}')),
-      );
     }
   }
 
   String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
-  }
-
-  Widget _buildOverallScore(ThemeData theme, PerformanceMetrics m) => Card(child: Padding(padding: const EdgeInsets.all(24), child: Row(children: [
-    SizedBox(width: 100, height: 100, child: Stack(alignment: Alignment.center, children: [
-      CircularProgressIndicator(value: m.totalCases > 0 ? m.resolutionRate / 100 : 0, strokeWidth: 10, backgroundColor: ImboniColors.success.withOpacity(0.2), valueColor: const AlwaysStoppedAnimation(ImboniColors.success)),
-      Text('${m.resolutionRate.toInt()}%', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: ImboniColors.success)),
-    ])),
-    const SizedBox(width: 24),
-    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text('Overall Performance', style: theme.textTheme.titleLarge),
-      const SizedBox(height: 4),
-      Text('Based on resolution rate, response time, and citizen satisfaction', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-      const SizedBox(height: 8),
-      Row(children: [const Icon(Icons.trending_up, color: ImboniColors.success, size: 16), const SizedBox(width: 4), Text('+5% from last month', style: theme.textTheme.bodySmall?.copyWith(color: ImboniColors.success))]),
-    ])),
-  ])));
-
-  Widget _buildMetricsGrid(PerformanceMetrics m) => GridView.count(
-    shrinkWrap: true,
-    physics: const NeverScrollableScrollPhysics(),
-    crossAxisCount: 2,
-    crossAxisSpacing: 12,
-    mainAxisSpacing: 12,
-    childAspectRatio: 1.5,
-    children: [
-      _MetricCard(label: 'Resolution Rate', value: '${m.resolutionRate}%', icon: Icons.check_circle_outline, color: ImboniColors.success),
-      _MetricCard(label: 'Avg Response Time', value: '${m.avgResponseTimeHours}h', icon: Icons.schedule, color: ImboniColors.info),
-      _MetricCard(label: 'Cases Escalated', value: '${m.escalatedCases}', icon: Icons.trending_up, color: ImboniColors.warning),
-      _MetricCard(label: 'Pending Cases', value: '${m.pendingCases}', icon: Icons.hourglass_empty, color: ImboniColors.accent),
-    ],
-  );
-
-  Widget _buildCategoriesBreakdown(ThemeData theme, PerformanceMetrics m) {
-    if (m.totalCases == 0) return const SizedBox();
-    
-    return Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(
-      children: m.casesByCategory.entries.map((e) {
-        final pct = (e.value / m.totalCases * 100).round();
-        Color color = ImboniColors.categoryOther;
-        if (e.key == 'Infrastructure') color = ImboniColors.categoryInfrastructure;
-        if (e.key == 'Health') color = ImboniColors.categoryHealth;
-        if (e.key == 'Land') color = ImboniColors.categoryLand;
-        if (e.key == 'Justice') color = ImboniColors.categoryJustice;
-        
-        return _catRow(e.key, pct, color);
-      }).toList(),
-    )));
-  }
-
-  Widget _catRow(String name, int pct, Color color) => Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Row(children: [
-    Container(width: 12, height: 12, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3))),
-    const SizedBox(width: 12),
-    Expanded(child: Text(name)),
-    Text('$pct%', style: const TextStyle(fontWeight: FontWeight.bold)),
-  ]));
-}
-
-class _MetricCard extends StatelessWidget {
-  final String label, value;
-  final IconData icon;
-  final Color color;
-
-  const _MetricCard({required this.label, required this.value, required this.icon, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-      Icon(icon, color: color),
-      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(value, style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
-        Text(label, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-      ]),
-    ])));
+    return '${date.day}/${date.month}';
   }
 }

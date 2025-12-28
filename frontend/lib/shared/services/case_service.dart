@@ -118,42 +118,6 @@ class CaseService {
 }
 
 /// Performance Metrics Model
-class PerformanceMetrics {
-  final int totalCases;
-  final int resolvedCases;
-  final int pendingCases;
-  final int escalatedCases;
-  final double resolutionRate;
-  final double avgResponseTimeHours;
-  final Map<String, int> casesByCategory;
-
-  PerformanceMetrics({
-    required this.totalCases,
-    required this.resolvedCases,
-    required this.pendingCases,
-    required this.escalatedCases,
-    required this.resolutionRate,
-    required this.avgResponseTimeHours,
-    required this.casesByCategory,
-  });
-
-  factory PerformanceMetrics.fromJson(Map<String, dynamic> json) {
-    return PerformanceMetrics(
-      totalCases: json['totalCases'] ?? 0,
-      resolvedCases: json['resolvedCases'] ?? 0,
-      pendingCases: json['pendingCases'] ?? 0,
-      escalatedCases: json['escalatedCases'] ?? 0,
-      resolutionRate: (json['resolutionRate'] ?? 0).toDouble(),
-      avgResponseTimeHours: (json['avgResponseTimeHours'] ?? 0).toDouble(),
-      casesByCategory: Map<String, int>.from(json['casesByCategory'] ?? {}),
-    );
-  }
-
-  factory PerformanceMetrics.empty() => PerformanceMetrics(
-    totalCases: 0, resolvedCases: 0, pendingCases: 0, escalatedCases: 0,
-    resolutionRate: 0, avgResponseTimeHours: 0, casesByCategory: {},
-  );
-}
 
 /// Case Action Model
 class CaseAction {

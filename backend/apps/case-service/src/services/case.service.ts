@@ -230,13 +230,27 @@ export class CaseService {
      * Get performance metrics for leader
      */
     async getPerformanceMetrics(leaderId: string) {
-        // Get all assignments for this leader (active and inactive)
+        // Get all assignments for this leader
         const assignments = await prisma.caseAssignment.findMany({
             where: { leaderId },
             include: { case: true },
         });
 
         const total = assignments.length;
+
+        // Initialize weekly trends (last 7 days)
+        const weeklyTrends = Array(7).fill(0).map((_, i) => {
+            const d = new Date();
+            d.setDate(d.getDate() - (6 - i)); // 6 days ago to today
+            return {
+                day: d.toLocaleDateString('en-US', { weekday: 'short' }),
+                date: d.toISOString().split('T')[0],
+                newCases: 0,
+                resolvedCases: 0,
+                activeCases: 0
+            };
+        });
+
         if (total === 0) {
             return {
                 totalCases: 0,
@@ -246,20 +260,58 @@ export class CaseService {
                 resolutionRate: 0,
                 avgResponseTimeHours: 0,
                 casesByCategory: {},
+                weeklyTrends, // Return empty trends structure
             };
         }
 
         let resolved = 0;
         let escalated = 0;
+        let totalResponseTimeMinutes = 0;
+        let casesWithResponseTime = 0;
         const byCategory: Record<string, number> = {};
+
+        // Helper to find trend index by date
+        const getTrendIndex = (date: Date) => {
+            const dateString = date.toISOString().split('T')[0];
+            return weeklyTrends.findIndex(t => t.date === dateString);
+        };
 
         for (const a of assignments) {
             const c = a.case as unknown as CaseEntity;
-            if (c.status === 'RESOLVED') resolved++;
+
+            // Count status
+            if (c.status === 'RESOLVED') {
+                resolved++;
+                // Calculate response time if resolved
+                if (c.resolvedAt) {
+                    const created = new Date(c.createdAt);
+                    const res = new Date(c.resolvedAt);
+                    const diffMins = (res.getTime() - created.getTime()) / (1000 * 60);
+                    totalResponseTimeMinutes += diffMins;
+                    casesWithResponseTime++;
+                }
+
+                // Add to weekly trends (resolved count)
+                if (c.resolvedAt) {
+                    const idx = getTrendIndex(new Date(c.resolvedAt));
+                    if (idx !== -1) weeklyTrends[idx].resolvedCases++;
+                }
+            }
             if (c.status === 'ESCALATED') escalated++;
 
+            // Count category
             byCategory[c.category] = (byCategory[c.category] || 0) + 1;
+
+            // Add to weekly trends (new cases count)
+            const idx = getTrendIndex(new Date(c.createdAt));
+            if (idx !== -1) weeklyTrends[idx].newCases++;
         }
+
+        // Calculate active cases for each day (cumulative logic could be improved, but simple diff is okay for now)
+        // For this simple version, activeCases will just be new - resolved for that day
+        weeklyTrends.forEach(t => {
+            t.activeCases = Math.max(0, t.newCases - t.resolvedCases);
+        });
 
         return {
             totalCases: total,
@@ -267,8 +319,11 @@ export class CaseService {
             pendingCases: total - resolved,
             escalatedCases: escalated,
             resolutionRate: Math.round((resolved / total) * 100),
-            avgResponseTimeHours: 4.5, // Mock for now, would need action logs
+            avgResponseTimeHours: casesWithResponseTime > 0
+                ? Number((totalResponseTimeMinutes / casesWithResponseTime / 60).toFixed(1))
+                : 0,
             casesByCategory: byCategory,
+            weeklyTrends,
         };
     }
 
