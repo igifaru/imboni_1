@@ -6,9 +6,10 @@ import 'shared/localization/app_localizations.dart';
 import 'shared/services/auth_service.dart';
 import 'shared/services/admin_units_service.dart';
 import 'shared/services/settings_service.dart';
-import 'shared/auth/auth_screens.dart';
-import 'citizen/home/citizen_home_screen.dart';
-import 'leader/dashboard/leader_dashboard_screen.dart';
+import 'package:imboni/shared/auth/auth_screens.dart';
+import 'package:imboni/admin/dashboard/admin_dashboard_screen.dart';
+import 'package:imboni/citizen/home/citizen_home_screen.dart';
+import 'package:imboni/leader/dashboard/leader_dashboard_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,6 +33,7 @@ class _ImboniAppState extends State<ImboniApp> {
   bool _isAuthenticated = false;
   bool _showRegister = false;
   bool _isLeader = false;
+  bool _isAdmin = false;
 
   @override
   void initState() {
@@ -39,6 +41,7 @@ class _ImboniAppState extends State<ImboniApp> {
     _isAuthenticated = authService.isAuthenticated;
     if (_isAuthenticated && authService.currentUser != null) {
       _isLeader = authService.currentUser!.isLeader;
+      _isAdmin = authService.currentUser!.isAdmin;
     }
     settingsService.addListener(_onSettingsChanged);
   }
@@ -55,6 +58,7 @@ class _ImboniAppState extends State<ImboniApp> {
     setState(() {
       _isAuthenticated = true;
       _isLeader = authService.currentUser?.isLeader ?? false;
+      _isAdmin = authService.currentUser?.isAdmin ?? false;
     });
   }
 
@@ -63,10 +67,26 @@ class _ImboniAppState extends State<ImboniApp> {
     setState(() {
       _isAuthenticated = false;
       _isLeader = false;
+      _isAdmin = false;
     });
   }
 
-  void toggleUserMode() => setState(() => _isLeader = !_isLeader);
+  // Debug toggle
+  void toggleUserMode() {
+    setState(() {
+       // simple cycle: Citizen -> Leader -> Admin -> Citizen
+       if (!_isLeader && !_isAdmin) {
+         _isLeader = true; 
+         _isAdmin = false;
+       } else if (_isLeader && !_isAdmin) {
+         _isLeader = false;
+         _isAdmin = true;
+       } else {
+         _isLeader = false;
+         _isAdmin = false;
+       }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -83,13 +103,10 @@ class _ImboniAppState extends State<ImboniApp> {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      // Only include locales that Flutter natively supports
       supportedLocales: const [Locale('en'), Locale('fr')],
-      // For unsupported locales (like rw), fall back to en for Material widgets
       localeResolutionCallback: (locale, supportedLocales) {
-        // Our AppLocalizations handles rw, but Material/Cupertino need en/fr
         final code = locale?.languageCode ?? 'en';
-        if (code == 'rw') return const Locale('en'); // Use en for Material widgets
+        if (code == 'rw') return const Locale('en'); 
         for (var l in supportedLocales) {
           if (l.languageCode == code) return l;
         }
@@ -113,14 +130,14 @@ class _ImboniAppState extends State<ImboniApp> {
       );
     }
 
-    return Scaffold(
-      body: _isLeader ? const LeaderDashboardScreen() : const CitizenHomeScreen(),
-      floatingActionButton: FloatingActionButton.small(
-        heroTag: 'mode_toggle',
-        onPressed: toggleUserMode,
-        tooltip: _isLeader ? 'Switch to Citizen' : 'Switch to Leader',
-        child: Icon(_isLeader ? Icons.person : Icons.admin_panel_settings),
-      ),
-    );
+    if (_isAdmin) {
+      return AdminDashboardScreen(onLogout: _onLogout);
+    }
+
+    if (_isLeader) {
+      return LeaderDashboardScreen();
+    }
+    
+    return CitizenHomeScreen();
   }
 }
