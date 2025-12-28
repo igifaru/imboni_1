@@ -4,6 +4,7 @@ import '../../shared/models/models.dart';
 import '../../shared/theme/colors.dart';
 import '../../shared/theme/responsive.dart';
 import '../../shared/widgets/dashboard/status_chips.dart';
+import '../../shared/localization/app_localizations.dart';
 
 class UserManagementScreen extends StatefulWidget {
   const UserManagementScreen({super.key});
@@ -83,7 +84,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> with Single
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('User Management'),
+        title: Text(AppLocalizations.of(context).userManagement),
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
@@ -92,10 +93,10 @@ class _UserManagementScreenState extends State<UserManagementScreen> with Single
           labelColor: ImboniColors.primary,
           unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
           indicatorColor: ImboniColors.primary,
-          tabs: const [
-            Tab(text: 'All Users'),
-            Tab(text: 'Leaders'),
-            Tab(text: 'Citizens'),
+          tabs: [
+            Tab(text: AppLocalizations.of(context).allUsers),
+            Tab(text: AppLocalizations.of(context).leaders),
+            Tab(text: AppLocalizations.of(context).citizens),
           ],
         ),
       ),
@@ -107,7 +108,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> with Single
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Search by name or email...',
+                hintText: AppLocalizations.of(context).searchUsersHint,
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.refresh),
@@ -133,7 +134,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> with Single
                           Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
                           const SizedBox(height: 16),
                           Text(
-                            adminService.error ?? 'No users found',
+                            adminService.error ?? AppLocalizations.of(context).noUsersFound,
                             style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.error),
                           ),
                           if (adminService.error != null)
@@ -141,7 +142,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> with Single
                               padding: const EdgeInsets.only(top: 16.0),
                               child: FilledButton.tonal(
                                 onPressed: _loadUsers,
-                                child: const Text('Retry'),
+                                child: Text(AppLocalizations.of(context).retry),
                               ),
                             ),
                         ],
@@ -162,11 +163,11 @@ class _UserManagementScreenState extends State<UserManagementScreen> with Single
         child: DataTable(
           headingRowColor: WidgetStateProperty.all(theme.cardColor),
           columnSpacing: isDesktop ? 40 : 20,
-          columns: const [
-            DataColumn(label: Text('Name')),
-            DataColumn(label: Text('Role')),
-            DataColumn(label: Text('Status')),
-            DataColumn(label: Text('Actions')),
+          columns: [
+            DataColumn(label: Text(AppLocalizations.of(context).name)),
+            DataColumn(label: Text(AppLocalizations.of(context).role)),
+            DataColumn(label: Text(AppLocalizations.of(context).status)),
+            DataColumn(label: Text(AppLocalizations.of(context).actions)),
           ],
           rows: _users.map((user) {
             return DataRow(

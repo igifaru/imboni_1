@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../shared/theme/colors.dart';
 import '../../../shared/models/models.dart';
 import '../../../shared/constants/rwanda_provinces.dart';
+import '../../../shared/localization/app_localizations.dart';
 
 class ProvinceCasesWidget extends StatelessWidget {
   final List<CaseModel> cases;
@@ -87,7 +88,7 @@ class ProvinceCasesWidget extends StatelessWidget {
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      'Cases by Province',
+                      AppLocalizations.of(context).casesByProvince,
                       style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                     ),
                   ],
@@ -99,8 +100,8 @@ class ProvinceCasesWidget extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    '${cases.length} Total',
-                    style: TextStyle(
+                    '${cases.length} ${AppLocalizations.of(context).total}',
+                    style: const TextStyle(
                       color: ImboniColors.info,
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -172,9 +173,9 @@ class ProvinceCasesWidget extends StatelessWidget {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    _buildMiniStat(context, 'Open', open, Colors.orange),
+                    _buildMiniStat(context, AppLocalizations.of(context).open, open, Colors.orange),
                     const SizedBox(width: 12),
-                    _buildMiniStat(context, 'Resolved', resolved, Colors.green),
+                    _buildMiniStat(context, AppLocalizations.of(context).resolved, resolved, Colors.green),
                   ],
                 ),
               ],

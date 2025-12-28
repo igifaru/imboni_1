@@ -118,6 +118,36 @@ class AppLocalizations {
   String get myCases => get('my_cases');
   String get alerts => get('alerts');
   String get performance => get('performance');
+
+  // Admin Strings
+  String get adminDashboard => get('admin_dashboard');
+  String get home => get('home');
+  String get users => get('users');
+  String get userManagement => get('user_management');
+  String get registerLeader => get('register_leader');
+  String get searchUsersHint => get('search_users_hint');
+  String get allUsers => get('all_users');
+  String get leaders => get('leaders');
+  String get citizens => get('citizens');
+  String get retry => get('retry');
+  String get noUsersFound => get('no_users_found'); 
+  String get name => get('name');
+  String get status => get('status');
+  String get actions => get('actions');
+  String get imboniAdmin => get('imboni_admin');
+  
+  // Dashboard Widgets
+  String get searchCases => get('search_cases');
+  String get urgent => get('urgent');
+  // active is already defined
+  String get escalated => get('escalated');
+  String get godViewTitle => get('god_view_title');
+  String get aiInsights => get('ai_insights');
+  String get casesByProvince => get('cases_by_province');
+  String get total => get('total');
+  // statusOpen and statusResolved defined
+  String get open => get('open'); // Short version for cards
+  String get resolved => get('resolved'); // Short version for cards
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
@@ -219,6 +249,16 @@ const Map<String, Map<String, String>> _translations = {
     'my_cases': 'Ibibazo',
     'alerts': 'Imburira',
     'performance': 'Imikorere',
+    // New Dashboard Keys RW
+    'search_cases': 'Shakisha ibibazo...',
+    'urgent': 'Byihutirwa',
+    'escalated': 'Byazamuwe',
+    'god_view_title': "Incamake y'Igihugu 'God View'",
+    'ai_insights': 'Isesengura rya AI',
+    'cases_by_province': 'Ibibazo mu Ntara',
+    'total': 'Yose',
+    'open': 'Gifunguye',
+    'resolved': 'Cyakemutse',
   },
   'en': {
     'app_name': 'Imboni',
@@ -308,6 +348,16 @@ const Map<String, Map<String, String>> _translations = {
     'my_cases': 'Cases',
     'alerts': 'Alerts',
     'performance': 'Performance',
+    // New Dashboard Keys EN
+    'search_cases': 'Search cases...',
+    'urgent': 'Urgent',
+    'escalated': 'Escalated',
+    'god_view_title': 'National "God View" Dashboard',
+    'ai_insights': 'AI Insights',
+    'cases_by_province': 'Cases by Province',
+    'total': 'Total',
+    'open': 'Open',
+    'resolved': 'Resolved',
   },
   'fr': {
     'app_name': 'Imboni',
@@ -397,5 +447,15 @@ const Map<String, Map<String, String>> _translations = {
     'my_cases': 'Dossiers',
     'alerts': 'Alertes',
     'performance': 'Performance',
+    // New Dashboard Keys FR
+    'search_cases': 'Rechercher des cas...',
+    'urgent': 'Urgent',
+    'escalated': 'Escalé',
+    'god_view_title': 'Tableau de bord national',
+    'ai_insights': 'Analyses IA',
+    'cases_by_province': 'Cas par Province',
+    'total': 'Total',
+    'open': 'Ouvert',
+    'resolved': 'Résolu',
   },
 };

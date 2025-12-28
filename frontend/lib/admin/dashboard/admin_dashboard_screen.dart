@@ -10,6 +10,7 @@ import '../../shared/widgets/forms/register_leader_form.dart';
 import '../users/user_management_screen.dart';
 import 'widgets/province_cases_widget.dart';
 import 'settings/admin_settings_screen.dart';
+import '../../shared/localization/app_localizations.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   final VoidCallback onLogout;
@@ -42,7 +43,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Widget _buildMobile(ThemeData theme, List<Widget> screens) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Admin Dashboard'),
+        title: Text(AppLocalizations.of(context).adminDashboard),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -54,26 +55,26 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (i) => setState(() => _currentIndex = i),
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard),
-            label: 'Home',
+            icon: const Icon(Icons.dashboard_outlined),
+            selectedIcon: const Icon(Icons.dashboard),
+            label: AppLocalizations.of(context).home,
           ),
           NavigationDestination(
-            icon: Icon(Icons.people_outline),
-            selectedIcon: Icon(Icons.people),
-            label: 'Users',
+            icon: const Icon(Icons.people_outline),
+            selectedIcon: const Icon(Icons.people),
+            label: AppLocalizations.of(context).users,
           ),
           NavigationDestination(
-            icon: Icon(Icons.person_add_outlined),
-            selectedIcon: Icon(Icons.person_add),
-            label: 'Register',
+            icon: const Icon(Icons.person_add_outlined),
+            selectedIcon: const Icon(Icons.person_add),
+            label: AppLocalizations.of(context).register,
           ),
           NavigationDestination(
-             icon: Icon(Icons.settings_outlined),
-             selectedIcon: Icon(Icons.settings),
-             label: 'Settings',
+             icon: const Icon(Icons.settings_outlined),
+             selectedIcon: const Icon(Icons.settings),
+             label: AppLocalizations.of(context).settings,
           ),
         ],
       ),
@@ -109,7 +110,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'Imboni Admin',
+                          AppLocalizations.of(context).imboniAdmin,
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -119,10 +120,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                _buildNavItem(theme, Icons.dashboard_outlined, 'Dashboard', 0),
-                _buildNavItem(theme, Icons.people_outline, 'User Management', 1),
-                _buildNavItem(theme, Icons.person_add_outlined, 'Register Leader', 2),
-                _buildNavItem(theme, Icons.settings_outlined, 'Settings', 3),
+                _buildNavItem(theme, Icons.dashboard_outlined, AppLocalizations.of(context).dashboard, 0),
+                _buildNavItem(theme, Icons.people_outline, AppLocalizations.of(context).userManagement, 1),
+                _buildNavItem(theme, Icons.person_add_outlined, AppLocalizations.of(context).registerLeader, 2),
+                _buildNavItem(theme, Icons.settings_outlined, AppLocalizations.of(context).settings, 3),
               ],
             ),
           ),
@@ -140,8 +141,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   child: Row(
                     children: [
                       Text(
-                        _currentIndex == 0 ? 'Dashboard' : 
-                        _currentIndex == 1 ? 'User Management' : 'Register Leader',
+                        _currentIndex == 0 ? AppLocalizations.of(context).dashboard : 
+                        _currentIndex == 1 ? AppLocalizations.of(context).userManagement : 
+                        _currentIndex == 2 ? AppLocalizations.of(context).registerLeader :
+                        AppLocalizations.of(context).settings,
                         style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const Spacer(),
@@ -345,11 +348,11 @@ class _AdminHomeState extends State<_AdminHome> {
 
   Widget _buildStatsRow(ThemeData theme) {
     return Row(children: [
-      Expanded(child: StatCard(icon: Icons.assignment_late, iconColor: ImboniColors.urgencyEmergency, label: 'Urgent', value: '${_globalStats['urgent'] ?? 0}')),
+      Expanded(child: StatCard(icon: Icons.assignment_late, iconColor: ImboniColors.urgencyEmergency, label: AppLocalizations.of(context).urgent, value: '${_globalStats['urgent'] ?? 0}')),
       const SizedBox(width: 12),
-      Expanded(child: StatCard(icon: Icons.radio_button_checked, iconColor: ImboniColors.info, label: 'Active', value: '${_globalStats['active'] ?? 0}')),
+      Expanded(child: StatCard(icon: Icons.radio_button_checked, iconColor: ImboniColors.info, label: AppLocalizations.of(context).active, value: '${_globalStats['active'] ?? 0}')),
       const SizedBox(width: 12),
-      Expanded(child: StatCard(icon: Icons.warning_amber, iconColor: ImboniColors.warning, label: 'Escalated', value: '${_globalStats['escalated'] ?? 0}')),
+      Expanded(child: StatCard(icon: Icons.warning_amber, iconColor: ImboniColors.warning, label: AppLocalizations.of(context).escalated, value: '${_globalStats['escalated'] ?? 0}')),
     ]);
   }
 
