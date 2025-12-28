@@ -36,6 +36,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   }
 
   Future<void> _loadUsers({int? page}) async {
+    print('UserManagementScreen: _loadUsers called. Page: $page');
     setState(() => _isLoading = true);
     final targetPage = page ?? _currentPage;
     
@@ -89,9 +90,11 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: Padding(
+    print('UserManagementScreen: Build called. Users: ${_users.length}, Loading: $_isLoading');
+    // Removing nested Scaffold to fix layout issues
+    return Container(
+      color: theme.scaffoldBackgroundColor,
+      child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -109,7 +112,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                 decoration: BoxDecoration(
                   color: theme.cardColor,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: theme.dividerColor),
+                  border: Border.all(color: Colors.red, width: 2), // DEBUG BORDER
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withAlpha(isDark ? 50 : 10),
