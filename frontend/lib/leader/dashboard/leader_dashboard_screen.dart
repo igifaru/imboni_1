@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
+import '../../shared/widgets/dashboard/stat_card.dart';
+import '../../shared/widgets/dashboard/status_chips.dart';
 import '../../shared/theme/colors.dart';
 import '../../shared/theme/responsive.dart';
 import '../../shared/services/case_service.dart';
-import '../../shared/services/auth_service.dart';
-import '../../shared/services/api_client.dart';
-
 import '../../shared/models/models.dart';
 import '../../shared/widgets/rwanda_map/rwanda_map.dart';
+import '../../shared/widgets/forms/register_leader_form.dart';
 import 'assigned_cases/assigned_cases_screen.dart';
 import 'escalation_alerts/escalation_alerts_screen.dart';
 import 'performance/performance_screen.dart';
@@ -27,7 +27,13 @@ class _LeaderDashboardScreenState extends State<LeaderDashboardScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDesktop = Responsive.isDesktop(context);
-    final screens = [const _DashboardHome(), const AssignedCasesScreen(), const EscalationAlertsScreen(), const PerformanceScreen()];
+    final screens = [
+      const _DashboardHome(),
+      const AssignedCasesScreen(),
+      const EscalationAlertsScreen(),
+      const PerformanceScreen(),
+      const RegisterLeaderForm()
+    ];
 
     return isDesktop ? _buildDesktop(theme, screens) : _buildMobile(screens);
   }
@@ -42,6 +48,7 @@ class _LeaderDashboardScreenState extends State<LeaderDashboardScreen> {
         NavigationDestination(icon: Icon(Icons.folder_outlined), selectedIcon: Icon(Icons.folder), label: 'Ibibazo'),
         NavigationDestination(icon: Icon(Icons.warning_amber_outlined), selectedIcon: Icon(Icons.warning_amber), label: 'Imburira'),
         NavigationDestination(icon: Icon(Icons.analytics_outlined), selectedIcon: Icon(Icons.analytics), label: 'Imikorere'),
+        NavigationDestination(icon: Icon(Icons.person_add_outlined), selectedIcon: Icon(Icons.person_add), label: 'Register Leader'),
       ],
     ),
   );
@@ -100,6 +107,7 @@ class _LeaderDashboardScreenState extends State<LeaderDashboardScreen> {
       (Icons.folder, 'Ibibazo', 1),
       (Icons.warning_amber, 'Imburira', 2),
       (Icons.analytics, 'Imikorere', 3),
+      (Icons.person_add, 'Register Leader', 4),
     ];
     return items.map((item) {
       final isSelected = _currentIndex == item.$3;
@@ -131,10 +139,8 @@ class _DashboardHome extends StatefulWidget {
 class _DashboardHomeState extends State<_DashboardHome> {
   List<CaseModel> _assignedCases = [];
   List<CaseModel> _escalationAlerts = [];
-  PerformanceMetrics _metrics = PerformanceMetrics.empty();
   bool _isLoading = true;
   String _searchQuery = '';
-  String? _selectedProvince;
 
   @override
   void initState() {
@@ -142,32 +148,6 @@ class _DashboardHomeState extends State<_DashboardHome> {
     _loadDashboardData();
   }
 
-  Map<String, int> get _casesByProvince {
-    final map = {'Kigali': 0, 'North': 0, 'South': 0, 'East': 0, 'West': 0};
-    final locationService = LocationService();
-    
-    for (final c in _assignedCases) {
-      // 1. Try to get precise district first
-      final district = locationService.extractDistrict(c.currentLevel);
-      if (district != null) {
-        final province = locationService.getProvinceForDistrict(district);
-        if (province != null) {
-          map[province] = (map[province] ?? 0) + 1;
-          continue;
-        }
-      }
-
-      // 2. Fallback to fuzzy matching if district not found
-      final level = c.currentLevel.toUpperCase();
-      if (level.contains('KIGALI')) map['Kigali'] = (map['Kigali'] ?? 0) + 1;
-      else if (level.contains('NORTH')) map['North'] = (map['North'] ?? 0) + 1;
-      else if (level.contains('SOUTH')) map['South'] = (map['South'] ?? 0) + 1;
-      else if (level.contains('EAST')) map['East'] = (map['East'] ?? 0) + 1;
-      else if (level.contains('WEST')) map['West'] = (map['West'] ?? 0) + 1;
-      else map['Kigali'] = (map['Kigali'] ?? 0) + 1; // default
-    }
-    return map;
-  }
 
   Map<String, int> get _casesByDistrict {
     final map = <String, int>{};
@@ -191,13 +171,11 @@ class _DashboardHomeState extends State<_DashboardHome> {
       final results = await Future.wait([
         caseService.getAssignedCases(limit: 50),
         caseService.getEscalationAlerts(),
-        caseService.getPerformanceMetrics(),
       ]);
       if (mounted) {
         setState(() {
-          _assignedCases = (results[0] as ApiResponse<List<CaseModel>>).data ?? [];
-          _escalationAlerts = (results[1] as ApiResponse<List<CaseModel>>).data ?? [];
-          _metrics = (results[2] as ApiResponse<PerformanceMetrics>).data ?? PerformanceMetrics.empty();
+          _assignedCases = results[0].data ?? [];
+          _escalationAlerts = results[1].data ?? [];
           _isLoading = false;
         });
       }
@@ -310,11 +288,11 @@ class _DashboardHomeState extends State<_DashboardHome> {
   Widget _buildStatsRow(ThemeData theme, bool isDark) {
     final urgentCount = _assignedCases.where((c) => c.urgency == 'EMERGENCY' || c.urgency == 'HIGH').length;
     return Row(children: [
-      _StatCard(icon: Icons.circle, iconColor: ImboniColors.urgencyEmergency, label: 'Urgent (+24h):', value: '$urgentCount', theme: theme),
+      Expanded(child: StatCard(icon: Icons.circle, iconColor: ImboniColors.urgencyEmergency, label: 'Urgent (+24h):', value: '$urgentCount')),
       const SizedBox(width: 24),
-      _StatCard(icon: Icons.circle, iconColor: ImboniColors.info, label: 'Active:', value: '${_assignedCases.length}', theme: theme),
+      Expanded(child: StatCard(icon: Icons.circle, iconColor: ImboniColors.info, label: 'Active:', value: '${_assignedCases.length}')),
       const SizedBox(width: 24),
-      _StatCard(icon: Icons.circle, iconColor: ImboniColors.warning, label: 'Escalated:', value: '${_escalationAlerts.length}', theme: theme),
+      Expanded(child: StatCard(icon: Icons.circle, iconColor: ImboniColors.warning, label: 'Escalated:', value: '${_escalationAlerts.length}')),
     ]);
   }
 
@@ -380,51 +358,12 @@ class _DashboardHomeState extends State<_DashboardHome> {
           cells: [
             DataCell(Text(c.caseReference, style: TextStyle(color: ImboniColors.info, fontWeight: FontWeight.w500))),
             DataCell(Text(c.title, overflow: TextOverflow.ellipsis)),
-            DataCell(_buildStatusChip(c.status, theme)),
-            DataCell(_buildUrgencyChip(c.urgency, theme)),
+            DataCell(StatusChip(status: c.status)),
+            DataCell(UrgencyChip(urgency: c.urgency)),
             DataCell(Text('${DateTime.now().difference(c.createdAt).inHours}h', style: theme.textTheme.bodySmall)),
           ],
         )).toList(),
       ),
     );
-  }
-
-  Widget _buildStatusChip(String status, ThemeData theme) {
-    final color = ImboniColors.getStatusColor(status);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: color.withAlpha(25), borderRadius: BorderRadius.circular(8)),
-      child: Text(status.replaceAll('_', ' '), style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
-    );
-  }
-
-  Widget _buildUrgencyChip(String urgency, ThemeData theme) {
-    final color = ImboniColors.getUrgencyColor(urgency);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: color.withAlpha(25), borderRadius: BorderRadius.circular(8)),
-      child: Text(urgency, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final String label;
-  final String value;
-  final ThemeData theme;
-
-  const _StatCard({required this.icon, required this.iconColor, required this.label, required this.value, required this.theme});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(children: [
-      Icon(icon, color: iconColor, size: 16),
-      const SizedBox(width: 8),
-      Text(label, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-      const SizedBox(width: 8),
-      Text(value, style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
-    ]);
   }
 }
