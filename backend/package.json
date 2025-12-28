@@ -15,6 +15,9 @@
     "lint": "eslint \"apps/**/*.ts\" \"libs/**/*.ts\"",
     "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\""
   },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  },
   "dependencies": {
     "@prisma/client": "^5.22.0",
     "amqplib": "^0.10.3",
