@@ -22,7 +22,7 @@ const app = express();
 // Security middleware
 app.use(helmet());
 app.use(cors({
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || '*',
+    origin: true, // Reflect request origin to support credentials with strict CORS
     credentials: true,
 }));
 app.use(express.json({ limit: '10mb' }));
@@ -47,7 +47,17 @@ app.use('/api/user', authMiddleware, userRoutes);
 
 // Case routes - some require auth, some don't
 app.use('/api/cases/track', optionalAuthMiddleware); // Track by reference - no auth needed
-app.use('/api/cases', optionalAuthMiddleware, emergencyBypass);
+app.use('/api/cases', optionalAuthMiddleware);
+
+// Applying rate limiting ONLY to case submission (POST)
+// Read-only routes (Metrics, Track, Search) should not share the 5-cases-per-hour limit
+import { caseController } from '../../case-service/src/controllers/case.controller';
+app.use('/api/cases', (req, res, next) => {
+    if (req.method === 'POST') {
+        return emergencyBypass(req, res, next);
+    }
+    next();
+}, caseController);
 
 // Leader dashboard routes - require auth
 app.use('/api/leader', authMiddleware);
@@ -56,42 +66,14 @@ app.use('/api/leader', authMiddleware);
 import { adminRoutes } from './admin/admin.routes';
 app.use('/api/admin', authMiddleware, adminRoutes);
 
-// Proxy to services (if running as gateway)
+// Proxy to services (if running as gateway) - only for production with separate microservices
 if (config.isProduction) {
-    // Case service proxy
+    // Case service proxy (override the inline mount above for true microservice mode if needed)
     app.use('/api/cases', createProxyMiddleware({
         target: `http://case-service:${config.ports.caseService}`,
         pathRewrite: { '^/api/cases': '/cases' },
         changeOrigin: true,
     }));
-}
-
-// For development - inline route handling
-if (config.isDevelopment) {
-    // Import and mount case routes directly in dev mode
-    app.use('/api/cases', async (req, res, next) => {
-        // Forward to case service
-        const axios = await import('axios');
-        try {
-            const response = await axios.default({
-                method: req.method as any,
-                url: `http://localhost:${config.ports.caseService}/cases${req.path}`,
-                data: req.body,
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: req.headers.authorization || '',
-                },
-                params: req.query,
-            });
-            res.status(response.status).json(response.data);
-        } catch (error: any) {
-            if (error.response) {
-                res.status(error.response.status).json(error.response.data);
-            } else {
-                next(error);
-            }
-        }
-    });
 }
 
 // Error handler
