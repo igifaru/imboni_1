@@ -430,7 +430,18 @@ export class CaseService {
         }
 
         if (filters?.category && filters.category !== 'All Categories') {
-            whereClause.category = filters.category;
+            let category = filters.category.toUpperCase();
+            // Map common frontend labels to backend enum
+            if (category === 'GENERAL') category = 'OTHER';
+
+            // Validate against known enum values to prevent Prisma crash
+            const validCategories = ['JUSTICE', 'HEALTH', 'LAND', 'INFRASTRUCTURE', 'SECURITY', 'SOCIAL', 'EDUCATION', 'OTHER'];
+            if (validCategories.includes(category)) {
+                whereClause.category = category as any;
+            } else {
+                // Fallback or ignore if invalid (safe default)
+                logger.warn(`Invalid category filter: ${filters.category}, ignoring.`);
+            }
         }
 
         if (filters?.startDate || filters?.endDate) {
