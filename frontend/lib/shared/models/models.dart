@@ -313,6 +313,7 @@ class DailyTrend {
 }
 
 class SubUnitPerformance {
+  final String unitId;
   final String unitName;
   final int totalCases;
   final double resolutionRate;
@@ -321,6 +322,7 @@ class SubUnitPerformance {
   final String status; // 'On Track', 'At Risk', 'Behind'
 
   SubUnitPerformance({
+    required this.unitId,
     required this.unitName,
     required this.totalCases,
     required this.resolutionRate,
@@ -331,6 +333,7 @@ class SubUnitPerformance {
 
   factory SubUnitPerformance.fromJson(Map<String, dynamic> json) {
     return SubUnitPerformance(
+      unitId: json['unitId'] ?? '',
       unitName: json['unitName'] ?? 'Unknown',
       totalCases: json['totalCases'] ?? 0,
       resolutionRate: (json['resolutionRate'] ?? 0).toDouble(),
