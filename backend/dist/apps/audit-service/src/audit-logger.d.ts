@@ -27,9 +27,9 @@ export declare function getAuditTrail(entityType: string, entityId: string, limi
     entityType: string;
     entityId: string;
     action: string;
+    performedBy: string | null;
     oldValue: import("@prisma/client/runtime/library").JsonValue | null;
     newValue: import("@prisma/client/runtime/library").JsonValue | null;
-    performedBy: string | null;
 })[]>;
 /**
  * Get all audits by a user
@@ -40,9 +40,9 @@ export declare function getAuditsByUser(userId: string, limit?: number): Promise
     entityType: string;
     entityId: string;
     action: string;
+    performedBy: string | null;
     oldValue: import("@prisma/client/runtime/library").JsonValue | null;
     newValue: import("@prisma/client/runtime/library").JsonValue | null;
-    performedBy: string | null;
 }[]>;
 /**
  * Get system-wide audit summary

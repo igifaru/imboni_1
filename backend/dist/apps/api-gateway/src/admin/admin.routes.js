@@ -359,7 +359,7 @@ router.get('/my-jurisdiction', jwt_middleware_1.authMiddleware, async (req, res)
             targetLevel: HIERARCHY[unit.level],
             children: children,
             districts: children, // Backward compatibility for DistrictCasesWidget
-            data: nodeData, // Raw data for nested counting (sectors etc)
+            hierarchyData: nodeData, // Raw data for nested counting (Renamed from 'data' to avoid ApiClient unwrap)
             assignment: { province: unit.name } // Backward compatibility
         });
     }

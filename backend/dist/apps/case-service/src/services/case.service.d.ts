@@ -44,16 +44,39 @@ export declare class CaseService {
      */
     getEscalationAlerts(leaderId: string): Promise<CaseResponseDto[]>;
     /**
-     * Get performance metrics for leader
+     * Get performance metrics for leader (Jurisdiction View)
      */
-    getPerformanceMetrics(leaderId: string): Promise<{
+    getPerformanceMetrics(leaderId: string, filters?: {
+        startDate?: Date;
+        endDate?: Date;
+        category?: string;
+        locationId?: string;
+    }): Promise<{
         totalCases: number;
         resolvedCases: number;
         pendingCases: number;
         escalatedCases: number;
         resolutionRate: number;
         avgResponseTimeHours: number;
+        escalationRate: number;
+        overdueCases: number;
         casesByCategory: Record<string, number>;
+        weeklyTrends: {
+            day: string;
+            date: string;
+            newCases: number;
+            resolvedCases: number;
+            activeCases: number;
+        }[];
+        subUnitBreakdown: {
+            unitId: string;
+            unitName: string;
+            totalCases: number;
+            resolutionRate: number;
+            avgResponseTimeHours: number;
+            escalationRate: number;
+            status: string;
+        }[];
     }>;
     /**
      * Transform entity to response DTO
