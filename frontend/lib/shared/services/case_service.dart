@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'api_client.dart';
 import '../models/models.dart';
 
@@ -108,8 +109,31 @@ class CaseService {
   }
 
   /// Get performance metrics (for leaders)
-  Future<ApiResponse<PerformanceMetrics>> getPerformanceMetrics() async {
-    final response = await apiClient.get('/api/cases/metrics');
+  Future<ApiResponse<PerformanceMetrics>> getPerformanceMetrics({
+    DateTimeRange? dateRange,
+    String? category,
+    String? location,
+  }) async {
+    final queryParams = <String, String>{};
+    
+    if (dateRange != null) {
+      queryParams['startDate'] = dateRange.start.toIso8601String();
+      queryParams['endDate'] = dateRange.end.toIso8601String();
+    }
+    
+    if (category != null && category != 'All Categories') {
+      queryParams['category'] = category;
+    }
+    
+    if (location != null && location != 'All Locations') {
+      queryParams['locationId'] = location;
+    }
+
+    final uri = Uri(path: '/api/cases/metrics', queryParameters: queryParams);
+    
+    // uri.toString() includes the query string properly encoded
+    final response = await apiClient.get(uri.toString());
+    
     if (response.isSuccess && response.data != null) {
       return ApiResponse.success(PerformanceMetrics.fromJson(response.data));
     }

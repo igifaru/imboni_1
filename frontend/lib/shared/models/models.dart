@@ -217,10 +217,13 @@ class PerformanceMetrics {
   final int resolvedCases;
   final int pendingCases;
   final int escalatedCases;
-  final int resolutionRate;
+  final double resolutionRate; // Changed to double for precision
   final double avgResponseTimeHours;
+  final double escalationRate; // New
+  final int overdueCases; // New
   final Map<String, int> casesByCategory;
   final List<DailyTrend> weeklyTrends;
+  final List<SubUnitPerformance> subUnitBreakdown; // New
 
   PerformanceMetrics({
     required this.totalCases,
@@ -229,8 +232,11 @@ class PerformanceMetrics {
     required this.escalatedCases,
     required this.resolutionRate,
     required this.avgResponseTimeHours,
+    required this.escalationRate,
+    required this.overdueCases,
     required this.casesByCategory,
     required this.weeklyTrends,
+    required this.subUnitBreakdown,
   });
 
   factory PerformanceMetrics.fromJson(Map<String, dynamic> json) {
@@ -240,16 +246,26 @@ class PerformanceMetrics {
         trends.add(DailyTrend.fromJson(v));
       });
     }
+
+    var breakdown = <SubUnitPerformance>[];
+    if (json['subUnitBreakdown'] != null) {
+      json['subUnitBreakdown'].forEach((v) {
+        breakdown.add(SubUnitPerformance.fromJson(v));
+      });
+    }
     
     return PerformanceMetrics(
       totalCases: json['totalCases'] ?? 0,
       resolvedCases: json['resolvedCases'] ?? 0,
       pendingCases: json['pendingCases'] ?? 0,
       escalatedCases: json['escalatedCases'] ?? 0,
-      resolutionRate: json['resolutionRate'] ?? 0,
+      resolutionRate: (json['resolutionRate'] ?? 0).toDouble(),
       avgResponseTimeHours: (json['avgResponseTimeHours'] ?? 0).toDouble(),
+      escalationRate: (json['escalationRate'] ?? 0).toDouble(),
+      overdueCases: json['overdueCases'] ?? 0,
       casesByCategory: Map<String, int>.from(json['casesByCategory'] ?? {}),
       weeklyTrends: trends,
+      subUnitBreakdown: breakdown,
     );
   }
 
@@ -261,8 +277,11 @@ class PerformanceMetrics {
       escalatedCases: 0,
       resolutionRate: 0,
       avgResponseTimeHours: 0,
+      escalationRate: 0,
+      overdueCases: 0,
       casesByCategory: {},
       weeklyTrends: [],
+      subUnitBreakdown: [],
     );
   }
 }
@@ -272,8 +291,15 @@ class DailyTrend {
   final String date;
   final int newCases;
   final int resolvedCases;
+  int activeCases; // Added activeCases
 
-  DailyTrend({required this.day, required this.date, required this.newCases, required this.resolvedCases});
+  DailyTrend({
+    required this.day, 
+    required this.date, 
+    required this.newCases, 
+    required this.resolvedCases,
+    this.activeCases = 0,
+  });
 
   factory DailyTrend.fromJson(Map<String, dynamic> json) {
     return DailyTrend(
@@ -281,6 +307,36 @@ class DailyTrend {
       date: json['date'] ?? '',
       newCases: json['newCases'] ?? 0,
       resolvedCases: json['resolvedCases'] ?? 0,
+      activeCases: json['activeCases'] ?? 0,
+    );
+  }
+}
+
+class SubUnitPerformance {
+  final String unitName;
+  final int totalCases;
+  final double resolutionRate;
+  final double avgResponseTimeHours;
+  final double escalationRate;
+  final String status; // 'On Track', 'At Risk', 'Behind'
+
+  SubUnitPerformance({
+    required this.unitName,
+    required this.totalCases,
+    required this.resolutionRate,
+    required this.avgResponseTimeHours,
+    required this.escalationRate,
+    required this.status,
+  });
+
+  factory SubUnitPerformance.fromJson(Map<String, dynamic> json) {
+    return SubUnitPerformance(
+      unitName: json['unitName'] ?? 'Unknown',
+      totalCases: json['totalCases'] ?? 0,
+      resolutionRate: (json['resolutionRate'] ?? 0).toDouble(),
+      avgResponseTimeHours: (json['avgResponseTimeHours'] ?? 0).toDouble(),
+      escalationRate: (json['escalationRate'] ?? 0).toDouble(),
+      status: json['status'] ?? 'On Track',
     );
   }
 }

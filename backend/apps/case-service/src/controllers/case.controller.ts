@@ -118,7 +118,15 @@ router.get('/escalation-alerts', async (req: Request, res: Response, next: NextF
 router.get('/metrics', async (req: Request, res: Response, next: NextFunction) => {
     try {
         const userId = (req as any).user?.userId;
-        const result = await caseService.getPerformanceMetrics(userId);
+
+        const filters = {
+            startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
+            endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined,
+            category: req.query.category as string,
+            locationId: req.query.locationId as string,
+        };
+
+        const result = await caseService.getPerformanceMetrics(userId, filters);
 
         res.json({
             success: true,

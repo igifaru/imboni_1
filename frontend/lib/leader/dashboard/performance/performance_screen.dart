@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart'; // Add fl_chart dependency
+import 'package:fl_chart/fl_chart.dart';
 import '../../../shared/theme/colors.dart';
 import '../../../shared/models/models.dart';
 import '../../../shared/services/case_service.dart';
@@ -16,6 +16,8 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
   DateTimeRange? _selectedDateRange;
   PerformanceMetrics? _metrics;
   bool _isLoading = true;
+  String _locationFilter = 'All Locations';
+  String _categoryFilter = 'All Categories';
 
   @override
   void initState() {
@@ -23,20 +25,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
     _loadMetrics();
   }
 
-  Future<void> _loadMetrics() async {
-    setState(() => _isLoading = true);
-    try {
-      final response = await caseService.getPerformanceMetrics();
-      if (mounted) {
-        setState(() {
-          _metrics = response.data;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -49,6 +38,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
 
     final metrics = _metrics ?? PerformanceMetrics.empty();
 
+    // NOTE: Using ListView ensures stable viewport constraints vs SingleChildScrollView
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
@@ -58,11 +48,6 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.calendar_month_outlined),
-            onPressed: _selectDateRange,
-            tooltip: 'Filter by Date',
-          ),
-          IconButton(
             icon: const Icon(Icons.download_outlined),
             onPressed: () {},
             tooltip: 'Export Report',
@@ -70,158 +55,166 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
           const SizedBox(width: 8),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (_selectedDateRange != null)
-              _buildDateFilterChip(theme),
-
-            // Top Key Metrics Row
-            LayoutBuilder(builder: (context, constraints) {
-              final width = constraints.maxWidth;
-              final isWide = width > 600;
-              return Wrap(
-                spacing: 16,
-                runSpacing: 16,
-                children: [
-                  SizedBox(
-                    width: isWide ? (width - 16) / 2 : width,
-                    child: _buildMetricCard(
-                      theme, 
-                      'Resolution Rate', 
-                      '${metrics.resolutionRate.toInt()}%', 
-                      metrics.resolutionRate >= 80 ? Icons.trending_up : Icons.trending_down,
-                      metrics.resolutionRate >= 80 ? ImboniColors.success : ImboniColors.warning,
-                      isDark
-                    )
-                  ),
-                  SizedBox(
-                    width: isWide ? (width - 16) / 2 : width,
-                    child: _buildMetricCard(
-                      theme, 
-                      'Avg Response Time', 
-                      '${metrics.avgResponseTimeHours}h', 
-                      Icons.timer_outlined,
-                      ImboniColors.info,
-                      isDark
-                    )
-                  ),
-                ],
-              );
-            }),
-
-            const SizedBox(height: 24),
-
-            // Charts Section
-            LayoutBuilder(builder: (context, constraints) {
-              final width = constraints.maxWidth;
-              final isWide = width > 900;
-              
-              return Flex(
-                direction: isWide ? Axis.horizontal : Axis.vertical,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Pie Chart: Cases by Category
-                  SizedBox(
-                    width: isWide ? (width * 0.4) : width,
-                    child: _buildCategoryChart(theme, metrics, isDark),
-                  ),
-                  if (isWide) const SizedBox(width: 24) else const SizedBox(height: 24),
+      body: ExcludeSemantics(
+        child: Builder(
+          builder: (context) {
+            final width = MediaQuery.of(context).size.width;
+            final isWide = width > 900;
+            
+            return ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                  Text('System-wide metrics and leader effectiveness.', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                  const SizedBox(height: 16),
                   
-                  // Bar Chart: Weekly Comparison (Mocked for visual)
-                  Expanded(
-                    flex: isWide ? 1 : 0,
-                    child: SizedBox(
-                      width: isWide ? null : width,
-                      child: _buildTrendsChart(theme, metrics, isDark),
+                  // Filters Row (Refined)
+                  Container(
+                    width: double.infinity,
+                    child: Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      alignment: WrapAlignment.start,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                       _buildFilterChip(
+                           theme, 
+                           'Time Range: ${_formatDateRange()}', 
+                           Icons.calendar_today, 
+                           true, 
+                           null, 
+                           onTapDown: (details) => _showDateFilterMenu(context, details)
+                       ),
+                       _buildFilterChip(theme, 'Location: $_locationFilter', Icons.place_outlined, false, () {}),
+                       _buildFilterChip(theme, 'Category: $_categoryFilter', Icons.category_outlined, false, () {}),
+                       if (_isLoading)
+                          const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                    ],
                     ),
                   ),
-                ],
-              );
-            }),
-            
-             const SizedBox(height: 24),
-             _buildDetailedStatsTable(theme, metrics, isDark),
-          ],
+                  const SizedBox(height: 24),
+
+                  // Top Key Metrics Grid
+                  _buildMetricsGrid(theme, width, metrics, isDark),
+
+                  const SizedBox(height: 24),
+
+                  // Charts Section
+                  _buildChartsSection(theme, width, isWide, metrics, isDark),
+                  
+                   const SizedBox(height: 24),
+                   _buildRegionalBreakdownTable(theme, metrics, isDark),
+              ],
+            );
+          }
         ),
       ),
     );
   }
 
-  Widget _buildDateFilterChip(ThemeData theme) {
-    return Padding(
-       padding: const EdgeInsets.only(bottom: 16),
-       child: FilterChip(
-         label: Text(
-           '${_formatDate(_selectedDateRange!.start)} - ${_formatDate(_selectedDateRange!.end)}',
-           style: TextStyle(color: theme.colorScheme.primary),
-         ),
-         onSelected: (_) => setState(() => _selectedDateRange = null),
-         selected: true,
-         showCheckmark: false,
-         avatar: Icon(Icons.close, size: 16, color: theme.colorScheme.primary),
-         backgroundColor: theme.colorScheme.primaryContainer.withAlpha(50),
-         selectedColor: theme.colorScheme.primaryContainer.withAlpha(50),
-         shape: RoundedRectangleBorder(
-           borderRadius: BorderRadius.circular(20),
-           side: BorderSide(color: theme.colorScheme.primary.withAlpha(50)),
-         ),
-       ),
+  Widget _buildFilterChip(ThemeData theme, String label, IconData icon, bool isSelected, VoidCallback? onTap, {Function(TapDownDetails)? onTapDown}) {
+      final isDark = theme.brightness == Brightness.dark;
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          onTapDown: onTapDown,
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: isSelected ? ImboniColors.primary.withAlpha(isDark ? 50 : 20) : Colors.transparent,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isSelected ? ImboniColors.primary : theme.dividerColor,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 16, color: isSelected ? ImboniColors.primary : theme.colorScheme.onSurfaceVariant),
+                const SizedBox(width: 8),
+                Text(
+                  label, 
+                  style: TextStyle(
+                    color: isSelected ? ImboniColors.primary : theme.colorScheme.onSurface,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    fontSize: 13,
+                  )
+                ),
+                const SizedBox(width: 4),
+                Icon(Icons.arrow_drop_down, size: 16, color: isSelected ? ImboniColors.primary : theme.colorScheme.onSurfaceVariant),
+              ],
+            ),
+          ),
+        ),
+      );
+  }
+
+  Widget _buildMetricsGrid(ThemeData theme, double width, PerformanceMetrics metrics, bool isDark) {
+    if (width < 600) {
+        return Column(
+            children: [
+                _buildMetricCard(theme, 'Resolution Rate', '${metrics.resolutionRate.toInt()}%', 'Target: 85%', Icons.check_circle_outline, ImboniColors.success, isDark),
+                const SizedBox(height: 16),
+                _buildMetricCard(theme, 'Avg Response Time', '${metrics.avgResponseTimeHours}h', 'Target: < 4h', Icons.timer_outlined, ImboniColors.info, isDark),
+                const SizedBox(height: 16),
+                _buildMetricCard(theme, 'Escalation Rate', '${metrics.escalationRate}%', 'Cases failing local resolution', Icons.arrow_upward_rounded, ImboniColors.warning, isDark),
+                const SizedBox(height: 16),
+                _buildMetricCard(theme, 'Overdue Cases', '${metrics.overdueCases}', 'Exceeded SLA deadline', Icons.notification_important_outlined, ImboniColors.error, isDark),
+            ],
+        );
+    }
+
+    return Row(
+      children: [
+        Expanded(child: _buildMetricCard(theme, 'Resolution Rate', '${metrics.resolutionRate.toInt()}%', 'Target: 85%', Icons.check_circle_outline, ImboniColors.success, isDark)),
+        const SizedBox(width: 16),
+        Expanded(child: _buildMetricCard(theme, 'Avg Response', '${metrics.avgResponseTimeHours}h', 'Target: < 4h', Icons.timer_outlined, ImboniColors.info, isDark)),
+        const SizedBox(width: 16),
+        Expanded(child: _buildMetricCard(theme, 'Escalation Rate', '${metrics.escalationRate}%', 'Failing resolution', Icons.arrow_upward_rounded, ImboniColors.warning, isDark)),
+        const SizedBox(width: 16),
+        Expanded(child: _buildMetricCard(theme, 'Overdue Cases', '${metrics.overdueCases}', 'Exceeded SLA', Icons.notification_important_outlined, ImboniColors.error, isDark)),
+      ],
     );
   }
 
-  Widget _buildMetricCard(ThemeData theme, String title, String value, IconData icon, Color color, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(isDark ? 50 : 5),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          )
-        ],
-        border: Border.all(color: theme.dividerColor.withAlpha(isDark ? 20 : 50)),
-      ),
-      child: Row(
+  Widget _buildChartsSection(ThemeData theme, double width, bool isWide, PerformanceMetrics metrics, bool isDark) {
+    if (isWide) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withAlpha(30),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: color, size: 28),
+          Expanded(
+            flex: 2,
+            child: _buildTrendsChart(theme, metrics, isDark),
           ),
-          const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title, 
-                style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)
-              ),
-              const SizedBox(height: 4),
-              Text(
-                value, 
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.onSurface
-                )
-              ),
-            ],
-          )
+          const SizedBox(width: 24),
+          Expanded(
+             flex: 1,
+             child: _buildCategoryChart(theme, metrics, isDark),
+          ),
         ],
-      ),
-    );
+      );
+    } else {
+      return Column(
+        children: [
+          SizedBox(
+            width: width,
+            child: _buildTrendsChart(theme, metrics, isDark),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: width,
+            child: _buildCategoryChart(theme, metrics, isDark),
+          ),
+        ],
+      );
+    }
   }
 
   Widget _buildCategoryChart(ThemeData theme, PerformanceMetrics m, bool isDark) {
-    if (m.totalCases == 0) return const SizedBox();
+    if (m.totalCases == 0 || m.casesByCategory.isEmpty) {
+        return _buildEmptyChart(theme, 'No category data available', isDark);
+    }
 
     final categoryColors = {
       'Infrastructure': ImboniColors.categoryInfrastructure,
@@ -241,25 +234,35 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Cases by Category', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+               Text('Cases by Category', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+               Icon(Icons.pie_chart_outline, size: 20, color: theme.colorScheme.onSurfaceVariant),
+            ],
+          ),
           const SizedBox(height: 24),
           SizedBox(
             height: 200,
-            child: PieChart(
-              PieChartData(
-                sectionsSpace: 2,
-                centerSpaceRadius: 40,
-                sections: m.casesByCategory.entries.map((e) {
-                  final color = categoryColors[e.key] ?? ImboniColors.categoryOther;
-                  final value = e.value.toDouble();
-                  return PieChartSectionData(
-                    color: color,
-                    value: value,
-                    title: '${(value / m.totalCases * 100).round()}%',
-                    radius: 50,
-                    titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
-                  );
-                }).toList(),
+            child: ExcludeSemantics( // SAFE MODE: Prevent engine crash
+              child: PieChart(
+                PieChartData(
+                  sectionsSpace: 2,
+                  centerSpaceRadius: 40,
+                  pieTouchData: PieTouchData(enabled: false), // SAFE MODE: No touch
+                  sections: m.casesByCategory.entries.map((e) {
+                    final color = categoryColors[e.key] ?? ImboniColors.categoryOther;
+                    final value = e.value.toDouble();
+                    return PieChartSectionData(
+                      color: color,
+                      value: value,
+                      title: '${(value / m.totalCases * 100).round()}%',
+                      radius: 50,
+                      titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                    );
+                  }).toList(),
+                ),
+                swapAnimationDuration: Duration.zero, // SAFE MODE: No animation
               ),
             ),
           ),
@@ -275,6 +278,8 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                   Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
                   const SizedBox(width: 6),
                   Text(e.key, style: theme.textTheme.bodySmall),
+                  const SizedBox(width: 4),
+                  Text('(${e.value})', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
                 ],
               );
             }).toList(),
@@ -285,13 +290,12 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
   }
 
   Widget _buildTrendsChart(ThemeData theme, PerformanceMetrics m, bool isDark) {
-    if (m.weeklyTrends.isEmpty) {
-        return const Center(child: Text("No trend data available"));
+    if (m.weeklyTrends.isEmpty || m.weeklyTrends.every((t) => t.newCases == 0 && t.resolvedCases == 0)) {
+        return _buildEmptyChart(theme, 'No activity in last 7 days', isDark);
     }
 
-    // Calculate trend percentage (vs previous period would require more data, but we can just show total new cases for week)
-    final totalNewLastWeek = m.weeklyTrends.fold(0, (sum, item) => sum + item.newCases);
-    
+    final trendData = m.weeklyTrends;
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -305,38 +309,48 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Activity Trends (Last 7 Days)', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Weekly Performance', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                  Text('New vs Resolved cases', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                ],
+              ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(color: ImboniColors.primary.withAlpha(20), borderRadius: BorderRadius.circular(8)),
-                child: Text('$totalNewLastWeek New Cases', style: const TextStyle(color: ImboniColors.primary, fontSize: 10, fontWeight: FontWeight.bold)),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(color: theme.colorScheme.primary.withAlpha(10), borderRadius: BorderRadius.circular(8)),
+                child: Text('${m.totalCases} Total', style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.bold, fontSize: 12)),
               )
             ],
           ),
           const SizedBox(height: 24),
           SizedBox(
-            height: 200,
-            child: BarChart(
-              BarChartData(
-                gridData: FlGridData(show: false),
-                titlesData: FlTitlesData(
-                  leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 30, getTitlesWidget: (v, m) => Text(v.toInt().toString(), style: const TextStyle(fontSize: 10)))),
-                  bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, getTitlesWidget: (v, meta) {
-                    if (v.toInt() >= 0 && v.toInt() < m.weeklyTrends.length) {
-                        return Padding(
-                            padding: const EdgeInsets.only(top: 8.0),
-                            child: Text(m.weeklyTrends[v.toInt()].day, style: const TextStyle(fontSize: 10)),
-                        );
-                    }
-                    return const Text('');
-                  })),
-                  topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            height: 250,
+            child: ExcludeSemantics( // SAFE MODE
+              child: BarChart(
+                BarChartData(
+                  gridData: FlGridData(show: true, drawVerticalLine: false, horizontalInterval: 1),
+                  barTouchData: BarTouchData(enabled: false), // SAFE MODE
+                  titlesData: FlTitlesData(
+                    leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 30, interval: 1, getTitlesWidget: (v, m) => Text(v.toInt().toString(), style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant)))),
+                    bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, getTitlesWidget: (v, meta) {
+                      if (v.toInt() >= 0 && v.toInt() < trendData.length) {
+                          return Padding(
+                              padding: const EdgeInsets.only(top: 8.0),
+                              child: Text(trendData[v.toInt()].day, style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant)),
+                          );
+                      }
+                      return const Text('');
+                    })),
+                    topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  ),
+                  borderData: FlBorderData(show: false),
+                  barGroups: trendData.asMap().entries.map((entry) {
+                      return _makeBarGroup(entry.key, entry.value.newCases.toDouble(), entry.value.resolvedCases.toDouble(), isDark);
+                  }).toList(),
                 ),
-                borderData: FlBorderData(show: false),
-                barGroups: m.weeklyTrends.asMap().entries.map((entry) {
-                    return _makeBarGroup(entry.key, entry.value.newCases.toDouble(), entry.value.resolvedCases.toDouble(), isDark);
-                }).toList(),
+                swapAnimationDuration: Duration.zero, // SAFE MODE
               ),
             ),
           ),
@@ -344,7 +358,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
            Row(
              mainAxisAlignment: MainAxisAlignment.center,
              children: [
-               _buildLegendItem('New', isDark ? Colors.white30 : Colors.grey.shade300),
+               _buildLegendItem('New Cases', isDark ? Colors.white30 : Colors.grey.shade400),
                const SizedBox(width: 16),
                _buildLegendItem('Resolved', ImboniColors.primary),
              ],
@@ -353,22 +367,108 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
       ),
     );
   }
-
-  BarChartGroupData _makeBarGroup(int x, double total, double resolved, bool isDark) {
-    return BarChartGroupData(
-      x: x,
-      barRods: [
-        BarChartRodData(
-          toY: total,
-          color: isDark ? Colors.white30 : Colors.grey.shade300,
-          width: 12,
-          borderRadius: BorderRadius.circular(4),
-          rodStackItems: [
-             BarChartRodStackItem(0, resolved, ImboniColors.primary),
-          ],
-        ),
-      ],
+  
+  Widget _buildRegionalBreakdownTable(ThemeData theme, PerformanceMetrics m, bool isDark) {
+    return Container(
+       decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.dividerColor.withAlpha(isDark ? 20 : 50)),
+       ),
+       child: Column(
+         crossAxisAlignment: CrossAxisAlignment.start,
+         children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text('Detailed Regional Breakdown', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            ),
+            const Divider(height: 1),
+            // Header
+            Padding(
+               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+               child: Row(
+                 children: [
+                    Expanded(flex: 3, child: Text('Region', style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold))),
+                    Expanded(flex: 2, child: Text('Total Cases', style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold))),
+                    Expanded(flex: 2, child: Text('Res. Rate', style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold))),
+                    Expanded(flex: 2, child: Text('Avg Time', style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold))),
+                    Expanded(flex: 2, child: Text('Status', style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold))),
+                 ],
+               ),
+            ),
+            const Divider(height: 1),
+            if (m.subUnitBreakdown.isEmpty)
+                Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Center(child: Text('No breakdown data available', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant))),
+                )
+            else
+                Column(
+                  children: List.generate(m.subUnitBreakdown.length, (index) {
+                      final unit = m.subUnitBreakdown[index];
+                      return Column(
+                        children: [
+                          if (index > 0) const Divider(height: 1),
+                          Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              child: Row(
+                                  children: [
+                                      Expanded(flex: 3, child: Text(unit.unitName, style: theme.textTheme.bodyMedium)),
+                                      Expanded(flex: 2, child: Text('${unit.totalCases}', style: theme.textTheme.bodyMedium)),
+                                      Expanded(flex: 2, child: _buildProgressBar(theme, unit.resolutionRate)),
+                                      Expanded(flex: 2, child: Text('${unit.avgResponseTimeHours}h', style: theme.textTheme.bodyMedium)),
+                                      Expanded(flex: 2, child: _buildStatusBadge(theme, unit.status)),
+                                  ],
+                              ),
+                          ),
+                        ],
+                      );
+                  }),
+                ),
+         ],
+       ),
     );
+  }
+
+  Widget _buildProgressBar(ThemeData theme, double percent) {
+      return Row(
+          children: [
+              Expanded(
+                  child: ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: ExcludeSemantics(
+                        child: LinearProgressIndicator(
+                            value: percent / 100,
+                            backgroundColor: theme.dividerColor.withAlpha(50),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                                percent >= 80 ? ImboniColors.success : (percent >= 50 ? ImboniColors.warning : ImboniColors.error)
+                            ),
+                            minHeight: 6,
+                        ),
+                      ),
+                  )
+              ),
+              const SizedBox(width: 8),
+              Text('${percent.toInt()}%', style: const TextStyle(fontSize: 10)),
+          ],
+      );
+  }
+
+  Widget _buildStatusBadge(ThemeData theme, String status) {
+      Color color;
+      switch (status) {
+          case 'On Track': color = ImboniColors.success; break;
+          case 'At Risk': color = ImboniColors.warning; break;
+          default: color = ImboniColors.error; break;
+      }
+      return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          decoration: BoxDecoration(
+              color: color.withAlpha(20),
+              borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(status, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+      );
   }
   
   Widget _buildLegendItem(String label, Color color) {
@@ -381,57 +481,214 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
     );
   }
 
-  Widget _buildDetailedStatsTable(ThemeData theme, PerformanceMetrics m, bool isDark) {
-     return Container(
-       decoration: BoxDecoration(
+  Widget _buildMetricCard(ThemeData theme, String title, String value, String subtext, IconData icon, Color color, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(isDark ? 50 : 5),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
+        ],
         border: Border.all(color: theme.dividerColor.withAlpha(isDark ? 20 : 50)),
-       ),
-       child: Column(
-         children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(children: [
-                 Text('Detailed Breakdown', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-              ]),
-            ),
-            const Divider(height: 1),
-            _buildStatRow(theme, 'Total Cases', '${m.totalCases}'),
-            _buildStatRow(theme, 'Resolved Cases', '${(m.totalCases * m.resolutionRate / 100).round()}'),
-            _buildStatRow(theme, 'Pending', '${m.pendingCases}'),
-            _buildStatRow(theme, 'Escalated', '${m.escalatedCases}'),
-         ],
-       ),
-     );
-  }
-
-  Widget _buildStatRow(ThemeData theme, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: theme.textTheme.bodyMedium),
-          Text(value, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+               Expanded(child: Text(title, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.onSurfaceVariant), overflow: TextOverflow.ellipsis)),
+               Container(
+                 padding: const EdgeInsets.all(8),
+                 decoration: BoxDecoration(color: color.withAlpha(20), borderRadius: BorderRadius.circular(8)),
+                 child: Icon(icon, color: color, size: 20),
+               )
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(value, style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold, color: color)),
+          const SizedBox(height: 8),
+          Text(subtext, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
         ],
       ),
     );
   }
 
-  Future<void> _selectDateRange() async {
-    final picked = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2023),
-      lastDate: DateTime.now(),
-      initialDateRange: _selectedDateRange,
+  Widget _buildEmptyChart(ThemeData theme, String message, bool isDark) {
+      return Center(
+          child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                  Icon(Icons.bar_chart, size: 48, color: theme.disabledColor.withAlpha(50)),
+                  const SizedBox(height: 16),
+                  Text(message, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+              ],
+          ),
+      );
+  }
+
+  BarChartGroupData _makeBarGroup(int x, double total, double resolved, bool isDark) {
+    return BarChartGroupData(
+      x: x,
+      barsSpace: 4,
+      barRods: [
+        BarChartRodData(
+          toY: total,
+          color: isDark ? Colors.white30 : Colors.grey.shade400,
+          width: 8,
+          borderRadius: BorderRadius.circular(2),
+        ),
+        BarChartRodData(
+          toY: resolved,
+          color: ImboniColors.primary,
+          width: 8,
+          borderRadius: BorderRadius.circular(2),
+        ),
+      ],
     );
-    if (picked != null) {
-      setState(() => _selectedDateRange = picked);
+  }
+  
+  Future<void> _loadMetrics() async {
+    setState(() => _isLoading = true);
+    try {
+      final response = await caseService.getPerformanceMetrics(
+        dateRange: _selectedDateRange,
+        category: _categoryFilter,
+        location: _locationFilter
+      );
+      if (mounted) {
+        setState(() {
+          _metrics = response.data;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}';
+  void _onFilterChanged() {
+      _loadMetrics();
+  }
+
+  Future<void> _showDateFilterMenu(BuildContext context, TapDownDetails details) async {
+      final position = RelativeRect.fromLTRB(
+        details.globalPosition.dx,
+        details.globalPosition.dy + 30, // Show slightly below
+        details.globalPosition.dx + 200,
+        details.globalPosition.dy + 300,
+      );
+
+      final result = await showMenu<String>(
+        context: context,
+        position: position,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        items: [
+           PopupMenuItem(value: '7', child: Text('Last 7 Days')),
+           PopupMenuItem(value: '30', child: Text('Last 30 Days')),
+           PopupMenuItem(value: '90', child: Text('Last 90 Days')),
+           PopupMenuItem(value: 'custom', child: Row(children: [Icon(Icons.calendar_today, size: 16), SizedBox(width: 8), Text('Custom Range')])),
+        ]
+      );
+
+      if (result == null) return;
+
+      if (result == 'custom') {
+          _selectDateRange();
+      } else {
+          final days = int.parse(result);
+          final now = DateTime.now();
+          setState(() {
+              _selectedDateRange = DateTimeRange(
+                  start: now.subtract(Duration(days: days)),
+                  end: now
+              );
+          });
+          _loadMetrics();
+      }
+  }
+
+  Future<void> _selectDateRange() async {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    // Figma-matched dark color vs Clean White for Light mode
+    final dialogBg = isDark ? const Color(0xFF1E2128) : Colors.white;
+    final onBg = isDark ? Colors.white : Colors.black;
+    final calendarSurface = isDark ? const Color(0xFF1E2128) : Colors.white;
+    
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2000), // Allow going back much further
+      lastDate: DateTime.now(),
+      initialDateRange: _selectedDateRange,
+      saveText: 'Emeza',
+      cancelText: 'Reka',
+      helpText: 'Hitamo Itariki',
+      barrierColor: Colors.black54,
+      initialEntryMode: DatePickerEntryMode.calendarOnly,
+      builder: (context, child) {
+          return Center( 
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 900, maxHeight: 600), // Restore Dual-Month View
+              child: Theme(
+                data: theme.copyWith(
+                  iconTheme: IconThemeData(color: onBg, size: 24), // Keep visible icons
+                  platform: TargetPlatform.android, // Keep arrow navigation
+                  colorScheme: theme.colorScheme.copyWith(
+                    primary: ImboniColors.primary,
+                    onPrimary: Colors.white,
+                    surface: calendarSurface,
+                    onSurface: onBg,
+                    secondary: ImboniColors.primary,
+                  ),
+                  scaffoldBackgroundColor: dialogBg,
+                  dialogBackgroundColor: dialogBg,
+                  datePickerTheme: DatePickerThemeData(
+                    backgroundColor: dialogBg,
+                    headerBackgroundColor: dialogBg,
+                    headerForegroundColor: onBg,
+                    surfaceTintColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                    rangeSelectionBackgroundColor: ImboniColors.primary.withOpacity(0.2),
+                    rangePickerBackgroundColor: dialogBg,
+                    rangePickerHeaderBackgroundColor: dialogBg,
+                    rangePickerHeaderForegroundColor: onBg,
+                    rangePickerSurfaceTintColor: Colors.transparent,
+                    dayStyle: TextStyle(color: onBg),
+                    weekdayStyle: TextStyle(color: onBg.withOpacity(0.7)),
+                    yearStyle: TextStyle(color: onBg),
+                    dayOverlayColor:  MaterialStateProperty.all(ImboniColors.primary.withOpacity(0.1)),
+                    headerHeadlineStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: onBg), // Reduce massive header text
+                  ),
+                  textButtonTheme: TextButtonThemeData(
+                    style: TextButton.styleFrom(
+                      foregroundColor: onBg, 
+                    )
+                  ),
+                ),
+                child: child!,
+              ),
+            ),
+          );
+      }
+    );
+    if (picked != null) {
+      setState(() { 
+          _selectedDateRange = picked;
+      });
+      _loadMetrics();
+    }
+  }
+
+  String _formatDateRange() {
+      if (_selectedDateRange == null) return 'Last 30 Days';
+      return '${_selectedDateRange!.start.day}/${_selectedDateRange!.start.month} - ${_selectedDateRange!.end.day}/${_selectedDateRange!.end.month}';
   }
 }
