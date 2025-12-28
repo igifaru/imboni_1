@@ -7,6 +7,8 @@ import '../../shared/widgets/rwanda_map/rwanda_map.dart';
 import '../../shared/widgets/dashboard/stat_card.dart';
 import '../../shared/widgets/dashboard/status_chips.dart';
 import '../../shared/widgets/forms/register_leader_form.dart';
+import '../users/user_management_screen.dart';
+import 'widgets/province_cases_widget.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   final VoidCallback onLogout;
@@ -28,7 +30,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     // Screens for each navigation item
     final screens = [
       const _AdminHome(),
-      const RegisterLeaderForm(),
+      const UserManagementScreen(),
+      const RegisterLeaderForm(), // Index 2
     ];
 
     return isDesktop ? _buildDesktop(theme, screens) : _buildMobile(theme, screens);
@@ -54,6 +57,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             icon: Icon(Icons.dashboard_outlined),
             selectedIcon: Icon(Icons.dashboard),
             label: 'Home',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.people_outline),
+            selectedIcon: Icon(Icons.people),
+            label: 'Users',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_add_outlined),
@@ -105,7 +113,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 ),
                 const SizedBox(height: 16),
                 _buildNavItem(theme, Icons.dashboard_outlined, 'Dashboard', 0),
-                _buildNavItem(theme, Icons.person_add_outlined, 'Register Leader', 1),
+                _buildNavItem(theme, Icons.people_outline, 'User Management', 1),
+                _buildNavItem(theme, Icons.person_add_outlined, 'Register Leader', 2),
                 const Spacer(), // Pushes logout to bottom
                 const Divider(),
                 ListTile(
@@ -134,7 +143,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   child: Row(
                     children: [
                       Text(
-                        _currentIndex == 0 ? 'Dashboard' : 'Register Leader',
+                        _currentIndex == 0 ? 'Dashboard' : 
+                        _currentIndex == 1 ? 'User Management' : 'Register Leader',
                         style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const Spacer(),
@@ -265,15 +275,23 @@ class _AdminHomeState extends State<_AdminHome> {
                   const SizedBox(height: 32),
                   if (isDesktop)
                     Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      // Left: Rwanda Map
                       Expanded(
-                        flex: 3,
+                        flex: 5,
                         child: RwandaMapWidget(
                           casesByDistrict: _casesByDistrict,
                           onDistrictSelected: (d) => debugPrint('Selected District: $d'),
                         ),
                       ),
                       const SizedBox(width: 24),
-                      Expanded(flex: 4, child: _buildSearchAndTable(theme, isDark)),
+                      // Right: Province Cases Stats
+                      Expanded(
+                        flex: 3,
+                        child: ProvinceCasesWidget(
+                          cases: _assignedCases,
+                          isLoading: _isLoading,
+                        ),
+                      ),
                     ])
                   else ...[
                     RwandaMapWidget(
@@ -281,11 +299,14 @@ class _AdminHomeState extends State<_AdminHome> {
                       onDistrictSelected: (d) => debugPrint('Selected District: $d'),
                     ),
                     const SizedBox(height: 24),
-                    _buildSearchAndTable(theme, isDark),
+                    ProvinceCasesWidget(cases: _assignedCases, isLoading: _isLoading),
                   ],
+                  const SizedBox(height: 32),
+                  // Case search and table below
+                  _buildSearchAndTable(theme, isDark),
                 ]),
               ),
-      ),
+            ),
     );
   }
 
@@ -294,7 +315,27 @@ class _AdminHomeState extends State<_AdminHome> {
       backgroundColor: theme.scaffoldBackgroundColor,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
-      title: Text('Dashboard Overview', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+      title: SizedBox(
+        height: 44,
+        child: TextField(
+          onChanged: (v) => setState(() => _searchQuery = v),
+          decoration: InputDecoration(
+            hintText: 'Search cases...',
+            prefixIcon: const Icon(Icons.search),
+            filled: true,
+            fillColor: theme.cardColor,
+            contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: theme.dividerColor),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: theme.dividerColor),
+            ),
+          ),
+        ),
+      ),
       actions: [
         IconButton(icon: Icon(Icons.refresh, color: theme.colorScheme.onSurface), onPressed: _loadDashboardData),
       ],
@@ -316,18 +357,6 @@ class _AdminHomeState extends State<_AdminHome> {
     return Container(
       decoration: BoxDecoration(color: theme.cardColor, borderRadius: BorderRadius.circular(16), border: Border.all(color: theme.dividerColor)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: TextField(
-            onChanged: (v) => setState(() => _searchQuery = v),
-            decoration: InputDecoration(
-              hintText: 'Search cases...',
-              prefixIcon: const Icon(Icons.search),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          ),
-        ),
-        const Divider(height: 1),
         _buildDataTable(theme, isDark),
       ]),
     );
