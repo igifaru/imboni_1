@@ -16,15 +16,16 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _jurisdictionController = TextEditingController();
   
-  String? _selectedLevel;
-  final List<Map<String, String>> _levels = [
-    {'value': 'PROVINCE', 'label': 'Province (Intara)'},
-    {'value': 'DISTRICT', 'label': 'District (Akarere)'},
-    {'value': 'SECTOR', 'label': 'Sector (Umurenge)'},
-    {'value': 'CELL', 'label': 'Cell (Akagari)'},
-    {'value': 'VILLAGE', 'label': 'Village (Umudugudu)'},
+  String? _selectedProvince;
+  
+  /// Rwanda's 5 Provinces with Kinyarwanda names
+  final List<Map<String, String>> _provinces = [
+    {'code': 'Kigali', 'name': 'Kigali'},
+    {'code': 'Amajyaruguru', 'name': 'Amajyaruguru (Northern Province)'},
+    {'code': 'Amajyepfo', 'name': 'Amajyepfo (Southern Province)'},
+    {'code': 'Iburasirazuba', 'name': 'Iburasirazuba (Eastern Province)'},
+    {'code': 'Iburengerazuba', 'name': 'Iburengerazuba (Western Province)'},
   ];
   
   bool _isLoading = false;
@@ -38,8 +39,8 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
       name: _nameController.text.trim(),
       email: _emailController.text.trim(),
       password: _passwordController.text,
-      level: _selectedLevel!,
-      jurisdictionName: _jurisdictionController.text.trim(),
+      level: 'PROVINCE', // Admin only registers at province level
+      jurisdictionName: _selectedProvince!,
     );
 
     if (mounted) {
@@ -52,8 +53,7 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
         _nameController.clear();
         _emailController.clear();
         _passwordController.clear();
-        _jurisdictionController.clear();
-        setState(() => _selectedLevel = null);
+        setState(() => _selectedProvince = null);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(adminService.error ?? 'Registration failed'), backgroundColor: Colors.red),
@@ -67,7 +67,6 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
-    _jurisdictionController.dispose();
     super.dispose();
   }
 
@@ -76,19 +75,15 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
     final theme = Theme.of(context);
     final isDesktop = Responsive.isDesktop(context);
 
-    // If desktop, use a contained width or padding. If mobile, full width.
-    // The previous implementation used padding 40 for desktop, 20 for mobile.
-    
     return SingleChildScrollView(
       padding: EdgeInsets.all(isDesktop ? 40 : 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header styles adapted from both implementations
-          Text('Register New Leader', style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold)),
+          Text('Register Province Leader', style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Text(
-            'Register a subordinate leader for a specific administrative unit.',
+            'Register a leader for a province (Intara) administrative unit.',
             style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
           const SizedBox(height: 32),
@@ -126,31 +121,23 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
                 ),
                 const SizedBox(height: 16),
 
+                // Province Dropdown
                 DropdownButtonFormField<String>(
-                  value: _selectedLevel,
-                   items: _levels.map((l) => DropdownMenuItem(
-                    value: l['value'],
-                    child: Text(l['label']!),
+                  initialValue: _selectedProvince,
+                  items: _provinces.map((p) => DropdownMenuItem(
+                    value: p['code'],
+                    child: Text(p['name']!),
                   )).toList(),
-                  onChanged: (v) => setState(() => _selectedLevel = v),
+                  onChanged: (v) => setState(() => _selectedProvince = v),
                   decoration: InputDecoration(
-                    labelText: 'Administrative Level',
-                    prefixIcon: const Icon(Icons.layers),
+                    labelText: 'Province (Intara)',
+                    prefixIcon: const Icon(Icons.map),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                     filled: true,
                     fillColor: theme.cardColor,
                   ),
-                  validator: (v) => v == null ? 'Required' : null,
+                  validator: (v) => v == null ? 'Please select a province' : null,
                   dropdownColor: theme.cardColor,
-                ),
-                const SizedBox(height: 16),
-
-                _buildTextField(
-                  label: 'Jurisdiction Name (e.g. Kigali, Gasabo)',
-                  controller: _jurisdictionController,
-                  icon: Icons.location_city,
-                  validator: (v) => v?.isEmpty == true ? 'Required' : null,
-                  theme: theme,
                 ),
                 const SizedBox(height: 32),
 
