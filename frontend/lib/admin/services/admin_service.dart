@@ -2,6 +2,32 @@ import 'package:flutter/foundation.dart';
 import '../../shared/services/api_client.dart';
 import '../../shared/models/models.dart';
 
+class PaginatedResponse<T> {
+  final List<T> data;
+  final int total;
+  final int page;
+  final int limit;
+  final int totalPages;
+
+  PaginatedResponse({
+    required this.data,
+    required this.total,
+    required this.page,
+    required this.limit,
+    required this.totalPages,
+  });
+
+  factory PaginatedResponse.fromJson(Map<String, dynamic> json, T Function(dynamic) fromJson) {
+    return PaginatedResponse(
+      data: (json['data'] as List).map(fromJson).toList(),
+      total: json['meta']?['total'] ?? 0,
+      page: json['meta']?['page'] ?? 1,
+      limit: json['meta']?['limit'] ?? 50,
+      totalPages: json['meta']?['pages'] ?? 1,
+    );
+  }
+}
+
 class AdminService extends ChangeNotifier {
   ApiClient get _apiClient => apiClient;
   bool _isLoading = false;
@@ -11,12 +37,12 @@ class AdminService extends ChangeNotifier {
   String? get error => _error;
 
   /// Get users with optional filters
-  Future<List<UserModel>> getUsers({
+  Future<PaginatedResponse<UserModel>> getUsers({
     String? role,
     String? status,
     String? query,
     int page = 1,
-    int limit = 50,
+    int limit = 10, // Match design (10 per page)
   }) async {
     _isLoading = true;
     _error = null;
@@ -34,28 +60,25 @@ class AdminService extends ChangeNotifier {
       final response = await _apiClient.get('/admin/users', queryParameters: queryParams);
 
       if (response.isSuccess && response.data != null) {
-        List data;
-        if (response.data is List) {
-           data = response.data;
-        } else {
-           data = response.data['data'] ?? [];
-        }
+        final paginated = PaginatedResponse<UserModel>.fromJson(
+          response.data, 
+          (json) => UserModel.fromJson(json),
+        );
         
-        final users = data.map((e) => UserModel.fromJson(e)).toList();
         _isLoading = false;
         notifyListeners();
-        return users;
+        return paginated;
       } else {
         _error = response.error ?? 'Failed to load users';
         _isLoading = false;
         notifyListeners();
-        return [];
+        return PaginatedResponse(data: [], total: 0, page: 1, limit: limit, totalPages: 0);
       }
     } catch (e) {
       _error = e.toString();
       _isLoading = false;
       notifyListeners();
-      return [];
+      return PaginatedResponse(data: [], total: 0, page: 1, limit: limit, totalPages: 0);
     }
   }
 
