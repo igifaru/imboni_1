@@ -24,9 +24,10 @@ class ApiClient {
     if (_authToken != null) 'Authorization': 'Bearer $_authToken',
   };
 
-  Future<ApiResponse<T>> get<T>(String endpoint, {T Function(dynamic)? fromJson}) async {
+  Future<ApiResponse<T>> get<T>(String endpoint, {Map<String, dynamic>? queryParameters, T Function(dynamic)? fromJson}) async {
     try {
-      final response = await _client.get(Uri.parse('$_baseUrl$endpoint'), headers: _headers).timeout(const Duration(seconds: 15));
+      final uri = Uri.parse('$_baseUrl$endpoint').replace(queryParameters: queryParameters);
+      final response = await _client.get(uri, headers: _headers).timeout(const Duration(seconds: 15));
       return _handleResponse(response, fromJson: fromJson);
     } catch (e) {
       return ApiResponse.error('Network error: $e');
