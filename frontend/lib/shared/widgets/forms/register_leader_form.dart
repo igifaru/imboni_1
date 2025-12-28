@@ -378,53 +378,14 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
                 hint: 'Hitamo Urwego',
                 icon: Icons.work_outline,
                 items: ['Village Leader', 'Cell Executive', 'Sector Executive', 'District Mayor'],
-                onChanged: (v) => setState(() => _selectedRole = v),
+                onChanged: _onRoleChanged,
                 theme: theme,
               ),
               Text('Hitamo Urwego (e.g., Village Leader, Cell Executive)', style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey)),
 
               const SizedBox(height: 16),
               _buildLabel('Aho Akorera'),
-              Container(
-                 padding: const EdgeInsets.all(12),
-                 decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: theme.dividerColor.withOpacity(0.2)),
-                 ),
-                 child: Column(
-                   children: [
-                      Row(
-                        children: [
-                           Expanded(child: _buildLocationDropdown('Intara', _parentJurisdiction, null, theme, enabled: false)),
-                           const SizedBox(width: 8),
-                           Expanded(child: _buildLocationDropdown('Akarere', 'District', null, theme, enabled: false)),
-                           const SizedBox(width: 8),
-                           Expanded(child: _buildLocationDropdown('Umurenge', 'Sector', null, theme, enabled: false)),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      // Dynamic selection based on current level
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildDropdown(
-                              value: _selectedUnitName,
-                              hint: _formatLevel(_targetLevel),
-                              icon: Icons.location_on_outlined,
-                              items: _availableChildren,
-                              onChanged: (v) => setState(() => _selectedUnitName = v),
-                              theme: theme,
-                            )
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(child: _buildLocationDropdown('Umudugudu', 'Village', null, theme, enabled: false)),
-                        ],
-                      ),
-                   ],
-                 ),
-              ),
-              
-              const SizedBox(height: 16),
+              _buildHierarchy(theme),
               _buildLabel('Itariki yatangiriyeho'),
               InkWell(
                 onTap: () => _selectDate(context),
@@ -584,13 +545,94 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
       ),
     );
   }
+  Widget _buildHierarchy(ThemeData theme) {
+    // Determine parent level based on target level
+    String parentLabel = 'Urwego rw\'Ibanze';
+    
+    // Logic: If target is CELL, parent is SECTOR.
+    switch (_targetLevel) {
+      case 'DISTRICT': parentLabel = 'Intara (Province)'; break;
+      case 'SECTOR': parentLabel = 'Akarere (District)'; break;
+      case 'CELL': parentLabel = 'Umurenge (Sector)'; break;
+      case 'VILLAGE': parentLabel = 'Akagari (Cell)'; break;
+      default: parentLabel = 'Urwego rw\'Ibanze'; // Fallback
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: theme.dividerColor.withOpacity(0.2)),
+      ),
+      child: Column(
+        children: [
+           // Row 1: Context (Where we are)
+           Row(
+             children: [
+                Expanded(
+                  child: _buildLocationDropdown(
+                    parentLabel, 
+                    _parentJurisdiction, 
+                    null, 
+                    theme, 
+                    enabled: false
+                  )
+                ),
+             ],
+           ),
+           const SizedBox(height: 12),
+           // Row 2: Target (What we are selecting)
+           Row(
+             children: [
+               Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(_formatLevel(_targetLevel), style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor)),
+                      const SizedBox(height: 4),
+                      _buildDropdown(
+                        value: _selectedUnitName,
+                        hint: 'Hitamo ${_formatLevel(_targetLevel)}',
+                        icon: Icons.location_on_outlined,
+                        items: _availableChildren,
+                        onChanged: (v) => setState(() => _selectedUnitName = v),
+                        theme: theme,
+                      ),
+                    ],
+                  ),
+               ),
+             ],
+           ),
+        ],
+      ),
+    );
+  }
+
+  void _onRoleChanged(String? role) {
+    if (role == null) return;
+    setState(() {
+      _selectedRole = role;
+      if (role.contains('Village') || role.contains('Umudugudu')) {
+        _targetLevel = 'VILLAGE';
+      } else if (role.contains('Cell') || role.contains('Akagari')) {
+        _targetLevel = 'CELL';
+      } else if (role.contains('Sector') || role.contains('Umurenge')) {
+        _targetLevel = 'SECTOR';
+      } else if (role.contains('District') || role.contains('Akarere')) {
+        _targetLevel = 'DISTRICT';
+      } else if (role.contains('Province') || role.contains('Intara')) {
+        _targetLevel = 'PROVINCE';
+      }
+    });
+  }
+
   String _formatLevel(String level) {
     switch (level) {
-      case 'PROVINCE': return 'Province';
-      case 'DISTRICT': return 'District';
-      case 'SECTOR': return 'Sector';
-      case 'CELL': return 'Cell';
-      case 'VILLAGE': return 'Village';
+      case 'PROVINCE': return 'Intara';
+      case 'DISTRICT': return 'Akarere';
+      case 'SECTOR': return 'Umurenge';
+      case 'CELL': return 'Akagari';
+      case 'VILLAGE': return 'Umudugudu';
       default: return level;
     }
   }
