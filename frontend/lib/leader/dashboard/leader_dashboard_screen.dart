@@ -36,9 +36,11 @@ class _LeaderDashboardScreenState extends State<LeaderDashboardScreen> {
   Future<void> _fetchLevel() async {
     try {
       final context = await adminService.getMyJurisdiction();
-      if (context != null && mounted) {
+      if (mounted) {
         setState(() {
-          _currentLevel = context['level'];
+          if (context != null) {
+            _currentLevel = context['level'];
+          }
           _isLevelLoading = false;
         });
       }
