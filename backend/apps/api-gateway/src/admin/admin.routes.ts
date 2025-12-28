@@ -312,4 +312,88 @@ router.get('/stats/users-by-province', authMiddleware, roleMiddleware('ADMIN'), 
     }
 });
 
+/**
+ * Province name mapping: Kinyarwanda -> data.json keys
+ */
+const provinceMapping: Record<string, string> = {
+    'Kigali': 'Kigali',
+    'Amajyaruguru': 'North',
+    'Amajyepfo': 'South',
+    'Iburasirazuba': 'East',
+    'Iburengerazuba': 'West',
+};
+
+/**
+ * GET /my-jurisdiction
+ * Returns the logged-in leader's assigned province and its districts from data.json
+ */
+router.get('/my-jurisdiction', authMiddleware, async (req: Request, res: Response) => {
+    const userId = (req as any).user?.userId;
+    const userRole = (req as any).user?.role;
+
+    if (!userId) {
+        return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    try {
+        // Find the leader's active assignment
+        const assignment = await prisma.leaderAssignment.findFirst({
+            where: { userId, isActive: true },
+            include: {
+                administrativeUnit: true
+            }
+        });
+
+        if (!assignment) {
+            // If no assignment, check if user is ADMIN (super admin sees all)
+            if (userRole === 'ADMIN') {
+                // Return all provinces for super admin
+                const rwandaData = await import('../data/rwanda-admin.json');
+                return res.json({
+                    success: true,
+                    role: 'ADMIN',
+                    provinces: Object.keys(rwandaData.default || rwandaData),
+                    data: rwandaData.default || rwandaData
+                });
+            }
+            return res.status(404).json({ error: 'No active assignment found for this user' });
+        }
+
+        const unit = assignment.administrativeUnit;
+
+        // Load Rwanda administrative data
+        const rwandaData = await import('../data/rwanda-admin.json');
+        const data = rwandaData.default || rwandaData;
+
+        // Map the assignment's jurisdiction name to data.json key
+        const provinceKey = provinceMapping[unit.name] || unit.name;
+
+        // Get the province data (districts and below)
+        const provinceData = data[provinceKey as keyof typeof data];
+
+        if (!provinceData) {
+            return res.status(404).json({
+                error: `Province "${unit.name}" not found in administrative data`,
+                mappedKey: provinceKey
+            });
+        }
+
+        res.json({
+            success: true,
+            assignment: {
+                province: unit.name,
+                provinceKey,
+                level: unit.level,
+                unitId: unit.id
+            },
+            districts: Object.keys(provinceData),
+            data: provinceData
+        });
+
+    } catch (error) {
+        logger.error('Failed to fetch jurisdiction data', error);
+        res.status(500).json({ error: 'Failed to fetch jurisdiction data' });
+    }
+});
+
 export const adminRoutes = router;
