@@ -1,28 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../shared/theme/colors.dart';
 import '../../../shared/models/models.dart';
-
-/// Rwanda's 5 Provinces with their Kinyarwanda names
-const List<Map<String, String>> rwandaProvinces = [
-  {'code': 'Kigali', 'name': 'Kigali'},
-  {'code': 'Amajyaruguru', 'name': 'Amajyaruguru (Northern)'},
-  {'code': 'Amajyepfo', 'name': 'Amajyepfo (Southern)'},
-  {'code': 'Iburasirazuba', 'name': 'Iburasirazuba (Eastern)'},
-  {'code': 'Iburengerazuba', 'name': 'Iburengerazuba (Western)'},
-];
-
-/// Province code mapping from location data
-const Map<String, String> provinceCodeMap = {
-  'KIGALI': 'Kigali',
-  'NORTH': 'Amajyaruguru',
-  'NORTHERN': 'Amajyaruguru',
-  'SOUTH': 'Amajyepfo',
-  'SOUTHERN': 'Amajyepfo',
-  'EAST': 'Iburasirazuba',
-  'EASTERN': 'Iburasirazuba',
-  'WEST': 'Iburengerazuba',
-  'WESTERN': 'Iburengerazuba',
-};
+import '../../../shared/constants/rwanda_provinces.dart';
 
 class ProvinceCasesWidget extends StatelessWidget {
   final List<CaseModel> cases;
@@ -40,7 +19,7 @@ class ProvinceCasesWidget extends StatelessWidget {
 
     // Initialize all provinces with zeros
     for (final province in rwandaProvinces) {
-      result[province['code']!] = {'open': 0, 'resolved': 0, 'total': 0};
+      result[province.code] = {'open': 0, 'resolved': 0, 'total': 0};
     }
 
     for (final c in cases) {
@@ -64,20 +43,18 @@ class ProvinceCasesWidget extends StatelessWidget {
 
   String? _extractProvince(CaseModel c) {
     // Try to extract province from case data
-    // This is a simplified approach - you may need to adjust based on actual data structure
     final level = c.currentLevel.toUpperCase();
     
-    // Check if currentLevel contains province info
-    for (final entry in provinceCodeMap.entries) {
-      if (level.contains(entry.key)) {
-        return entry.value;
+    // Check if currentLevel contains English province names and map to code
+    for (final entry in provinceEnglishToCode.entries) {
+      if (level.contains(entry.key.toUpperCase())) {
+        return entry.value; // Returns Kinyarwanda code
       }
     }
     
-    // Default distribution based on case reference pattern or random for demo
-    // In production, this should come from the case's administrativeUnit
+    // Default distribution based on case reference hash for demo
     final hash = c.caseReference.hashCode % 5;
-    return rwandaProvinces[hash.abs()]['code'];
+    return rwandaProvinces[hash.abs()].code;
   }
 
   @override
@@ -138,8 +115,8 @@ class ProvinceCasesWidget extends StatelessWidget {
             else
               Column(
                 children: rwandaProvinces.map((province) {
-                  final code = province['code']!;
-                  final name = province['name']!;
+                  final code = province.code;
+                  final name = province.name;
                   final stats = caseData[code] ?? {'open': 0, 'resolved': 0, 'total': 0};
                   return _buildProvinceCard(context, name, stats['open']!, stats['resolved']!, stats['total']!);
                 }).toList(),

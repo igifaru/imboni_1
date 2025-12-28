@@ -1,15 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/admin_service.dart';
 import '../../../shared/theme/colors.dart';
-
-/// Rwanda's 5 Provinces with their Kinyarwanda names
-const List<Map<String, String>> rwandaProvinces = [
-  {'code': 'Kigali', 'name': 'Kigali'},
-  {'code': 'Amajyaruguru', 'name': 'Amajyaruguru (Northern)'},
-  {'code': 'Amajyepfo', 'name': 'Amajyepfo (Southern)'},
-  {'code': 'Iburasirazuba', 'name': 'Iburasirazuba (Eastern)'},
-  {'code': 'Iburengerazuba', 'name': 'Iburengerazuba (Western)'},
-];
+import '../../../shared/constants/rwanda_provinces.dart';
 
 class ProvinceStatsWidget extends StatefulWidget {
   const ProvinceStatsWidget({super.key});
@@ -111,8 +103,8 @@ class _ProvinceStatsWidgetState extends State<ProvinceStatsWidget> {
             else
               Column(
                 children: rwandaProvinces.map((province) {
-                  final code = province['code']!;
-                  final name = province['name']!;
+                  final code = province.code;
+                  final name = province.name;
                   final stats = _statsByProvince[code] ?? {'active': 0, 'inactive': 0};
                   return _buildProvinceCard(context, name, stats['active']!, stats['inactive']!);
                 }).toList(),

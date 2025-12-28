@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../admin/services/admin_service.dart';
 import '../../theme/colors.dart';
 import '../../theme/responsive.dart';
+import '../../constants/rwanda_provinces.dart';
 
 class RegisterLeaderForm extends StatefulWidget {
   const RegisterLeaderForm({super.key});
@@ -18,15 +19,6 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
   final _passwordController = TextEditingController();
   
   String? _selectedProvince;
-  
-  /// Rwanda's 5 Provinces with Kinyarwanda names
-  final List<Map<String, String>> _provinces = [
-    {'code': 'Kigali', 'name': 'Kigali'},
-    {'code': 'Amajyaruguru', 'name': 'Amajyaruguru (Northern Province)'},
-    {'code': 'Amajyepfo', 'name': 'Amajyepfo (Southern Province)'},
-    {'code': 'Iburasirazuba', 'name': 'Iburasirazuba (Eastern Province)'},
-    {'code': 'Iburengerazuba', 'name': 'Iburengerazuba (Western Province)'},
-  ];
   
   bool _isLoading = false;
 
@@ -124,9 +116,9 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
                 // Province Dropdown
                 DropdownButtonFormField<String>(
                   initialValue: _selectedProvince,
-                  items: _provinces.map((p) => DropdownMenuItem(
-                    value: p['code'],
-                    child: Text(p['name']!),
+                  items: rwandaProvinces.map((p) => DropdownMenuItem(
+                    value: p.code,
+                    child: Text(p.name),
                   )).toList(),
                   onChanged: (v) => setState(() => _selectedProvince = v),
                   decoration: InputDecoration(
