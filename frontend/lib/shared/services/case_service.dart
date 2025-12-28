@@ -10,7 +10,7 @@ class CaseService {
 
   /// Submit a new case
   Future<ApiResponse<CaseModel>> submitCase(CreateCaseRequest request) async {
-    final response = await apiClient.post('/api/cases', request.toJson());
+    final response = await apiClient.post('/cases', request.toJson());
     if (response.isSuccess && response.data != null) {
       return ApiResponse.success(CaseModel.fromJson(response.data));
     }
@@ -19,7 +19,7 @@ class CaseService {
 
   /// Track a case by reference number
   Future<ApiResponse<CaseModel>> trackCase(String reference) async {
-    final response = await apiClient.get('/api/cases/track/$reference');
+    final response = await apiClient.get('/cases/track/$reference');
     if (response.isSuccess && response.data != null) {
       return ApiResponse.success(CaseModel.fromJson(response.data));
     }
@@ -28,7 +28,7 @@ class CaseService {
 
   /// Get user's cases
   Future<ApiResponse<List<CaseModel>>> getUserCases({int limit = 20, int offset = 0, String? status}) async {
-    String endpoint = '/api/cases/my-cases?limit=$limit&offset=$offset';
+    String endpoint = '/cases/my-cases?limit=$limit&offset=$offset';
     if (status != null) endpoint += '&status=$status';
     
     final response = await apiClient.get(endpoint);
@@ -42,7 +42,7 @@ class CaseService {
 
   /// Get case details by ID
   Future<ApiResponse<CaseModel>> getCaseById(String id) async {
-    final response = await apiClient.get('/api/cases/$id');
+    final response = await apiClient.get('/cases/$id');
     if (response.isSuccess && response.data != null) {
       return ApiResponse.success(CaseModel.fromJson(response.data));
     }
@@ -51,7 +51,7 @@ class CaseService {
 
   /// Get case actions/history
   Future<ApiResponse<List<CaseAction>>> getCaseActions(String caseId) async {
-    final response = await apiClient.get('/api/cases/$caseId/actions');
+    final response = await apiClient.get('/cases/$caseId/actions');
     if (response.isSuccess && response.data != null) {
       final List<dynamic> actionsJson = response.data['actions'] ?? response.data ?? [];
       final actions = actionsJson.map((json) => CaseAction.fromJson(json)).toList();
@@ -62,7 +62,7 @@ class CaseService {
 
   /// Add action to case (for leaders)
   Future<ApiResponse<CaseAction>> addCaseAction(String caseId, String actionType, String description) async {
-    final response = await apiClient.post('/api/cases/$caseId/actions', {
+    final response = await apiClient.post('/cases/$caseId/actions', {
       'actionType': actionType,
       'description': description,
     });
@@ -74,7 +74,7 @@ class CaseService {
 
   /// Resolve case (for leaders)
   Future<ApiResponse<CaseModel>> resolveCase(String caseId, String resolution) async {
-    final response = await apiClient.post('/api/cases/$caseId/resolve', {
+    final response = await apiClient.post('/cases/$caseId/resolve', {
       'resolution': resolution,
     });
     if (response.isSuccess && response.data != null) {
@@ -85,7 +85,7 @@ class CaseService {
 
   /// Get assigned cases (for leaders)
   Future<ApiResponse<List<CaseModel>>> getAssignedCases({int limit = 20, String? status}) async {
-    String endpoint = '/api/cases/assigned?limit=$limit';
+    String endpoint = '/cases/assigned?limit=$limit';
     if (status != null) endpoint += '&status=$status';
     
     final response = await apiClient.get(endpoint);
@@ -99,7 +99,7 @@ class CaseService {
 
   /// Get escalation alerts (for leaders)
   Future<ApiResponse<List<CaseModel>>> getEscalationAlerts() async {
-    final response = await apiClient.get('/api/cases/escalation-alerts');
+    final response = await apiClient.get('/cases/escalation-alerts');
     if (response.isSuccess && response.data != null) {
       final List<dynamic> casesJson = response.data['cases'] ?? response.data ?? [];
       final cases = casesJson.map((json) => CaseModel.fromJson(json)).toList();
@@ -129,15 +129,15 @@ class CaseService {
       queryParams['locationId'] = location;
     }
 
-    final uri = Uri(path: '/api/cases/metrics', queryParameters: queryParams);
+    final uri = Uri(path: '/cases/metrics', queryParameters: queryParams);
     
     // uri.toString() includes the query string properly encoded
     final response = await apiClient.get(uri.toString());
     
     if (response.isSuccess && response.data != null) {
-      return ApiResponse.success(PerformanceMetrics.fromJson(response.data));
+      return ApiResponse.success(PerformanceMetrics.fromJson(response.data!));
     }
-    return ApiResponse.success(PerformanceMetrics.empty());
+    return ApiResponse.error(response.error ?? 'Failed to load metrics');
   }
 }
 
