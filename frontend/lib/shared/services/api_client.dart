@@ -27,9 +27,12 @@ class ApiClient {
   Future<ApiResponse<T>> get<T>(String endpoint, {Map<String, dynamic>? queryParameters, T Function(dynamic)? fromJson}) async {
     try {
       final uri = Uri.parse('$_baseUrl$endpoint').replace(queryParameters: queryParameters);
+      print('ApiClient: GET request to $uri');
       final response = await _client.get(uri, headers: _headers).timeout(const Duration(seconds: 15));
+      print('ApiClient: GET response from $endpoint: ${response.statusCode}');
       return _handleResponse(response, fromJson: fromJson);
     } catch (e) {
+      print('ApiClient: GET error: $e');
       return ApiResponse.error('Network error: $e');
     }
   }

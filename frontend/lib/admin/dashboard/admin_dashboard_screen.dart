@@ -32,7 +32,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     // Screens for each navigation item
     final screens = [
       const _AdminHome(),
-      const UserManagementScreen(),
+      const UserManagementScreen(), // Using const is fine if the widget handles its own state properly
       const RegisterLeaderForm(), // Index 2
       const AdminSettingsScreen(), // Index 3
     ];
