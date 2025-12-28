@@ -18,13 +18,13 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _phoneController = TextEditingController();
+  final _identifierController = TextEditingController(); // phone OR email
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
 
   @override
-  void dispose() { _phoneController.dispose(); _passwordController.dispose(); super.dispose(); }
+  void dispose() { _identifierController.dispose(); _passwordController.dispose(); super.dispose(); }
 
   @override
   Widget build(BuildContext context) {
@@ -103,21 +103,28 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 32),
                       
-                      // Phone field
+                      // Phone or Email field
                       TextFormField(
-                        controller: _phoneController,
-                        keyboardType: TextInputType.phone,
+                        controller: _identifierController,
+                        keyboardType: TextInputType.emailAddress,
                         style: theme.textTheme.bodyLarge,
                         decoration: InputDecoration(
-                          labelText: 'Nimero ya telefoni',
-                          hintText: '07X XXX XXXX',
-                          prefixIcon: Icon(Icons.phone_outlined, color: colorScheme.primary),
+                          labelText: 'Telefoni cyangwa Email',
+                          hintText: '07X XXX XXXX  cyangwa  email@example.com',
+                          prefixIcon: Icon(Icons.account_circle_outlined, color: colorScheme.primary),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
                           filled: true,
                           fillColor: colorScheme.surfaceContainerHighest.withAlpha(60),
                           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
                         ),
-                        validator: (v) => (v == null || v.length < 10) ? 'Nimero ya telefoni ntabwo yuzuye' : null,
+                        validator: (v) {
+                          if (v == null || v.isEmpty) return 'Andika nimero ya telefoni cyangwa email';
+                          // Check if it's a valid email or phone
+                          final isEmail = v.contains('@') && v.contains('.');
+                          final isPhone = v.length >= 10 && RegExp(r'^[0-9+]+$').hasMatch(v);
+                          if (!isEmail && !isPhone) return 'Andika nimero ya telefoni (10+) cyangwa email yuzuye';
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 20),
                       
@@ -219,7 +226,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     try {
-      final response = await authService.login(_phoneController.text.trim(), _passwordController.text);
+      final response = await authService.login(_identifierController.text.trim(), _passwordController.text);
       if (!mounted) return;
       if (response.isSuccess) {
         widget.onLoginSuccess();

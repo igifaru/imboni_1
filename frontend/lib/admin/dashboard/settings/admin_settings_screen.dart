@@ -44,14 +44,9 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text(AppLocalizations.of(context).settings), 
-        backgroundColor: theme.scaffoldBackgroundColor,
-        elevation: 0,
-      ),
-      body: _isLoading
+    return Material(
+      color: theme.scaffoldBackgroundColor,
+      child: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               padding: EdgeInsets.all(Responsive.horizontalPadding(context)),

@@ -128,52 +128,60 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     final l10n = AppLocalizations.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+
     return Material(
       color: theme.scaffoldBackgroundColor,
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: EdgeInsets.all(isMobile ? 12.0 : 24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Title Row with Stats
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  l10n.userManagement,
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-                if (!_isLoading && _errorMessage == null)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(20),
+            // Title Row with Stats - only show on desktop since mobile has AppBar title
+            if (!isMobile) ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      l10n.userManagement,
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.people, size: 18, color: theme.colorScheme.onPrimaryContainer),
-                        const SizedBox(width: 8),
-                        Text(
-                          '$_totalItems ${l10n.users}',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: theme.colorScheme.onPrimaryContainer,
+                  ),
+                  if (!_isLoading && _errorMessage == null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.people, size: 18, color: theme.colorScheme.onPrimaryContainer),
+                          const SizedBox(width: 8),
+                          Text(
+                            '$_totalItems ${l10n.users}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: theme.colorScheme.onPrimaryContainer,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 20),
+                ],
+              ),
+              const SizedBox(height: 20),
+            ],
             
             // Search and Filter Row
-            _buildSearchBar(theme, l10n, isDark),
+            _buildSearchBar(theme, l10n, isDark, isMobile),
             const SizedBox(height: 20),
             
             // Main Content Card
@@ -192,7 +200,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   ],
                 ),
                 clipBehavior: Clip.antiAlias,
-                child: _buildContent(theme, l10n),
+                child: isMobile ? _buildMobileContent(theme, l10n) : _buildContent(theme, l10n),
               ),
             ),
             
@@ -205,96 +213,161 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     );
   }
 
-  Widget _buildSearchBar(ThemeData theme, AppLocalizations l10n, bool isDark) {
+  Widget _buildSearchBar(ThemeData theme, AppLocalizations l10n, bool isDark, bool isMobile) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(isMobile ? 12 : 16),
       decoration: BoxDecoration(
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: theme.dividerColor.withAlpha(50)),
       ),
-      child: Row(
-        children: [
-          // Search Field
-          Expanded(
-            child: TextField(
-              controller: _searchController,
-              style: theme.textTheme.bodyMedium,
-              decoration: InputDecoration(
-                hintText: l10n.searchUsersHint,
-                hintStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-                prefixIcon: Icon(Icons.search, color: theme.colorScheme.primary),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear, size: 20),
-                        onPressed: () {
-                          _searchController.clear();
-                          _loadUsers(page: 1);
-                        },
-                      )
-                    : null,
-                filled: true,
-                fillColor: theme.colorScheme.surfaceContainerHighest.withAlpha(isDark ? 80 : 30),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide.none,
+      child: isMobile
+          ? Column(
+              children: [
+                // Search Field
+                TextField(
+                  controller: _searchController,
+                  style: theme.textTheme.bodyMedium,
+                  decoration: InputDecoration(
+                    hintText: l10n.searchUsersHint,
+                    hintStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                    prefixIcon: Icon(Icons.search, color: theme.colorScheme.primary),
+                    filled: true,
+                    fillColor: theme.colorScheme.surfaceContainerHighest.withAlpha(isDark ? 80 : 30),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
+                  onSubmitted: (_) => _loadUsers(page: 1),
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              ),
-              onSubmitted: (_) => _loadUsers(page: 1),
-              onChanged: (value) => setState(() {}), // To show/hide clear button
+                const SizedBox(height: 12),
+                // Filter and Refresh Row
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerHighest.withAlpha(isDark ? 80 : 30),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: _currentFilter,
+                            isExpanded: true,
+                            icon: Icon(Icons.keyboard_arrow_down, color: theme.colorScheme.primary),
+                            style: theme.textTheme.bodyMedium,
+                            dropdownColor: theme.cardColor,
+                            items: [
+                              DropdownMenuItem(value: 'ALL', child: Text(l10n.allUsers)),
+                              DropdownMenuItem(value: 'LEADER', child: Text(l10n.leaders)),
+                              DropdownMenuItem(value: 'CITIZEN', child: Text(l10n.citizens)),
+                              const DropdownMenuItem(value: 'ADMIN', child: Text('Admin')),
+                            ],
+                            onChanged: (value) {
+                              if (value != null) {
+                                setState(() => _currentFilter = value);
+                                _loadUsers(page: 1);
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: IconButton(
+                        icon: Icon(_isLoading ? Icons.hourglass_empty : Icons.refresh, color: theme.colorScheme.onPrimary),
+                        onPressed: _isLoading ? null : () => _loadUsers(page: 1),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            )
+          : Row(
+              children: [
+                // Search Field
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    style: theme.textTheme.bodyMedium,
+                    decoration: InputDecoration(
+                      hintText: l10n.searchUsersHint,
+                      hintStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                      prefixIcon: Icon(Icons.search, color: theme.colorScheme.primary),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, size: 20),
+                              onPressed: () {
+                                _searchController.clear();
+                                _loadUsers(page: 1);
+                              },
+                            )
+                          : null,
+                      filled: true,
+                      fillColor: theme.colorScheme.surfaceContainerHighest.withAlpha(isDark ? 80 : 30),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    ),
+                    onSubmitted: (_) => _loadUsers(page: 1),
+                    onChanged: (value) => setState(() {}),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // Filter Dropdown
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest.withAlpha(isDark ? 80 : 30),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: theme.dividerColor.withAlpha(50)),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: _currentFilter,
+                      icon: Icon(Icons.keyboard_arrow_down, color: theme.colorScheme.primary),
+                      style: theme.textTheme.bodyMedium,
+                      dropdownColor: theme.cardColor,
+                      items: [
+                        _buildDropdownItem('ALL', l10n.allUsers, Icons.people_outline, theme),
+                        _buildDropdownItem('LEADER', l10n.leaders, Icons.verified_user_outlined, theme),
+                        _buildDropdownItem('CITIZEN', l10n.citizens, Icons.person_outline, theme),
+                        _buildDropdownItem('ADMIN', 'Admin', Icons.admin_panel_settings_outlined, theme),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() => _currentFilter = value);
+                          _loadUsers(page: 1);
+                        }
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Refresh Button
+                Container(
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: IconButton(
+                    icon: Icon(_isLoading ? Icons.hourglass_empty : Icons.refresh, color: theme.colorScheme.onPrimary),
+                    onPressed: _isLoading ? null : () => _loadUsers(page: 1),
+                    tooltip: l10n.retry,
+                  ),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(width: 16),
-          
-          // Filter Dropdown
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest.withAlpha(isDark ? 80 : 30),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: theme.dividerColor.withAlpha(50)),
-            ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: _currentFilter,
-                icon: Icon(Icons.keyboard_arrow_down, color: theme.colorScheme.primary),
-                style: theme.textTheme.bodyMedium,
-                dropdownColor: theme.cardColor,
-                items: [
-                  _buildDropdownItem('ALL', l10n.allUsers, Icons.people_outline, theme),
-                  _buildDropdownItem('LEADER', l10n.leaders, Icons.verified_user_outlined, theme),
-                  _buildDropdownItem('CITIZEN', l10n.citizens, Icons.person_outline, theme),
-                  _buildDropdownItem('ADMIN', 'Admin', Icons.admin_panel_settings_outlined, theme),
-                ],
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() => _currentFilter = value);
-                    _loadUsers(page: 1);
-                  }
-                },
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          
-          // Refresh Button
-          Container(
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primary,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: IconButton(
-              icon: Icon(
-                _isLoading ? Icons.hourglass_empty : Icons.refresh,
-                color: theme.colorScheme.onPrimary,
-              ),
-              onPressed: _isLoading ? null : () => _loadUsers(page: 1),
-              tooltip: l10n.retry,
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -308,6 +381,85 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
           Text(label),
         ],
       ),
+    );
+  }
+
+  /// Mobile-friendly card-based layout instead of table
+  Widget _buildMobileContent(ThemeData theme, AppLocalizations l10n) {
+    if (_isLoading) {
+      return Center(
+        child: CircularProgressIndicator(color: theme.colorScheme.primary),
+      );
+    }
+    
+    if (_errorMessage != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
+              const SizedBox(height: 16),
+              Text(_errorMessage!, textAlign: TextAlign.center),
+              const SizedBox(height: 16),
+              FilledButton.icon(
+                onPressed: _loadUsers,
+                icon: const Icon(Icons.refresh),
+                label: Text(l10n.retry),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
+    if (_users.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.person_off_outlined, size: 48, color: theme.colorScheme.onSurfaceVariant),
+            const SizedBox(height: 16),
+            Text(l10n.noUsersFound),
+          ],
+        ),
+      );
+    }
+    
+    return ListView.builder(
+      padding: const EdgeInsets.all(8),
+      itemCount: _users.length,
+      itemBuilder: (context, index) {
+        final user = _users[index];
+        return Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          child: ListTile(
+            leading: _buildAvatar(user, theme),
+            title: Text(user.displayName, style: const TextStyle(fontWeight: FontWeight.w600)),
+            subtitle: Text(user.email ?? '-', style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 12)),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildStatusBadge(user.status, theme, l10n),
+                PopupMenuButton<String>(
+                  icon: Icon(Icons.more_vert, color: theme.colorScheme.onSurfaceVariant),
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: 'toggle',
+                      child: Text(user.status == 'ACTIVE' ? 'Deactivate' : 'Activate'),
+                    ),
+                  ],
+                  onSelected: (value) {
+                    if (value == 'toggle') _toggleStatus(user);
+                  },
+                ),
+              ],
+            ),
+            onTap: () => _showUserDetails(user),
+          ),
+        );
+      },
     );
   }
 

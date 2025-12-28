@@ -5,10 +5,12 @@ import 'package:http/http.dart' as http;
 /// API Client for backend communication
 class ApiClient {
   static String get _baseUrl {
-    // NOTE: For Android, run 'adb reverse tcp:3000 tcp:3000' to allow localhost access.
-    // 10.0.2.2 can be flaky. ADB reverse is more reliable.
+    // For Web: use localhost
+    // For Mobile (Android/iOS): use the computer's local IP address
+    // Make sure your phone is on the same WiFi network as your computer
     if (kIsWeb) return 'http://localhost:3000/api';
-    return 'http://localhost:3000/api';
+    // Your computer's local IP address (run 'hostname -I' to find it)
+    return 'http://10.24.143.221:3000/api';
   }
   final http.Client _client;
   String? _authToken;

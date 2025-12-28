@@ -41,15 +41,19 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   Widget _buildMobile(ThemeData theme, List<Widget> screens) {
+    final l10n = AppLocalizations.of(context);
+    
+    // Dynamic titles for mobile AppBar
+    final titles = [
+      l10n.home,
+      l10n.users,
+      l10n.register,
+      l10n.settings,
+    ];
+    
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context).adminDashboard),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: widget.onLogout,
-          ),
-        ],
+        title: Text(titles[_currentIndex]),
       ),
       body: screens[_currentIndex],
       bottomNavigationBar: NavigationBar(
