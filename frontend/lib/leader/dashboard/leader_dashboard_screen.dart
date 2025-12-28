@@ -225,7 +225,7 @@ class _DashboardHomeState extends State<_DashboardHome> {
                       // Right: Districts in Province with case counts
                       Expanded(
                         flex: 3,
-                        child: DistrictCasesWidget(cases: _assignedCases, isLoading: _isLoading),
+                        child: DistrictCasesWidget(cases: _assignedCases, isDashboardLoading: _isLoading),
                       ),
                     ])
                   else ...[
@@ -234,7 +234,7 @@ class _DashboardHomeState extends State<_DashboardHome> {
                       onDistrictSelected: (d) => debugPrint('Selected District: $d'),
                     ),
                     const SizedBox(height: 24),
-                    DistrictCasesWidget(cases: _assignedCases, isLoading: _isLoading),
+                    DistrictCasesWidget(cases: _assignedCases, isDashboardLoading: _isLoading),
                   ],
                   const SizedBox(height: 32),
                   // Case search and table below
