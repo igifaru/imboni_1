@@ -58,14 +58,15 @@ class _DistrictCasesWidgetState extends State<DistrictCasesWidget> {
             _subTargetLevel = _formatSubLevel(level);
 
             // Extract nested counts from jurisdiction data
-            final jurData = data['data'] as Map<String, dynamic>?;
+            final dynamic jurData = data['data'];
             _districtSectors = {};
-            if (jurData != null) {
+            if (jurData is Map<String, dynamic>) {
               for (final child in _districts) {
-                if (jurData[child] is Map) {
-                  _districtSectors[child] = (jurData[child] as Map).length;
-                } else if (jurData[child] is List) {
-                  _districtSectors[child] = (jurData[child] as List).length;
+                final subData = jurData[child];
+                if (subData is Map) {
+                  _districtSectors[child] = subData.length;
+                } else if (subData is List) {
+                  _districtSectors[child] = subData.length;
                 }
               }
             }
