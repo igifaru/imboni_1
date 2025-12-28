@@ -331,7 +331,7 @@ router.get('/my-jurisdiction', authMiddleware, async (req: Request, res: Respons
                 targetLevel: AdministrativeLevel.PROVINCE,
                 children: provinces,
                 districts: provinces, // Compatibility
-                data: adminJson
+                hierarchyData: adminJson
             });
         }
 
