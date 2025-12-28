@@ -16,22 +16,49 @@ const router = (0, express_1.Router)();
 router.post('/', async (req, res, next) => {
     try {
         const validation = case_dto_1.CreateCaseSchema.safeParse(req.body);
-        if (!validation.success) {
-            return res.status(400).json({
-                error: 'Validation failed',
-                details: validation.error.errors,
-            });
-        }
-        const userId = req.user?.userId;
-        const result = await case_service_1.caseService.createCase(validation.data, userId);
-        res.status(201).json({
+        // ... existing code ...
+    }
+    catch (error) {
+        // ... existing code ...
+    }
+});
+/**
+ * GET /cases/stats/global - Get global statistics (Admin)
+ */
+router.get('/stats/global', async (req, res, next) => {
+    try {
+        const result = await case_service_1.caseService.getGlobalStats();
+        res.json({
             success: true,
             data: result,
-            message: 'Case submitted successfully',
         });
     }
     catch (error) {
-        logger.error('Failed to create case', error);
+        logger.error('Failed to get global stats', error);
+        next(error);
+    }
+});
+/**
+ * GET /cases - Get all cases (Admin)
+ */
+router.get('/', async (req, res, next) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 50;
+        const search = req.query.search;
+        const result = await case_service_1.caseService.getAllCases(page, limit, search);
+        res.json({
+            success: true,
+            data: result.cases,
+            meta: {
+                total: result.total,
+                page: result.page,
+                limit: result.limit
+            }
+        });
+    }
+    catch (error) {
+        logger.error('Failed to fetch all cases', error);
         next(error);
     }
 });

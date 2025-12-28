@@ -160,6 +160,57 @@ class CaseRepository {
                 return config_service_1.config.escalation.normalHours;
         }
     }
+    /**
+     * Find all cases (for Admin)
+     */
+    async findAll(page = 1, limit = 50, search) {
+        const skip = (page - 1) * limit;
+        const where = {};
+        if (search) {
+            where.OR = [
+                { caseReference: { contains: search, mode: 'insensitive' } },
+                { title: { contains: search, mode: 'insensitive' } },
+            ];
+        }
+        const [cases, total] = await Promise.all([
+            prisma_service_1.prisma.case.findMany({
+                where,
+                skip,
+                take: limit,
+                orderBy: { createdAt: 'desc' },
+                include: { assignments: true }, // Include assignments for context
+            }),
+            prisma_service_1.prisma.case.count({ where }),
+        ]);
+        return { cases: cases, total };
+    }
+    /**
+     * Get global statistics (for Admin Dashboard)
+     */
+    async getGlobalStats() {
+        const [total, active, urgent, escalated, byStatus, byUrgency] = await Promise.all([
+            prisma_service_1.prisma.case.count(),
+            prisma_service_1.prisma.case.count({ where: { status: { in: ['OPEN', 'IN_PROGRESS', 'ESCALATED'] } } }),
+            prisma_service_1.prisma.case.count({ where: { urgency: { in: ['HIGH', 'EMERGENCY'] }, status: { not: 'RESOLVED' } } }),
+            prisma_service_1.prisma.case.count({ where: { status: 'ESCALATED' } }),
+            prisma_service_1.prisma.case.groupBy({
+                by: ['status'],
+                _count: { status: true },
+            }),
+            prisma_service_1.prisma.case.groupBy({
+                by: ['urgency'],
+                _count: { urgency: true },
+            }),
+        ]);
+        return {
+            total,
+            active,
+            urgent,
+            escalated,
+            byStatus: byStatus.reduce((acc, curr) => ({ ...acc, [curr.status]: curr._count.status }), {}),
+            byUrgency: byUrgency.reduce((acc, curr) => ({ ...acc, [curr.urgency]: curr._count.urgency }), {}),
+        };
+    }
 }
 exports.CaseRepository = CaseRepository;
 exports.caseRepository = new CaseRepository();

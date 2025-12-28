@@ -43,6 +43,17 @@ export declare class CaseRepository {
      * Get deadline hours based on urgency
      */
     private getDeadlineHours;
+    /**
+     * Find all cases (for Admin)
+     */
+    findAll(page?: number, limit?: number, search?: string): Promise<{
+        cases: CaseEntity[];
+        total: number;
+    }>;
+    /**
+     * Get global statistics (for Admin Dashboard)
+     */
+    getGlobalStats(): Promise<any>;
 }
 export declare const caseRepository: CaseRepository;
 //# sourceMappingURL=case.repository.d.ts.map

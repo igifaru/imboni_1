@@ -24,6 +24,19 @@ export declare class CaseService {
         limit: number;
     }>;
     /**
+     * Get all cases (Admin only)
+     */
+    getAllCases(page?: number, limit?: number, search?: string): Promise<{
+        cases: CaseResponseDto[];
+        total: number;
+        page: number;
+        limit: number;
+    }>;
+    /**
+     * Get global stats (Admin only)
+     */
+    getGlobalStats(): Promise<any>;
+    /**
      * Update case status (for leaders)
      */
     updateCase(caseId: string, dto: UpdateCaseDto, userId: string): Promise<CaseResponseDto>;

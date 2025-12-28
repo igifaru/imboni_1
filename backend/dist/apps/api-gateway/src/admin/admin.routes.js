@@ -336,7 +336,7 @@ router.get('/my-jurisdiction', jwt_middleware_1.authMiddleware, async (req, res)
                 targetLevel: client_1.AdministrativeLevel.PROVINCE,
                 children: provinces,
                 districts: provinces, // Compatibility
-                data: adminJson
+                hierarchyData: adminJson
             });
         }
         const assignment = await prisma_service_1.prisma.leaderAssignment.findFirst({
