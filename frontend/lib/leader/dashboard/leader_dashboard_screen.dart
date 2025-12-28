@@ -12,6 +12,7 @@ import 'assigned_cases/assigned_cases_screen.dart';
 import 'escalation_alerts/escalation_alerts_screen.dart';
 import 'performance/performance_screen.dart';
 import 'settings/leader_settings_screen.dart';
+import '../../admin/services/admin_service.dart';
 
 /// Leader Dashboard Screen - Professional responsive design
 class LeaderDashboardScreen extends StatefulWidget {
@@ -23,38 +24,71 @@ class LeaderDashboardScreen extends StatefulWidget {
 
 class _LeaderDashboardScreenState extends State<LeaderDashboardScreen> {
   int _currentIndex = 0;
+  String? _currentLevel;
+  bool _isLevelLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchLevel();
+  }
+
+  Future<void> _fetchLevel() async {
+    try {
+      final context = await adminService.getMyJurisdiction();
+      if (context != null && mounted) {
+        setState(() {
+          _currentLevel = context['level'];
+          _isLevelLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLevelLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLevelLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     final theme = Theme.of(context);
     final isDesktop = Responsive.isDesktop(context);
+    final showRegister = _currentLevel != 'VILLAGE';
+
     final screens = [
       const _DashboardHome(),
       const AssignedCasesScreen(),
       const EscalationAlertsScreen(),
       const PerformanceScreen(),
-      const RegisterLeaderForm()
+      if (showRegister) const RegisterLeaderForm()
     ];
 
-    return isDesktop ? _buildDesktop(theme, screens) : _buildMobile(screens);
+    // Ensure index doesn't go out of bounds if tab was removed
+    if (_currentIndex >= screens.length) {
+      _currentIndex = 0;
+    }
+
+    return isDesktop ? _buildDesktop(theme, screens, showRegister) : _buildMobile(screens, showRegister);
   }
 
-  Widget _buildMobile(List<Widget> screens) => Scaffold(
+  Widget _buildMobile(List<Widget> screens, bool showRegister) => Scaffold(
     body: screens[_currentIndex],
     bottomNavigationBar: NavigationBar(
       selectedIndex: _currentIndex,
       onDestinationSelected: (i) => setState(() => _currentIndex = i),
-      destinations: const [
-        NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: 'Intangiriro'),
-        NavigationDestination(icon: Icon(Icons.folder_outlined), selectedIcon: Icon(Icons.folder), label: 'Ibibazo'),
-        NavigationDestination(icon: Icon(Icons.warning_amber_outlined), selectedIcon: Icon(Icons.warning_amber), label: 'Imburira'),
-        NavigationDestination(icon: Icon(Icons.analytics_outlined), selectedIcon: Icon(Icons.analytics), label: 'Imikorere'),
-        NavigationDestination(icon: Icon(Icons.person_add_outlined), selectedIcon: Icon(Icons.person_add), label: 'Register Leader'),
+      destinations: [
+        const NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: 'Dashboard'),
+        const NavigationDestination(icon: Icon(Icons.folder_outlined), selectedIcon: Icon(Icons.folder), label: 'Ibibazo'),
+        const NavigationDestination(icon: Icon(Icons.warning_amber_outlined), selectedIcon: Icon(Icons.warning_amber), label: 'Imburira'),
+        const NavigationDestination(icon: Icon(Icons.analytics_outlined), selectedIcon: Icon(Icons.analytics), label: 'Imikorere'),
+        if (showRegister) const NavigationDestination(icon: Icon(Icons.person_add_outlined), selectedIcon: Icon(Icons.person_add), label: 'Register Leader'),
       ],
     ),
   );
 
-  Widget _buildDesktop(ThemeData theme, List<Widget> screens) {
+  Widget _buildDesktop(ThemeData theme, List<Widget> screens, bool showRegister) {
     final isDark = theme.brightness == Brightness.dark;
     return Scaffold(
       body: Row(children: [
@@ -81,11 +115,9 @@ class _LeaderDashboardScreenState extends State<LeaderDashboardScreen> {
               ]),
             ),
             const SizedBox(height: 8),
-            ..._buildNavItems(theme, isDark),
+            ..._buildNavItems(theme, isDark, showRegister),
             const Spacer(),
             const Divider(),
-// Add import at top of file (this tool call can't do both easily, I'll do imports in a separate call or use multi_replace if possible, but replace_file_content works for contiguous blocks. I'll split this.)
-// Let's effectively replace the ListTile.
             ListTile(
               leading: Icon(Icons.settings_outlined, color: theme.colorScheme.onSurfaceVariant),
               title: Text('Settings', style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
@@ -102,13 +134,13 @@ class _LeaderDashboardScreenState extends State<LeaderDashboardScreen> {
     );
   }
 
-  List<Widget> _buildNavItems(ThemeData theme, bool isDark) {
+  List<Widget> _buildNavItems(ThemeData theme, bool isDark, bool showRegister) {
     final items = [
       (Icons.dashboard, 'Dashboard', 0),
       (Icons.folder, 'Ibibazo', 1),
       (Icons.warning_amber, 'Imburira', 2),
       (Icons.analytics, 'Imikorere', 3),
-      (Icons.person_add, 'Register Leader', 4),
+      if (showRegister) (Icons.person_add, 'Register Leader', 4),
     ];
     return items.map((item) {
       final isSelected = _currentIndex == item.$3;

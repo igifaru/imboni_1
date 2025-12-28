@@ -14,11 +14,11 @@ const logger = (0, logger_service_1.createServiceLogger)('rate-limit');
  * General API rate limiter
  */
 exports.generalRateLimiter = (0, express_rate_limit_1.default)({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // 100 requests per window
+    windowMs: 1 * 60 * 1000, // Reduced to 1 minute for faster resets
+    max: 1000, // Increased for development
     message: {
         error: 'Too many requests, please try again later',
-        retryAfter: '15 minutes',
+        retryAfter: '1 minute',
     },
     standardHeaders: true,
     legacyHeaders: false,
@@ -31,11 +31,11 @@ exports.generalRateLimiter = (0, express_rate_limit_1.default)({
  * Strict rate limiter for auth endpoints
  */
 exports.authRateLimiter = (0, express_rate_limit_1.default)({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 10, // 10 attempts per window
+    windowMs: 1 * 60 * 1000, // Reduced to 1 minute
+    max: 100, // Increased to 100 attempts per minute
     message: {
         error: 'Too many authentication attempts, please try again later',
-        retryAfter: '15 minutes',
+        retryAfter: '1 minute',
     },
     standardHeaders: true,
     legacyHeaders: false,

@@ -10,11 +10,11 @@ const logger = createServiceLogger('rate-limit');
  * General API rate limiter
  */
 export const generalRateLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // 100 requests per window
+    windowMs: 1 * 60 * 1000, // Reduced to 1 minute for faster resets
+    max: 1000, // Increased for development
     message: {
         error: 'Too many requests, please try again later',
-        retryAfter: '15 minutes',
+        retryAfter: '1 minute',
     },
     standardHeaders: true,
     legacyHeaders: false,
@@ -28,11 +28,11 @@ export const generalRateLimiter = rateLimit({
  * Strict rate limiter for auth endpoints
  */
 export const authRateLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 10, // 10 attempts per window
+    windowMs: 1 * 60 * 1000, // Reduced to 1 minute
+    max: 100, // Increased to 100 attempts per minute
     message: {
         error: 'Too many authentication attempts, please try again later',
-        retryAfter: '15 minutes',
+        retryAfter: '1 minute',
     },
     standardHeaders: true,
     legacyHeaders: false,
