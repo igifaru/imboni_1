@@ -194,7 +194,7 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
           // Header
           Text(
             'Register New Leader', 
-            style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: Colors.white)
+            style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)
           ),
           const SizedBox(height: 8),
           Text(
@@ -240,7 +240,7 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
                     side: BorderSide(color: theme.dividerColor),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
-                  child: const Text('Reka', style: TextStyle(color: Colors.white)),
+                  child: const Text('Reka'),
                 ),
               ),
               const SizedBox(width: 16),
@@ -269,7 +269,7 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
       padding: const EdgeInsets.only(bottom: 16),
       child: Text(
         title,
-        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Colors.white),
+        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
       ),
     );
   }
@@ -282,9 +282,9 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
         Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: theme.cardColor.withOpacity(0.3),
+            color: theme.colorScheme.surface, 
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: theme.dividerColor.withOpacity(0.1)),
+            border: Border.all(color: theme.colorScheme.outlineVariant), 
           ),
           child: Column(
             children: [
@@ -365,9 +365,9 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
         Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: theme.cardColor.withOpacity(0.3),
+            color: theme.colorScheme.surface, 
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: theme.dividerColor.withOpacity(0.1)),
+            border: Border.all(color: theme.colorScheme.outlineVariant), 
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -453,9 +453,9 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
         Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: theme.cardColor.withOpacity(0.3),
+            color: theme.colorScheme.surface, 
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: theme.dividerColor.withOpacity(0.1)),
+            border: Border.all(color: theme.colorScheme.outlineVariant), 
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -509,7 +509,7 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
   Widget _buildLabel(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
-      child: Text(text, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500)),
+      child: Text(text, style: const TextStyle(fontWeight: FontWeight.w500)),
     );
   }
 
@@ -517,22 +517,23 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-           Text(label, style: TextStyle(color: Colors.grey, fontSize: 12)),
+           Text(label, style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor)),
            const SizedBox(height: 4),
            Container(
-             height: 40,
-             padding: const EdgeInsets.symmetric(horizontal: 8),
+             padding: const EdgeInsets.all(12),
              decoration: BoxDecoration(
-               color: theme.cardColor.withOpacity(0.5),
-               borderRadius: BorderRadius.circular(6),
-               border: Border.all(color: theme.dividerColor.withOpacity(0.1)),
+               color: theme.inputDecorationTheme.fillColor, 
+               borderRadius: BorderRadius.circular(8),
+               border: Border.all(color: theme.inputDecorationTheme.enabledBorder?.borderSide.color ?? Colors.grey),
              ),
              alignment: Alignment.centerLeft,
              child: Row(
                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                children: [
-                 Text(hint, style: TextStyle(color: enabled ? Colors.white : Colors.grey[600], fontSize: 13)),
-                 Icon(Icons.keyboard_arrow_down, size: 16, color: Colors.grey),
+                 Text(hint, style: theme.textTheme.bodyMedium?.copyWith(
+                    color: enabled ? null : theme.disabledColor
+                 )),
+                 Icon(Icons.keyboard_arrow_down, size: 20, color: theme.iconTheme.color),
                ],
              ),
            )
@@ -554,24 +555,10 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
       controller: controller,
       obscureText: obscureText,
       validator: validator,
-      style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(color: Colors.grey[600]),
-        prefixIcon: Icon(icon, color: Colors.grey, size: 20),
+        prefixIcon: Icon(icon, size: 20),
         suffixIcon: suffixIcon,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-        filled: true,
-        fillColor: theme.cardColor.withOpacity(0.5),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: theme.dividerColor.withOpacity(0.1)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: ImboniColors.primary, width: 1),
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
     );
   }
@@ -588,22 +575,12 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
       value: value,
       items: items.map((name) => DropdownMenuItem(
         value: name,
-        child: Text(name, style: TextStyle(color: Colors.white)),
+        child: Text(name),
       )).toList(),
       onChanged: onChanged,
-      dropdownColor: const Color(0xFF1F2937), // Dark dropdown
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(color: Colors.grey[600]),
-        prefixIcon: Icon(icon, color: Colors.grey, size: 20),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-        filled: true,
-        fillColor: theme.cardColor.withOpacity(0.5),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: theme.dividerColor.withOpacity(0.1)),
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        prefixIcon: Icon(icon, size: 20),
       ),
     );
   }
