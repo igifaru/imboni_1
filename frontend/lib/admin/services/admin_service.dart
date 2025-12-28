@@ -116,6 +116,22 @@ class AdminService extends ChangeNotifier {
       return false;
     }
   }
+
+  /// Get the logged-in leader's jurisdiction data
+  /// Returns province assignment and filtered districts from backend
+  Future<Map<String, dynamic>?> getMyJurisdiction() async {
+    try {
+      final response = await _apiClient.get('/admin/my-jurisdiction');
+      if (response.isSuccess && response.data != null) {
+        return response.data;
+      }
+      _error = response.error ?? 'Failed to fetch jurisdiction';
+      return null;
+    } catch (e) {
+      _error = e.toString();
+      return null;
+    }
+  }
 }
 
 final adminService = AdminService();
