@@ -369,7 +369,7 @@ router.get('/my-jurisdiction', authMiddleware, async (req: Request, res: Respons
         const provinceKey = provinceMapping[unit.name] || unit.name;
 
         // Get the province data (districts and below)
-        const provinceData = data[provinceKey as keyof typeof data];
+        const provinceData = (data as any)[provinceKey];
 
         if (!provinceData) {
             return res.status(404).json({

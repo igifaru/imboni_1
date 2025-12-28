@@ -359,8 +359,10 @@ router.get('/my-jurisdiction', jwt_middleware_1.authMiddleware, async (req, res)
         const data = rwandaData.default || rwandaData;
         // Map the assignment's jurisdiction name to data.json key
         const provinceKey = provinceMapping[unit.name] || unit.name;
+        console.log(`[my-jurisdiction] Unit name: ${unit.name}, Province key: ${provinceKey}`);
         // Get the province data (districts and below)
         const provinceData = data[provinceKey];
+        console.log(`[my-jurisdiction] Province data found: ${!!provinceData}`);
         if (!provinceData) {
             return res.status(404).json({
                 error: `Province "${unit.name}" not found in administrative data`,
