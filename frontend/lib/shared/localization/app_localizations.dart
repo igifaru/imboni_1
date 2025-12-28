@@ -17,6 +17,7 @@ class AppLocalizations {
   static const List<Locale> supportedLocales = [
     Locale('en'),
     Locale('fr'),
+    Locale('rw'),
   ];
 
   String get(String key) => _translations[locale.languageCode]?[key] ?? _translations['rw']![key] ?? key;
@@ -62,6 +63,61 @@ class AppLocalizations {
   String get levelDistrict => get('level_district');
   String get levelProvince => get('level_province');
   String get levelNational => get('level_national');
+  
+  // Registration Form
+  String get registerNewLeader => get('register_new_leader');
+  String get registerNewLeaderDesc => get('register_new_leader_desc');
+  String get personalInfo => get('personal_info');
+  String get addPhoto => get('add_photo');
+  String get fullName => get('full_name');
+  String get exampleName => get('example_name');
+  String get nationalId => get('national_id');
+  String get phoneNumber => get('phone_number');
+  String get emailOptional => get('email_optional');
+  String get roleAndLocation => get('role_and_location');
+  String get leadershipRole => get('leadership_role');
+  String get selectRole => get('select_role');
+  String get workLocation => get('work_location');
+  String get startDate => get('start_date');
+  String get securityAndStatus => get('security_and_status');
+  String get tempPassword => get('temp_password');
+  String get accountStatus => get('account_status');
+  String get active => get('active');
+  String get inactive => get('inactive');
+  String get copyPassword => get('copy_password');
+  String get passwordCopied => get('password_copied');
+  String get registrationSuccess => get('registration_success');
+  String get registrationFailed => get('registration_failed');
+  String get connectionError => get('connection_error');
+  String get selectLevel => get('select_level');
+  String get hintRoleSelect => get('hint_role_select');
+
+  // Settings Screen
+  String get settings => get('settings');
+  String get myAccount => get('my_account');
+  String get preferences => get('preferences');
+  String get supportAbout => get('support_about');
+  String get changePassword => get('change_password');
+  String get logOut => get('log_out');
+  String get language => get('language');
+  String get theme => get('theme');
+  String get darkMode => get('dark_mode');
+  String get helpCenter => get('help_center');
+  String get privacyPolicy => get('privacy_policy');
+  String get aboutImboni => get('about_imboni');
+  String get version => get('version');
+  String get role => get('role');
+  String get jurisdiction => get('jurisdiction');
+  String get logoutConfirmTitle => get('logout_confirm_title');
+  String get logoutConfirmContent => get('logout_confirm_content');
+  String get emailNotifications => get('email_notifications');
+  String get smsAlerts => get('sms_alerts');
+  
+  // Dashboard
+  String get dashboard => get('dashboard');
+  String get myCases => get('my_cases');
+  String get alerts => get('alerts');
+  String get performance => get('performance');
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
@@ -110,6 +166,59 @@ const Map<String, Map<String, String>> _translations = {
     'level_district': 'Akarere',
     'level_province': 'Intara',
     'level_national': "Urwego rw'Igihugu",
+    // Registration Form RW
+    'register_new_leader': 'Ongeraho Umuyobozi',
+    'register_new_leader_desc': 'Ongeraho umuyobozi mushya muri sisitemu.',
+    'personal_info': 'Amakuru Yihariye',
+    'add_photo': 'Ongeraho Ifoto',
+    'full_name': 'Amazina Yose',
+    'example_name': 'Urugero: Mugabo Jean',
+    'national_id': "Nimero y'Indangamuntu",
+    'phone_number': 'Nimero ya Telefoni',
+    'email_optional': 'Imell (Optional)',
+    'role_and_location': "Inshingano n'Aho Akorera",
+    'leadership_role': "Urwego rw'Ubuyobozi",
+    'select_role': 'Hitamo Urwego',
+    'work_location': 'Aho Akorera',
+    'start_date': 'Itariki Yatangiriyeho',
+    'security_and_status': 'Umutekano na Status',
+    'temp_password': "Ijambo ry'Ibanga ry'Agateganyo",
+    'account_status': 'Status ya Konti',
+    'active': 'Active',
+    'inactive': 'Inactive',
+    'copy_password': "Kopia Ijambo ry'Ibanga",
+    'password_copied': "Ijambo ry'Ibanga ryakopowe",
+    'registration_success': 'Yanditswe neza nka Uyobora',
+    'registration_failed': 'Kwiyandikisha byanze',
+    'connection_error': 'Ikibazo cya interineti',
+    'select_level': 'Hitamo',
+    'hint_role_select': 'Hitamo Urwego (urugero: Umuyobozi w\'Umudugudu)',
+    // Settings RW
+    'settings': 'Igenamiterere',
+    'my_account': 'Konti Yanjye',
+    'preferences': 'Ibyo Ukunda',
+    'support_about': 'Ubufasha & Ibyerekeye',
+    'change_password': 'Hindura Ijambo ry\'Ibanga',
+    'log_out': 'Sohoka',
+    'language': 'Ururimi',
+    'theme': 'Insanganyamatsiko',
+    'dark_mode': 'Mode Yijimye',
+    'help_center': 'Ikigo cy\'Ubufasha',
+    'privacy_policy': 'Politiki y\'Ibanga',
+    'about_imboni': 'Ibyerekeye Imboni',
+    'version': 'Verisiyo',
+    'role': 'Inshingano',
+    'jurisdiction': 'Ifasi',
+    'logout_confirm_title': 'Gusohoka',
+    'logout_confirm_content': 'Urahamya ko ushaka gusohoka?',
+    'email_notifications': 'Ubutumwa bwa Email',
+    'sms_alerts': 'Impuruza za SMS',
+    
+    // Dashboard RW
+    'dashboard': 'Incamake',
+    'my_cases': 'Ibibazo',
+    'alerts': 'Imburira',
+    'performance': 'Imikorere',
   },
   'en': {
     'app_name': 'Imboni',
@@ -146,6 +255,59 @@ const Map<String, Map<String, String>> _translations = {
     'level_district': 'District',
     'level_province': 'Province',
     'level_national': 'National Level',
+    // Registration Form EN
+    'register_new_leader': 'Register New Leader',
+    'register_new_leader_desc': 'Register a new leader in the system.',
+    'personal_info': 'Personal Information',
+    'add_photo': 'Add Photo',
+    'full_name': 'Full Name',
+    'example_name': 'Example: John Doe',
+    'national_id': 'National ID',
+    'phone_number': 'Phone Number',
+    'email_optional': 'Email (Optional)',
+    'role_and_location': 'Role and Location',
+    'leadership_role': 'Leadership Role',
+    'select_role': 'Select Role',
+    'work_location': 'Work Location',
+    'start_date': 'Start Date',
+    'security_and_status': 'Security and Status',
+    'temp_password': 'Temporary Password',
+    'account_status': 'Account Status',
+    'active': 'Active',
+    'inactive': 'Inactive',
+    'copy_password': 'Copy Password',
+    'password_copied': 'Password Copied',
+    'registration_success': 'Successfully registered Head of',
+    'registration_failed': 'Registration failed',
+    'connection_error': 'Connection error',
+    'select_level': 'Select',
+    'hint_role_select': 'Select Role (e.g., Village Leader)',
+    // Settings EN
+    'settings': 'Settings',
+    'my_account': 'My Account',
+    'preferences': 'Preferences',
+    'support_about': 'Support & About',
+    'change_password': 'Change Password',
+    'log_out': 'Log Out',
+    'language': 'Language',
+    'theme': 'Theme',
+    'dark_mode': 'Dark Mode',
+    'help_center': 'Help Center',
+    'privacy_policy': 'Privacy Policy',
+    'about_imboni': 'About Imboni',
+    'version': 'Version',
+    'role': 'Role',
+    'jurisdiction': 'Jurisdiction',
+    'logout_confirm_title': 'Logout',
+    'logout_confirm_content': 'Are you sure you want to logout?',
+    'email_notifications': 'Email Notifications',
+    'sms_alerts': 'SMS Alerts',
+
+    // Dashboard EN
+    'dashboard': 'Dashboard',
+    'my_cases': 'Cases',
+    'alerts': 'Alerts',
+    'performance': 'Performance',
   },
   'fr': {
     'app_name': 'Imboni',
@@ -182,5 +344,58 @@ const Map<String, Map<String, String>> _translations = {
     'level_district': 'District',
     'level_province': 'Province',
     'level_national': 'Niveau National',
+    // Registration Form FR
+    'register_new_leader': 'Inscrire un Nouveau Leader',
+    'register_new_leader_desc': 'Inscrire un nouveau leader dans le système.',
+    'personal_info': 'Informations Personnelles',
+    'add_photo': 'Ajouter une Photo',
+    'full_name': 'Nom Complet',
+    'example_name': 'Exemple: Jean Dupont',
+    'national_id': 'Identité Nationale',
+    'phone_number': 'Numéro de Téléphone',
+    'email_optional': 'Email (Optionnel)',
+    'role_and_location': 'Rôle et Lieu',
+    'leadership_role': 'Rôle de Leadership',
+    'select_role': 'Sélectionner le Rôle',
+    'work_location': 'Lieu de Travail',
+    'start_date': 'Date de Début',
+    'security_and_status': 'Sécurité et Statut',
+    'temp_password': 'Mot de Passe Temporaire',
+    'account_status': 'Statut du Compte',
+    'active': 'Actif',
+    'inactive': 'Inactif',
+    'copy_password': 'Copier le Mot de Passe',
+    'password_copied': 'Mot de Passe Copié',
+    'registration_success': 'Chef enregistré avec succès pour',
+    'registration_failed': "L'inscription a échoué",
+    'connection_error': 'Erreur de connexion',
+    'select_level': 'Sélectionner',
+    'hint_role_select': 'Sélectionner le Rôle (ex: Chef de Village)',
+    // Settings FR
+    'settings': 'Paramètres',
+    'my_account': 'Mon Compte',
+    'preferences': 'Préférences',
+    'support_about': 'Support & À propos',
+    'change_password': 'Changer le Mot de Passe',
+    'log_out': 'Se Déconnecter',
+    'language': 'Langue',
+    'theme': 'Thème',
+    'dark_mode': 'Mode Sombre',
+    'help_center': "Centre d'Aide",
+    'privacy_policy': 'Politique de Confidentialité',
+    'about_imboni': 'À propos de Imboni',
+    'version': 'Version',
+    'role': 'Rôle',
+    'jurisdiction': 'Juridiction',
+    'logout_confirm_title': 'Déconnexion',
+    'logout_confirm_content': 'Êtes-vous sûr de vouloir vous déconnecter?',
+    'email_notifications': 'Notifications Email',
+    'sms_alerts': 'Alertes SMS',
+
+    // Dashboard FR
+    'dashboard': 'Tableau de bord',
+    'my_cases': 'Dossiers',
+    'alerts': 'Alertes',
+    'performance': 'Performance',
   },
 };

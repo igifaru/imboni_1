@@ -7,6 +7,8 @@ import '../../../../shared/services/settings_service.dart';
 import '../../../../shared/widgets/dialogs/change_password_dialog.dart';
 import '../../../../main.dart'; // For logout navigation
 
+import '../../../../shared/localization/app_localizations.dart';
+
 class LeaderSettingsScreen extends StatefulWidget {
   const LeaderSettingsScreen({super.key});
 
@@ -44,7 +46,7 @@ class _LeaderSettingsScreenState extends State<LeaderSettingsScreen> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Settings'), // Kept simple to match style, though header is inside body for profile
+        title: Text(AppLocalizations.of(context).settings), 
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
       ),
@@ -91,7 +93,7 @@ class _LeaderSettingsScreenState extends State<LeaderSettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('My Account', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            Text(AppLocalizations.of(context).myAccount, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             Row(
               children: [
@@ -125,12 +127,13 @@ class _LeaderSettingsScreenState extends State<LeaderSettingsScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            _buildInfoRow(theme, colorScheme, Icons.verified_user_outlined, 'Role', _user?.roleDisplayName ?? '-'),
-            _buildInfoRow(theme, colorScheme, Icons.location_on_outlined, 'Jurisdiction', _user?.fullLocation ?? '-'),
+            const SizedBox(height: 16),
+            _buildInfoRow(theme, colorScheme, Icons.verified_user_outlined, AppLocalizations.of(context).role, _user?.roleDisplayName ?? '-'),
+            _buildInfoRow(theme, colorScheme, Icons.location_on_outlined, AppLocalizations.of(context).jurisdiction, _user?.fullLocation ?? '-'),
             const SizedBox(height: 16),
             const Divider(),
-            _buildActionTile(theme, colorScheme, 'Change Password', Icons.lock_outline_rounded, () => showDialog(context: context, builder: (_) => const ChangePasswordDialog())),
-            _buildActionTile(theme, colorScheme, 'Log Out', Icons.logout, _logout, isDestructive: true),
+            _buildActionTile(theme, colorScheme, AppLocalizations.of(context).changePassword, Icons.lock_outline_rounded, () => showDialog(context: context, builder: (_) => const ChangePasswordDialog())),
+            _buildActionTile(theme, colorScheme, AppLocalizations.of(context).logOut, Icons.logout, _logout, isDestructive: true),
           ],
         ),
       ),
@@ -146,14 +149,14 @@ class _LeaderSettingsScreenState extends State<LeaderSettingsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Preferences', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+              Text(AppLocalizations.of(context).preferences, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
                // Language
               Row(
                 children: [
                   Icon(Icons.language_outlined, color: colorScheme.primary, size: 22),
                   const SizedBox(width: 12),
-                  Text('Language', style: theme.textTheme.bodyMedium),
+                  Text(AppLocalizations.of(context).language, style: theme.textTheme.bodyMedium),
                   const Spacer(),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -173,13 +176,13 @@ class _LeaderSettingsScreenState extends State<LeaderSettingsScreen> {
               ),
               const SizedBox(height: 16),
               // Notifications
-              Row(children: [Icon(Icons.notifications_outlined, color: colorScheme.primary, size: 22), const SizedBox(width: 12), Text('Notifications', style: theme.textTheme.bodyMedium)]),
-              _buildSwitch('Email Notifications', settingsService.emailNotifications, (v) => settingsService.setEmailNotifications(v), theme, colorScheme),
-              _buildSwitch('SMS Alerts', settingsService.smsNotifications, (v) => settingsService.setSmsNotifications(v), theme, colorScheme),
+              Row(children: [Icon(Icons.notifications_outlined, color: colorScheme.primary, size: 22), const SizedBox(width: 12), Text(AppLocalizations.of(context).notifications, style: theme.textTheme.bodyMedium)]),
+              _buildSwitch(AppLocalizations.of(context).emailNotifications, settingsService.emailNotifications, (v) => settingsService.setEmailNotifications(v), theme, colorScheme),
+              _buildSwitch(AppLocalizations.of(context).smsAlerts, settingsService.smsNotifications, (v) => settingsService.setSmsNotifications(v), theme, colorScheme),
               const SizedBox(height: 16),
               // Theme
-              Row(children: [Icon(Icons.palette_outlined, color: colorScheme.primary, size: 22), const SizedBox(width: 12), Text('Theme', style: theme.textTheme.bodyMedium)]),
-              _buildSwitch('Dark Mode', settingsService.isDarkMode, (v) => settingsService.setDarkMode(v), theme, colorScheme),
+              Row(children: [Icon(Icons.palette_outlined, color: colorScheme.primary, size: 22), const SizedBox(width: 12), Text(AppLocalizations.of(context).theme, style: theme.textTheme.bodyMedium)]),
+              _buildSwitch(AppLocalizations.of(context).darkMode, settingsService.isDarkMode, (v) => settingsService.setDarkMode(v), theme, colorScheme),
             ],
           ),
         ),
@@ -194,13 +197,13 @@ class _LeaderSettingsScreenState extends State<LeaderSettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Support & About', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            Text(AppLocalizations.of(context).supportAbout, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
-            _buildActionTile(theme, colorScheme, 'Help Center', Icons.help_outline_rounded, () {}),
-            _buildActionTile(theme, colorScheme, 'Privacy Policy', Icons.privacy_tip_outlined, () {}),
-            _buildActionTile(theme, colorScheme, 'About Imboni', Icons.info_outline_rounded, () => _showAboutDialog(context)),
+            _buildActionTile(theme, colorScheme, AppLocalizations.of(context).helpCenter, Icons.help_outline_rounded, () {}),
+            _buildActionTile(theme, colorScheme, AppLocalizations.of(context).privacyPolicy, Icons.privacy_tip_outlined, () {}),
+            _buildActionTile(theme, colorScheme, AppLocalizations.of(context).aboutImboni, Icons.info_outline_rounded, () => _showAboutDialog(context)),
             const SizedBox(height: 16),
-            Row(children: [Text('Version', style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant)), const Spacer(), Text('1.2.0 (Build 45)', style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500))]),
+            Row(children: [Text(AppLocalizations.of(context).version, style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant)), const Spacer(), Text('1.2.0 (Build 45)', style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500))]),
           ],
         ),
       ),
@@ -262,11 +265,11 @@ class _LeaderSettingsScreenState extends State<LeaderSettingsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
+        title: Text(AppLocalizations.of(context).logoutConfirmTitle),
+        content: Text(AppLocalizations.of(context).logoutConfirmContent),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Logout', style: TextStyle(color: ImboniColors.error))),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(AppLocalizations.of(context).cancel)),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: Text(AppLocalizations.of(context).logOut, style: const TextStyle(color: ImboniColors.error))),
         ],
       ),
     );

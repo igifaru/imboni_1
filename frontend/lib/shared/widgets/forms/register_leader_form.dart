@@ -4,6 +4,8 @@ import '../../../admin/services/admin_service.dart';
 import '../../theme/colors.dart';
 import '../../theme/responsive.dart';
 import '../../constants/rwanda_provinces.dart';
+import '../../localization/app_localizations.dart';
+import 'package:flutter/services.dart';
 
 class RegisterLeaderForm extends StatefulWidget {
   const RegisterLeaderForm({super.key});
@@ -23,6 +25,7 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
   
   String? _selectedUnitName;
   String? _selectedRole;
+  String? _generatedPassword;
   List<String> _availableChildren = [];
   String _targetLevel = 'PROVINCE';
   String _parentJurisdiction = 'Rwanda';
@@ -42,10 +45,11 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
 
   void _generatePassword() {
     // Simple random password generator for demo/default
-    final chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#\$%^&*';
     final rnd = DateTime.now().microsecondsSinceEpoch;
     // Simple implementation for the "Imb@2025#XyZ" style from Figma
-    _passwordController.text = 'Imb@${DateTime.now().year}#${(rnd % 999).toString().padLeft(3, '0')}';
+    final newPass = 'Imb@${DateTime.now().year}#${(rnd % 999).toString().padLeft(3, '0')}';
+    _passwordController.text = newPass;
+    setState(() => _generatedPassword = newPass);
   }
 
   String _formatDate(DateTime date) {
@@ -164,8 +168,9 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = MediaQuery.of(context).size.width > 900;
     final theme = Theme.of(context);
-    final isDesktop = Responsive.isDesktop(context);
+    final l10n = AppLocalizations.of(context);
 
     if (_isInitializing) {
       return const Center(child: CircularProgressIndicator());
@@ -193,12 +198,12 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
         children: [
           // Header
           Text(
-            'Register New Leader', 
+            l10n.registerNewLeader, 
             style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)
           ),
           const SizedBox(height: 8),
           Text(
-            'Ongeraho umuyobozi mushya muri sisitemu.',
+            l10n.registerNewLeaderDesc,
             style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey),
           ),
           const SizedBox(height: 32),
@@ -209,22 +214,22 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
               ? Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(child: _buildPersonalInfoSection(theme)),
+                    Expanded(child: _buildPersonalInfoSection(theme, l10n)),
                     const SizedBox(width: 32),
-                    Expanded(child: _buildRoleLocationSection(theme)),
+                    Expanded(child: _buildRoleLocationSection(theme, l10n)),
                   ],
                 )
               : Column(
                   children: [
-                    _buildPersonalInfoSection(theme),
+                    _buildPersonalInfoSection(theme, l10n),
                     const SizedBox(height: 32),
-                    _buildRoleLocationSection(theme),
+                    _buildRoleLocationSection(theme, l10n),
                   ],
                 ),
           ),
           
           const SizedBox(height: 32),
-          _buildSecuritySection(theme),
+          _buildSecuritySection(theme, l10n),
           
           const SizedBox(height: 40),
           Row(
@@ -240,7 +245,7 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
                     side: BorderSide(color: theme.dividerColor),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
-                  child: const Text('Reka'),
+                  child: Text(l10n.cancel),
                 ),
               ),
               const SizedBox(width: 16),
@@ -254,7 +259,7 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
                   ),
                   child: _isLoading 
                     ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : const Text('✔ Emeza', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    : Text('✔ ${l10n.confirm}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -274,11 +279,11 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
     );
   }
 
-  Widget _buildPersonalInfoSection(ThemeData theme) {
+  Widget _buildPersonalInfoSection(ThemeData theme, AppLocalizations l10n) { // Added l10n
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('Amakuru Yihariye', theme),
+        _buildSectionHeader(l10n.personalInfo, theme), // Pass l10n.personalInfo
         Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
@@ -295,37 +300,34 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      color: Colors.grey[200],
-                      shape: BoxShape.circle,
+                       color: theme.dividerColor.withOpacity(0.1),
+                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.camera_alt_outlined, color: Colors.grey, size: 30),
+                    child: Icon(Icons.camera_alt_outlined, size: 40, color: theme.disabledColor),
                   ),
                   const SizedBox(width: 16),
-                  Expanded(
+                  Expanded( // Fixed broken widget tree here
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Amazina Yose', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500)),
-                        const SizedBox(height: 8),
+                        _buildLabel(l10n.fullName),
                         _buildTextField(
-                          hint: 'Amazina Yose',
+                          hint: l10n.fullName,
                           controller: _nameController,
                           icon: Icons.person_outline,
-                          validator: (v) => v?.isEmpty == true ? 'Required' : null,
+                          validator: (v) => v?.isNotEmpty == true ? null : 'Required',
                           theme: theme,
                         ),
                         const SizedBox(height: 4),
-                        Text('Urugero: Mugabo Jean', style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey)),
+                        Text(l10n.exampleName, style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey)),
                       ],
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              Center(child: TextButton(onPressed: () {}, child: Text('Ongeraho Ifoto', style: TextStyle(color: Colors.grey[400])))),
-              
               const SizedBox(height: 16),
-              _buildLabel('Nimero y\'Indangamuntu'),
+              
+              _buildLabel(l10n.nationalId),
               _buildTextField(
                 hint: '1 1990 8 0000000 0 00',
                 controller: _nationalIdController,
@@ -334,16 +336,16 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
               ),
 
               const SizedBox(height: 16),
-              _buildLabel('Nimero ya Telefoni'),
+              _buildLabel(l10n.phoneNumber),
               _buildTextField(
-                hint: '+250 7X XXX XXXX',
-                controller: _phoneController,
-                icon: Icons.phone_outlined,
-                theme: theme,
+                 hint: '+250 7X XXX XXXX',
+                 controller: _phoneController,
+                 icon: Icons.phone_outlined,
+                 theme: theme,
               ),
 
               const SizedBox(height: 16),
-              _buildLabel('Imell (Optional)'),
+              _buildLabel(l10n.emailOptional),
               _buildTextField(
                 hint: 'email@example.com',
                 controller: _emailController,
@@ -357,11 +359,11 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
     );
   }
 
-  Widget _buildRoleLocationSection(ThemeData theme) {
+  Widget _buildRoleLocationSection(ThemeData theme, AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('Inshingano n\'Aho Akorera', theme),
+        _buildSectionHeader(l10n.roleAndLocation, theme),
         Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
@@ -372,26 +374,26 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildLabel('Urwego rw\'Ubuyobozi'),
+              _buildLabel(l10n.leadershipRole),
               _buildDropdown(
                 value: _selectedRole,
-                hint: 'Hitamo Urwego',
+                hint: l10n.selectRole,
                 icon: Icons.work_outline,
                 items: ['Village Leader', 'Cell Executive', 'Sector Executive', 'District Mayor'],
                 onChanged: _onRoleChanged,
                 theme: theme,
               ),
-              Text('Hitamo Urwego (e.g., Village Leader, Cell Executive)', style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey)),
+              Text(l10n.hintRoleSelect, style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey)),
 
               const SizedBox(height: 16),
-              _buildLabel('Aho Akorera'),
+              _buildLabel(l10n.workLocation),
               _buildHierarchy(theme),
-              _buildLabel('Itariki yatangiriyeho'),
+              _buildLabel(l10n.startDate),
               InkWell(
                 onTap: () => _selectDate(context),
                 child: AbsorbPointer(
                   child: _buildTextField(
-                    hint: 'yatangiriyeho',
+                    hint: l10n.startDate,
                     controller: _startDateController,
                     icon: Icons.calendar_today_outlined,
                     theme: theme,
@@ -406,11 +408,11 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
     );
   }
 
-  Widget _buildSecuritySection(ThemeData theme) {
+  Widget _buildSecuritySection(ThemeData theme, AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('Umutekano na Status', theme),
+        _buildSectionHeader(l10n.securityAndStatus, theme),
         Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
@@ -426,36 +428,61 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildLabel('Ijambo ry\'Ibanga ry\'Agateganyo'),
-                    _buildTextField(
-                      hint: 'Password',
-                      controller: _passwordController,
-                      icon: Icons.lock_outline,
-                      theme: theme,
-                      suffixIcon: IconButton(
-                        icon: const Icon(Icons.copy, size: 20, color: Colors.grey),
-                        onPressed: () {}, // Implement copy
+                    _buildLabel(l10n.tempPassword),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: theme.scaffoldBackgroundColor,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: theme.dividerColor.withOpacity(0.1)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.lock_outline, size: 20, color: Colors.grey[600]),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: SelectableText(
+                              _generatedPassword ?? 'Generating...', 
+                              style: theme.textTheme.bodyLarge?.copyWith(fontFamily: 'Courier', fontWeight: FontWeight.bold)
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.copy_outlined, size: 20),
+                            onPressed: () {
+                              if (_generatedPassword != null) {
+                                Clipboard.setData(ClipboardData(text: _generatedPassword!));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                   SnackBar(content: Text(l10n.passwordCopied), backgroundColor: ImboniColors.success)
+                                );
+                              }
+                            },
+                            tooltip: l10n.copyPassword,
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text('Share this password. They must change it on first login.', style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey)),
+                    const SizedBox(height: 8),
+                    Text('Share this password. They must change it on first login.', style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor)),
                   ],
                 ),
               ),
-              const SizedBox(width: 32),
+              const SizedBox(width: 24),
               Expanded(
                 flex: 1,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildLabel('Status ya Konti'),
+                    _buildLabel(l10n.accountStatus),
                     const SizedBox(height: 8),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(_isActive ? 'Active' : 'Inactive', style: TextStyle(color: Colors.white)),
-                      value: _isActive,
-                      activeColor: ImboniColors.primary,
-                      onChanged: (v) => setState(() => _isActive = v),
+                    Row(
+                      children: [
+                        Text(_isActive ? l10n.active : l10n.inactive, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
+                        Switch(
+                          value: _isActive,
+                          activeColor: ImboniColors.primary,
+                          onChanged: (v) => setState(() => _isActive = v),
+                        ),
+                      ],
                     ),
                   ],
                 ),

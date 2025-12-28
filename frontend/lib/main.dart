@@ -102,14 +102,22 @@ class _ImboniAppState extends State<ImboniApp> {
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
+        // Fallback delegates for Kinyarwanda (uses English defaults for system widgets)
+        _RwMaterialLocalizationsDelegate(),
+        _RwCupertinoLocalizationsDelegate(),
       ],
-      supportedLocales: const [Locale('en'), Locale('fr')],
+      supportedLocales: const [Locale('en'), Locale('fr'), Locale('rw')],
       localeResolutionCallback: (locale, supportedLocales) {
-        final code = locale?.languageCode ?? 'en';
-        if (code == 'rw') return const Locale('en'); 
+        final code = locale?.languageCode ?? 'rw';
+        
+        // Check if the current locale is supported
         for (var l in supportedLocales) {
           if (l.languageCode == code) return l;
         }
+        
+        // If 'rw' (default) return it, otherwise fallback to english
+        if (code == 'rw') return const Locale('rw');
+        
         return const Locale('en');
       },
       home: _buildHome(),
@@ -140,4 +148,32 @@ class _ImboniAppState extends State<ImboniApp> {
     
     return CitizenHomeScreen();
   }
+}
+
+/// Delegate that provides English Material Localizations for Kinyarwanda
+class _RwMaterialLocalizationsDelegate extends LocalizationsDelegate<MaterialLocalizations> {
+  const _RwMaterialLocalizationsDelegate();
+
+  @override
+  bool isSupported(Locale locale) => locale.languageCode == 'rw';
+
+  @override
+  Future<MaterialLocalizations> load(Locale locale) async => DefaultMaterialLocalizations();
+
+  @override
+  bool shouldReload(_RwMaterialLocalizationsDelegate old) => false;
+}
+
+/// Delegate that provides English Cupertino Localizations for Kinyarwanda
+class _RwCupertinoLocalizationsDelegate extends LocalizationsDelegate<CupertinoLocalizations> {
+  const _RwCupertinoLocalizationsDelegate();
+
+  @override
+  bool isSupported(Locale locale) => locale.languageCode == 'rw';
+
+  @override
+  Future<CupertinoLocalizations> load(Locale locale) async => DefaultCupertinoLocalizations();
+
+  @override
+  bool shouldReload(_RwCupertinoLocalizationsDelegate old) => false;
 }

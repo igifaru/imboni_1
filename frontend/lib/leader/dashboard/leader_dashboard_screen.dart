@@ -13,6 +13,7 @@ import 'escalation_alerts/escalation_alerts_screen.dart';
 import 'performance/performance_screen.dart';
 import 'settings/leader_settings_screen.dart';
 import '../../admin/services/admin_service.dart';
+import '../../shared/localization/app_localizations.dart';
 
 /// Leader Dashboard Screen - Professional responsive design
 class LeaderDashboardScreen extends StatefulWidget {
@@ -81,16 +82,17 @@ class _LeaderDashboardScreenState extends State<LeaderDashboardScreen> {
       selectedIndex: _currentIndex,
       onDestinationSelected: (i) => setState(() => _currentIndex = i),
       destinations: [
-        const NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: 'Dashboard'),
-        const NavigationDestination(icon: Icon(Icons.folder_outlined), selectedIcon: Icon(Icons.folder), label: 'Ibibazo'),
-        const NavigationDestination(icon: Icon(Icons.warning_amber_outlined), selectedIcon: Icon(Icons.warning_amber), label: 'Imburira'),
-        const NavigationDestination(icon: Icon(Icons.analytics_outlined), selectedIcon: Icon(Icons.analytics), label: 'Imikorere'),
-        if (showRegister) const NavigationDestination(icon: Icon(Icons.person_add_outlined), selectedIcon: Icon(Icons.person_add), label: 'Register Leader'),
+        NavigationDestination(icon: const Icon(Icons.dashboard_outlined), selectedIcon: const Icon(Icons.dashboard), label: AppLocalizations.of(context).dashboard),
+        NavigationDestination(icon: const Icon(Icons.folder_outlined), selectedIcon: const Icon(Icons.folder), label: AppLocalizations.of(context).myCases),
+        NavigationDestination(icon: const Icon(Icons.warning_amber_outlined), selectedIcon: const Icon(Icons.warning_amber), label: AppLocalizations.of(context).alerts),
+        NavigationDestination(icon: const Icon(Icons.analytics_outlined), selectedIcon: const Icon(Icons.analytics), label: AppLocalizations.of(context).performance),
+        if (showRegister) NavigationDestination(icon: const Icon(Icons.person_add_outlined), selectedIcon: const Icon(Icons.person_add), label: AppLocalizations.of(context).registerNewLeader),
       ],
     ),
   );
 
   Widget _buildDesktop(ThemeData theme, List<Widget> screens, bool showRegister) {
+    final l10n = AppLocalizations.of(context);
     final isDark = theme.brightness == Brightness.dark;
     return Scaffold(
       body: Row(children: [
@@ -113,16 +115,16 @@ class _LeaderDashboardScreenState extends State<LeaderDashboardScreen> {
                   child: const Icon(Icons.shield, color: Colors.white, size: 24),
                 ),
                 const SizedBox(width: 12),
-                Text('Imboni', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                Text(l10n.appName, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
               ]),
             ),
             const SizedBox(height: 8),
-            ..._buildNavItems(theme, isDark, showRegister),
+            ..._buildNavItems(theme, isDark, showRegister, l10n),
             const Spacer(),
             const Divider(),
             ListTile(
               leading: Icon(Icons.settings_outlined, color: theme.colorScheme.onSurfaceVariant),
-              title: Text('Settings', style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
+              title: Text(l10n.settings, style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
               onTap: () => Navigator.push(
                 context, 
                 MaterialPageRoute(builder: (_) => const LeaderSettingsScreen()),
@@ -136,13 +138,13 @@ class _LeaderDashboardScreenState extends State<LeaderDashboardScreen> {
     );
   }
 
-  List<Widget> _buildNavItems(ThemeData theme, bool isDark, bool showRegister) {
+  List<Widget> _buildNavItems(ThemeData theme, bool isDark, bool showRegister, AppLocalizations l10n) {
     final items = [
-      (Icons.dashboard, 'Dashboard', 0),
-      (Icons.folder, 'Ibibazo', 1),
-      (Icons.warning_amber, 'Imburira', 2),
-      (Icons.analytics, 'Imikorere', 3),
-      if (showRegister) (Icons.person_add, 'Register Leader', 4),
+      (Icons.dashboard, l10n.dashboard, 0),
+      (Icons.folder, l10n.myCases, 1),
+      (Icons.warning_amber, l10n.alerts, 2),
+      (Icons.analytics, l10n.performance, 3),
+      if (showRegister) (Icons.person_add, l10n.registerNewLeader, 4),
     ];
     return items.map((item) {
       final isSelected = _currentIndex == item.$3;
@@ -241,7 +243,7 @@ class _DashboardHomeState extends State<_DashboardHome> {
             : SingleChildScrollView(
                 padding: EdgeInsets.all(padding),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Dashboard', style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold)),
+                  Text(AppLocalizations.of(context).dashboard, style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 24),
                   _buildStatsRow(theme, isDark),
                   const SizedBox(height: 32),
