@@ -18,9 +18,55 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   
-  String? _selectedProvince;
+  String? _selectedUnitName;
+  List<String> _availableChildren = [];
+  String _targetLevel = 'PROVINCE';
+  String _parentJurisdiction = 'Rwanda';
   
   bool _isLoading = false;
+  bool _isInitializing = true;
+  String? _initError;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadContext();
+  }
+
+  Future<void> _loadContext() async {
+    setState(() {
+      _isInitializing = true;
+      _initError = null;
+    });
+
+    try {
+      final context = await adminService.getMyJurisdiction();
+      if (context != null && context['success'] == true) {
+        if (mounted) {
+          setState(() {
+            _targetLevel = context['targetLevel'] ?? 'PROVINCE';
+            _parentJurisdiction = context['jurisdiction'] ?? 'Rwanda';
+            _availableChildren = List<String>.from(context['children'] ?? []);
+            _isInitializing = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _initError = adminService.error ?? 'Failed to load system context';
+            _isInitializing = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _initError = 'Connection error: Could not reach server';
+          _isInitializing = false;
+        });
+      }
+    }
+  }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
@@ -31,21 +77,24 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
       name: _nameController.text.trim(),
       email: _emailController.text.trim(),
       password: _passwordController.text,
-      level: 'PROVINCE', // Admin only registers at province level
-      jurisdictionName: _selectedProvince!,
+      level: _targetLevel,
+      jurisdictionName: _selectedUnitName!,
     );
 
     if (mounted) {
       setState(() => _isLoading = false);
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Leader registered successfully'), backgroundColor: Colors.green),
+          SnackBar(
+            content: Text('Succesfully registered Head of $_selectedUnitName'), 
+            backgroundColor: Colors.green
+          ),
         );
         _formKey.currentState!.reset();
         _nameController.clear();
         _emailController.clear();
         _passwordController.clear();
-        setState(() => _selectedProvince = null);
+        setState(() => _selectedUnitName = null);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(adminService.error ?? 'Registration failed'), backgroundColor: Colors.red),
@@ -67,16 +116,57 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
     final theme = Theme.of(context);
     final isDesktop = Responsive.isDesktop(context);
 
+    if (_isInitializing) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_initError != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
+            const SizedBox(height: 16),
+            Text(_initError!, style: theme.textTheme.bodyLarge),
+            const SizedBox(height: 24),
+            ElevatedButton(onPressed: _loadContext, child: const Text('Retry')),
+          ],
+        ),
+      );
+    }
+
     return SingleChildScrollView(
       padding: EdgeInsets.all(isDesktop ? 40 : 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Register Province Leader', style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Text(
-            'Register a leader for a province (Intara) administrative unit.',
-            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: ImboniColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.person_add, color: ImboniColors.primary),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Register ${_formatLevel(_targetLevel)} Leader', 
+                      style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)
+                    ),
+                    Text(
+                      'Assigned under $_parentJurisdiction',
+                      style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 32),
 
@@ -88,7 +178,7 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
                 _buildTextField(
                   label: 'Full Name',
                   controller: _nameController,
-                  icon: Icons.person,
+                  icon: Icons.person_outline,
                   validator: (v) => v?.isEmpty == true ? 'Required' : null,
                   theme: theme,
                 ),
@@ -97,7 +187,7 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
                 _buildTextField(
                   label: 'Email Address',
                   controller: _emailController,
-                  icon: Icons.email,
+                  icon: Icons.email_outlined,
                   validator: (v) => v?.isEmpty == true || !v!.contains('@') ? 'Invalid email' : null,
                   theme: theme,
                 ),
@@ -106,46 +196,51 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
                 _buildTextField(
                   label: 'Initial Password',
                   controller: _passwordController,
-                  icon: Icons.lock,
+                  icon: Icons.lock_outline,
                   obscureText: true,
-                  validator: (v) => v != null && v.length < 6 ? 'Min 6 chars' : null,
+                  validator: (v) => v != null && v.length < 6 ? 'Min 6 characters' : null,
                   theme: theme,
                 ),
                 const SizedBox(height: 16),
 
-                // Province Dropdown
+                // Jurisdiction Dropdown
                 DropdownButtonFormField<String>(
-                  initialValue: _selectedProvince,
-                  items: rwandaProvinces.map((p) => DropdownMenuItem(
-                    value: p.code,
-                    child: Text(p.name),
+                  value: _selectedUnitName,
+                  items: _availableChildren.map((name) => DropdownMenuItem(
+                    value: name,
+                    child: Text(name),
                   )).toList(),
-                  onChanged: (v) => setState(() => _selectedProvince = v),
+                  onChanged: (v) => setState(() => _selectedUnitName = v),
                   decoration: InputDecoration(
-                    labelText: 'Province (Intara)',
-                    prefixIcon: const Icon(Icons.map),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    labelText: 'Select ${_formatLevel(_targetLevel)}',
+                    prefixIcon: const Icon(Icons.location_on_outlined),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     filled: true,
-                    fillColor: theme.cardColor,
+                    fillColor: theme.cardColor.withValues(alpha: 0.5),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: theme.dividerColor.withValues(alpha: 0.1)),
+                    ),
                   ),
-                  validator: (v) => v == null ? 'Please select a province' : null,
+                  validator: (v) => v == null ? 'Please select a unit' : null,
                   dropdownColor: theme.cardColor,
+                  icon: const Icon(Icons.keyboard_arrow_down_rounded),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 40),
 
                 SizedBox(
-                  height: 50,
+                  height: 56,
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _submit,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: ImboniColors.primary,
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       elevation: 0,
                     ),
                     child: _isLoading 
-                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Text('Register Leader', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : Text('Complete Registration', style: theme.textTheme.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
@@ -154,6 +249,17 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
         ],
       ),
     );
+  }
+
+  String _formatLevel(String level) {
+    switch (level) {
+      case 'PROVINCE': return 'Province';
+      case 'DISTRICT': return 'District';
+      case 'SECTOR': return 'Sector';
+      case 'CELL': return 'Cell';
+      case 'VILLAGE': return 'Village';
+      default: return level;
+    }
   }
 
   Widget _buildTextField({
@@ -168,19 +274,24 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
       controller: controller,
       obscureText: obscureText,
       validator: validator,
+      style: theme.textTheme.bodyLarge,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon, color: theme.colorScheme.onSurfaceVariant),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         filled: true,
-        fillColor: theme.cardColor.withAlpha(200).withValues(alpha: 0.5),
+        fillColor: theme.cardColor.withValues(alpha: 0.5),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: theme.dividerColor.withValues(alpha: 0.1)),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: ImboniColors.primary),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: ImboniColors.primary, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: theme.colorScheme.error),
         ),
       ),
     );

@@ -9,29 +9,88 @@ import { authMiddleware, roleMiddleware } from '../auth/jwt.middleware';
 const logger = createServiceLogger('admin-routes');
 const router = Router();
 
+/**
+ * Hierarchy mapping: Registrar Level -> Subordinate Level
+ */
+const HIERARCHY: Record<string, AdministrativeLevel> = {
+    [AdministrativeLevel.NATIONAL]: AdministrativeLevel.PROVINCE,
+    [AdministrativeLevel.PROVINCE]: AdministrativeLevel.DISTRICT,
+    [AdministrativeLevel.DISTRICT]: AdministrativeLevel.SECTOR,
+    [AdministrativeLevel.SECTOR]: AdministrativeLevel.CELL,
+    [AdministrativeLevel.CELL]: AdministrativeLevel.VILLAGE,
+};
+
+/**
+ * Province name mapping: Kinyarwanda -> data.json keys
+ */
+const provinceMapping: Record<string, string> = {
+    'Kigali': 'Kigali',
+    'Amajyaruguru': 'North',
+    'Amajyepfo': 'South',
+    'Iburasirazuba': 'East',
+    'Iburengerazuba': 'West',
+};
+
 // Validation schema for registering a subordinate
 const RegisterSubordinateSchema = z.object({
     name: z.string().min(2),
     email: z.string().email(),
     password: z.string().min(6), // Initial password
     role: z.nativeEnum(UserRole).default(UserRole.LEADER),
-    administrativeUnitId: z.string().optional(), // Optional if parent logic determines it
+    administrativeUnitId: z.string().optional(),
     level: z.nativeEnum(AdministrativeLevel),
     jurisdictionName: z.string(), // e.g. "Kigali", "Gasabo", etc.
 });
 
 /**
+ * Find the unit's path in the database to traverse JSON
+ */
+async function getUnitFullPath(unitId: string) {
+    const path = [];
+    let currId: string | null = unitId;
+    while (currId) {
+        const u: any = await prisma.administrativeUnit.findUnique({ where: { id: currId } });
+        if (!u) break;
+        path.unshift(u);
+        currId = u.parentId;
+    }
+    return path;
+}
+
+/**
+ * Traverse the JSON data to find current node for a given path of units
+ */
+function getDataAtUnitPath(path: any[], data: any) {
+    let current = data;
+
+    // Follow the path
+    for (const unit of path) {
+        const key = provinceMapping[unit.name] || unit.name;
+        if (current[key]) {
+            current = current[key];
+        } else {
+            return null; // Path not found in JSON
+        }
+    }
+    return current;
+}
+
+/**
+ * Traverse the JSON data to find children for a given path of units
+ */
+function getChildrenFromJson(path: any[], data: any) {
+    const node = getDataAtUnitPath(path, data);
+    if (!node) return [];
+
+    // Return keys (cities/sectors/cells) or values (villages)
+    return Array.isArray(node) ? node : Object.keys(node);
+}
+
+/**
  * POST /register-subordinate
  * Allows a leader to register a direct subordinate in the hierarchy.
- * Rules:
- * - Admin -> Province Leader
- * - Province Leader -> District Leader (Mayor)
- * - District Leader -> Sector Leader
- * - Sector Leader -> Cell Leader
- * - Cell Leader -> Village Leader
  */
-router.post('/register-subordinate', async (req: Request, res: Response) => {
-    // Current user (the one trying to register someone)
+router.post('/register-subordinate', authMiddleware, async (req: Request, res: Response) => {
     const registrarId = (req as any).user?.userId;
     const registrarRole = (req as any).user?.role;
 
@@ -45,87 +104,63 @@ router.post('/register-subordinate', async (req: Request, res: Response) => {
 
         const { name, email, password, role, level, jurisdictionName } = validation.data;
 
-        // 1. Verify Registrar's Jurisdiction and Permissions
-        // const registrarAssignment = await prisma.leaderAssignment.findFirst({
-        //     where: { userId: registrarId, isActive: true },
-        //     include: { administrativeUnit: true }
-        // });
+        // Load Rwanda administrative data
+        const rwandaData = await import('../data/rwanda-admin.json');
+        const adminJson = rwandaData.default || rwandaData;
 
         let parentUnitId: string | null = null;
+        let registrarLevel: AdministrativeLevel = AdministrativeLevel.NATIONAL;
+        let registrarPath: any[] = [];
 
-        // Logic to determine if registrar can register this level
-        if (registrarRole === 'ADMIN') {
-            // Admin can register Province Leaders
-            if (level !== AdministrativeLevel.PROVINCE) {
-                return res.status(403).json({ error: 'System Admin can only register Province Leaders directly.' });
-            }
-            // Parent for Province is National (or null in this simplified schema where Admin is top)
-            // parentUnitId remains null or we find a "National" unit if it existed.
-        } else {
-            // For other leaders, we need to know their current unit
-            const registrarAssignment = await prisma.leaderAssignment.findFirst({
+        if (registrarRole !== 'ADMIN') {
+            const assignment = await prisma.leaderAssignment.findFirst({
                 where: { userId: registrarId, isActive: true },
                 include: { administrativeUnit: true }
             });
 
-            if (!registrarAssignment) {
-                return res.status(403).json({ error: 'You do not have an active leader assignment to perform this action.' });
+            if (!assignment) {
+                return res.status(403).json({ error: 'No active leader assignment found.' });
             }
 
-            const registrarLevel = registrarAssignment.administrativeUnit.level;
-            parentUnitId = registrarAssignment.administrativeUnitId;
-
-            // Enforce hierarchy
-            const hierarchy: Record<string, AdministrativeLevel> = {
-                [AdministrativeLevel.PROVINCE]: AdministrativeLevel.DISTRICT,
-                [AdministrativeLevel.DISTRICT]: AdministrativeLevel.SECTOR,
-                [AdministrativeLevel.SECTOR]: AdministrativeLevel.CELL,
-                [AdministrativeLevel.CELL]: AdministrativeLevel.VILLAGE,
-            };
-
-            const allowedChildLevel = hierarchy[registrarLevel];
-
-            if (allowedChildLevel !== level) {
-                return res.status(403).json({
-                    error: `A ${registrarLevel} leader can only register a ${allowedChildLevel} leader. You are trying to register a ${level}.`
-                });
-            }
+            registrarLevel = assignment.administrativeUnit.level;
+            parentUnitId = assignment.administrativeUnitId;
+            registrarPath = await getUnitFullPath(parentUnitId);
         }
 
-        // 2. Check or Create the Administrative Unit
-        // For provinces, we seeded them. For others, we might need to create them if they don't exist.
-        // We expect the user to provide the NAME of the unit (e.g., "Kigali", "Gasabo").
-        // We should check if it exists under the parent.
+        // 1. Enforce strict hierarchy
+        const allowedChildLevel = HIERARCHY[registrarLevel];
+        if (allowedChildLevel !== level) {
+            return res.status(403).json({
+                error: `A ${registrarLevel} leader can only register a ${allowedChildLevel} leader.`
+            });
+        }
 
-        // Note: For simplified MVP, we assume the unit might simply be created if not found, 
-        // OR we enforce it must exist. Let's try to upsert it for flexibility, 
-        // ensuring it's linked to the parent.
+        // 2. Validate jurisdiction existence in JSON
+        const validChildren = getChildrenFromJson(registrarPath, adminJson);
+        if (!validChildren.includes(jurisdictionName)) {
+            return res.status(400).json({
+                error: `Jurisdiction "${jurisdictionName}" is not a valid child of your current assignment.`
+            });
+        }
 
-        // Generate a code (simple slug)
-        const code = jurisdictionName.toUpperCase().replace(/\s+/g, '_');
+        // 3. Check or Create the Administrative Unit
+        const parentCodes = registrarPath.map(u => u.name.toUpperCase().replace(/\s+/g, '_'));
+        const unitNameCode = jurisdictionName.toUpperCase().replace(/\s+/g, '_');
+        const code = [...parentCodes, unitNameCode].join(':');
 
         const targetUnit = await prisma.administrativeUnit.upsert({
-            where: { code }, // Assuming codes are unique globally for now (or composite unique in reality)
+            where: { code },
             update: {},
             create: {
                 name: jurisdictionName,
                 level: level,
                 code: code,
-                parentId: parentUnitId, // Link to the registrar's unit
+                parentId: parentUnitId,
             }
         });
 
-        // Verify parent link correctness (if unit existed, ensure it belongs to this parent)
-        if (parentUnitId && targetUnit.parentId !== parentUnitId) {
-            // If we really want to be strict. For now, let's warn or fail.
-            // If unit exists but has different parent, that's a data consistency issue or collision.
-        }
-
-
-        // 3. Create the User (Subordinate)
+        // 4. Create the User (Subordinate)
         const hashedPassword = await hashPassword(password);
-
-        // Check duplicate email
         const existingUser = await prisma.user.findUnique({ where: { email } });
         if (existingUser) {
             return res.status(409).json({ error: 'User with this email already exists' });
@@ -136,17 +171,17 @@ router.post('/register-subordinate', async (req: Request, res: Response) => {
                 name,
                 email,
                 password: hashedPassword,
-                role: role, // Likely LEADER
+                role: role,
                 status: 'ACTIVE',
             }
         });
 
-        // 4. Create Leader Assignment
+        // 5. Create Leader Assignment
         await prisma.leaderAssignment.create({
             data: {
                 userId: newUser.id,
                 administrativeUnitId: targetUnit.id,
-                positionTitle: `Head of ${jurisdictionName}`, // Default title
+                positionTitle: `Head of ${jurisdictionName}`,
                 startDate: new Date(),
                 isActive: true
             }
@@ -175,22 +210,16 @@ router.post('/register-subordinate', async (req: Request, res: Response) => {
  * GET /users
  * List all users with optional filtering.
  */
-router.get('/users', async (req: Request, res: Response) => {
+router.get('/users', authMiddleware, async (req: Request, res: Response) => {
     try {
         const { role, status, search, page = '1', limit = '50' } = req.query;
 
         const where: any = {};
-
         if (role) {
             const roles = String(role).split(',');
-            if (roles.length > 1) {
-                where.role = { in: roles };
-            } else {
-                where.role = role;
-            }
+            where.role = roles.length > 1 ? { in: roles } : role;
         }
         if (status) where.status = status;
-
         if (search) {
             where.OR = [
                 { name: { contains: String(search), mode: 'insensitive' } },
@@ -203,14 +232,7 @@ router.get('/users', async (req: Request, res: Response) => {
         const [users, total] = await Promise.all([
             prisma.user.findMany({
                 where,
-                select: {
-                    id: true,
-                    name: true,
-                    email: true,
-                    role: true,
-                    status: true,
-                    createdAt: true
-                },
+                select: { id: true, name: true, email: true, role: true, status: true, createdAt: true },
                 skip,
                 take: Number(limit),
                 orderBy: { createdAt: 'desc' }
@@ -228,22 +250,21 @@ router.get('/users', async (req: Request, res: Response) => {
             }
         });
     } catch (error) {
-        logger.error('Failed to items users', error);
+        logger.error('Failed to fetch users', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
 
 /**
  * PATCH /users/:id/status
- * Activate or Deactivate a user.
  */
-router.patch('/users/:id/status', async (req: Request, res: Response) => {
+router.patch('/users/:id/status', authMiddleware, async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         const { status } = req.body;
 
         if (!['ACTIVE', 'INACTIVE'].includes(status)) {
-            return res.status(400).json({ error: 'Invalid status. Use ACTIVE or INACTIVE.' });
+            return res.status(400).json({ error: 'Invalid status.' });
         }
 
         const user = await prisma.user.update({
@@ -252,7 +273,6 @@ router.patch('/users/:id/status', async (req: Request, res: Response) => {
             select: { id: true, status: true }
         });
 
-        logger.info(`User ${id} status updated to ${status} by ${(req as any).user?.userId}`);
         res.json({ success: true, user });
     } catch (error) {
         logger.error('Failed to update user status', error);
@@ -262,49 +282,27 @@ router.patch('/users/:id/status', async (req: Request, res: Response) => {
 
 /**
  * GET /stats/users-by-province
- * Aggregate user counts by Province and Status
  */
 router.get('/stats/users-by-province', authMiddleware, roleMiddleware('ADMIN'), async (req, res) => {
     try {
         const stats = await prisma.$queryRaw`
-            SELECT 
-                cp.province,
-                u.status,
-                COUNT(u.id)::int as count
+            SELECT cp.province, u.status, COUNT(u.id)::int as count
             FROM citizen_profiles cp
             JOIN users u ON u.id = cp.user_id
             WHERE cp.province IS NOT NULL
-            GROUP BY cp.province, u.status
-            ORDER BY cp.province ASC;
+            GROUP BY cp.province, u.status;
         `;
 
-        // Process data into a reliable format { province: string, active: number, inactive: number }
         const formattedStats: Record<string, { active: number, inactive: number }> = {};
-
         (stats as any[]).forEach(row => {
-            const province = row.province;
-            const status = row.status as string; // 'ACTIVE', 'INACTIVE', 'SUSPENDED'
-            const count = Number(row.count);
-
-            if (!formattedStats[province]) {
-                formattedStats[province] = { active: 0, inactive: 0 };
-            }
-
-            if (status === 'ACTIVE') {
-                formattedStats[province].active += count;
-            } else {
-                formattedStats[province].inactive += count;
-            }
+            if (!formattedStats[row.province]) formattedStats[row.province] = { active: 0, inactive: 0 };
+            if (row.status === 'ACTIVE') formattedStats[row.province].active += row.count;
+            else formattedStats[row.province].inactive += row.count;
         });
-
-        const result = Object.entries(formattedStats).map(([province, counts]) => ({
-            province,
-            ...counts
-        }));
 
         res.json({
             success: true,
-            data: result
+            data: Object.entries(formattedStats).map(([province, counts]) => ({ province, ...counts }))
         });
     } catch (error) {
         logger.error('Failed to fetch user stats by province', error);
@@ -313,81 +311,55 @@ router.get('/stats/users-by-province', authMiddleware, roleMiddleware('ADMIN'), 
 });
 
 /**
- * Province name mapping: Kinyarwanda -> data.json keys
- */
-const provinceMapping: Record<string, string> = {
-    'Kigali': 'Kigali',
-    'Amajyaruguru': 'North',
-    'Amajyepfo': 'South',
-    'Iburasirazuba': 'East',
-    'Iburengerazuba': 'West',
-};
-
-/**
  * GET /my-jurisdiction
- * Returns the logged-in leader's assigned province and its districts from data.json
  */
 router.get('/my-jurisdiction', authMiddleware, async (req: Request, res: Response) => {
     const userId = (req as any).user?.userId;
     const userRole = (req as any).user?.role;
 
-    if (!userId) {
-        return res.status(401).json({ error: 'Not authenticated' });
-    }
-
     try {
-        // Find the leader's active assignment
-        const assignment = await prisma.leaderAssignment.findFirst({
-            where: { userId, isActive: true },
-            include: {
-                administrativeUnit: true
-            }
-        });
-
-        if (!assignment) {
-            // If no assignment, check if user is ADMIN (super admin sees all)
-            if (userRole === 'ADMIN') {
-                // Return all provinces for super admin
-                const rwandaData = await import('../data/rwanda-admin.json');
-                return res.json({
-                    success: true,
-                    role: 'ADMIN',
-                    provinces: Object.keys(rwandaData.default || rwandaData),
-                    data: rwandaData.default || rwandaData
-                });
-            }
-            return res.status(404).json({ error: 'No active assignment found for this user' });
-        }
-
-        const unit = assignment.administrativeUnit;
-
-        // Load Rwanda administrative data
         const rwandaData = await import('../data/rwanda-admin.json');
-        const data = rwandaData.default || rwandaData;
+        const adminJson = rwandaData.default || rwandaData;
 
-        // Map the assignment's jurisdiction name to data.json key
-        const provinceKey = provinceMapping[unit.name] || unit.name;
-
-        // Get the province data (districts and below)
-        const provinceData = (data as any)[provinceKey];
-
-        if (!provinceData) {
-            return res.status(404).json({
-                error: `Province "${unit.name}" not found in administrative data`,
-                mappedKey: provinceKey
+        if (userRole === 'ADMIN') {
+            const provinces = getChildrenFromJson([], adminJson);
+            return res.json({
+                success: true,
+                role: 'ADMIN',
+                level: AdministrativeLevel.NATIONAL,
+                jurisdiction: 'Rwanda',
+                targetLevel: AdministrativeLevel.PROVINCE,
+                children: provinces,
+                districts: provinces, // Compatibility
+                data: adminJson
             });
         }
 
+        const assignment = await prisma.leaderAssignment.findFirst({
+            where: { userId, isActive: true },
+            include: { administrativeUnit: true }
+        });
+
+        if (!assignment) {
+            return res.status(404).json({ error: 'No active assignment found' });
+        }
+
+        const unit = assignment.administrativeUnit;
+        const unitPath = await getUnitFullPath(unit.id);
+        const children = getChildrenFromJson(unitPath, adminJson);
+        const nodeData = getDataAtUnitPath(unitPath, adminJson);
+
         res.json({
             success: true,
-            assignment: {
-                province: unit.name,
-                provinceKey,
-                level: unit.level,
-                unitId: unit.id
-            },
-            districts: Object.keys(provinceData),
-            data: provinceData
+            role: userRole,
+            level: unit.level,
+            jurisdiction: unit.name,
+            unitId: unit.id,
+            targetLevel: HIERARCHY[unit.level],
+            children: children,
+            districts: children, // Backward compatibility for DistrictCasesWidget
+            data: nodeData,      // Raw data for nested counting (sectors etc)
+            assignment: { province: unit.name } // Backward compatibility
         });
 
     } catch (error) {

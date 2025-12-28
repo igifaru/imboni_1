@@ -22,6 +22,8 @@ class _DistrictCasesWidgetState extends State<DistrictCasesWidget> {
   bool _isLoadingJurisdiction = true;
   String? _error;
   String? _provinceName;
+  String _targetLevel = 'District';
+  String _subTargetLevel = 'Sectors';
   List<String> _districts = [];
   Map<String, int> _districtSectors = {};
 
@@ -46,26 +48,34 @@ class _DistrictCasesWidgetState extends State<DistrictCasesWidget> {
       if (mounted) {
         if (data != null && data['success'] == true) {
           setState(() {
-            _provinceName = data['assignment']?['province'] ?? 'Unknown';
-            _districts = List<String>.from(data['districts'] ?? []);
+            // New generic fields
+            _provinceName = data['jurisdiction'] ?? data['assignment']?['province'] ?? 'Unknown';
+            final rawChildren = data['children'] ?? data['districts'] ?? [];
+            _districts = List<String>.from(rawChildren);
             
-            // Extract sector counts from jurisdiction data
+            final level = data['targetLevel'] ?? 'DISTRICT';
+            _targetLevel = _formatLevel(level);
+            _subTargetLevel = _formatSubLevel(level);
+
+            // Extract nested counts from jurisdiction data
             final jurData = data['data'] as Map<String, dynamic>?;
             _districtSectors = {};
             if (jurData != null) {
-              for (final district in _districts) {
-                if (jurData[district] is Map) {
-                  _districtSectors[district] = (jurData[district] as Map).length;
+              for (final child in _districts) {
+                if (jurData[child] is Map) {
+                  _districtSectors[child] = (jurData[child] as Map).length;
+                } else if (jurData[child] is List) {
+                  _districtSectors[child] = (jurData[child] as List).length;
                 }
               }
             }
             
             _isLoadingJurisdiction = false;
           });
-          debugPrint('[DistrictCasesWidget] Loaded ${_districts.length} districts for $_provinceName');
+          debugPrint('[DistrictCasesWidget] Loaded ${_districts.length} units for $_provinceName');
         } else {
           setState(() {
-            _error = 'Failed to load jurisdiction data';
+            _error = data?['error'] ?? 'Failed to load jurisdiction data';
             _isLoadingJurisdiction = false;
           });
         }
@@ -177,7 +187,7 @@ class _DistrictCasesWidgetState extends State<DistrictCasesWidget> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Cases by District',
+                  'Cases by $_targetLevel',
                   style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 if (_provinceName != null)
@@ -235,7 +245,7 @@ class _DistrictCasesWidgetState extends State<DistrictCasesWidget> {
           children: [
             Icon(Icons.location_off_outlined, color: theme.disabledColor, size: 40),
             const SizedBox(height: 12),
-            Text('No districts found for this province', style: theme.textTheme.bodyMedium?.copyWith(color: theme.disabledColor)),
+            Text('No ${_targetLevel.toLowerCase()}s found for this area', style: theme.textTheme.bodyMedium?.copyWith(color: theme.disabledColor)),
           ],
         ),
       ),
@@ -296,7 +306,7 @@ class _DistrictCasesWidgetState extends State<DistrictCasesWidget> {
                     Text(districtName, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
                     const SizedBox(width: 8),
                     Text(
-                      '($sectorCount Sectors)',
+                      '($sectorCount $_subTargetLevel)',
                       style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant.withAlpha(150), fontSize: 10),
                     ),
                   ],
@@ -344,5 +354,26 @@ class _DistrictCasesWidgetState extends State<DistrictCasesWidget> {
         ),
       ],
     );
+  }
+
+  String _formatLevel(String level) {
+    switch (level) {
+      case 'PROVINCE': return 'Province';
+      case 'DISTRICT': return 'District';
+      case 'SECTOR': return 'Sector';
+      case 'CELL': return 'Cell';
+      case 'VILLAGE': return 'Village';
+      default: return 'Unit';
+    }
+  }
+
+  String _formatSubLevel(String level) {
+    switch (level) {
+      case 'PROVINCE': return 'Districts';
+      case 'DISTRICT': return 'Sectors';
+      case 'SECTOR': return 'Cells';
+      case 'CELL': return 'Villages';
+      default: return 'Sub-units';
+    }
   }
 }
