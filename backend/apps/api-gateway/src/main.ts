@@ -52,8 +52,9 @@ app.use('/api/cases', optionalAuthMiddleware, emergencyBypass);
 // Leader dashboard routes - require auth
 app.use('/api/leader', authMiddleware);
 
-// Admin routes - require auth and admin role
-app.use('/api/admin', authMiddleware);
+// Admin routes - require auth
+import { adminRoutes } from './admin/admin.routes';
+app.use('/api/admin', authMiddleware, adminRoutes);
 
 // Proxy to services (if running as gateway)
 if (config.isProduction) {
