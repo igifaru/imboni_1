@@ -71,13 +71,16 @@ class _DistrictCasesWidgetState extends State<DistrictCasesWidget> {
             _isLoadingJurisdiction = false;
           });
         } else {
+          final errMsg = data?['error'] ?? adminService.error ?? 'Failed to load jurisdiction';
+          debugPrint('DistrictCasesWidget Error: $errMsg');
           setState(() {
-            _error = data?['error'] ?? 'Failed to load jurisdiction';
+            _error = errMsg;
             _isLoadingJurisdiction = false;
           });
         }
       }
     } catch (e) {
+      debugPrint('Jurisdiction Load Error: $e');
       if (mounted) {
         setState(() {
           _error = 'Error: ${e.toString()}';
