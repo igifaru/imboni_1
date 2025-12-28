@@ -5,6 +5,7 @@ import '../../../../shared/services/auth_service.dart';
 import '../../../../shared/models/models.dart';
 import '../../../../shared/services/settings_service.dart';
 import '../../../../shared/widgets/dialogs/change_password_dialog.dart';
+import '../../../../shared/widgets/dialogs/confirmation_dialog.dart';
 import '../../../../main.dart'; // For logout navigation
 
 import '../../../../shared/localization/app_localizations.dart';
@@ -264,20 +265,20 @@ class _LeaderSettingsScreenState extends State<LeaderSettingsScreen> {
   Future<void> _logout() async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(AppLocalizations.of(context).logoutConfirmTitle),
-        content: Text(AppLocalizations.of(context).logoutConfirmContent),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(AppLocalizations.of(context).cancel)),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: Text(AppLocalizations.of(context).logOut, style: const TextStyle(color: ImboniColors.error))),
-        ],
+      builder: (context) => ConfirmationDialog(
+        title: AppLocalizations.of(context).logoutConfirmTitle,
+        content: AppLocalizations.of(context).logoutConfirmContent,
+        confirmText: AppLocalizations.of(context).logOut,
+        cancelText: AppLocalizations.of(context).cancel,
+        icon: Icons.logout_rounded,
+        isDestructive: true,
+        onConfirm: () => Navigator.pop(context, true),
       ),
     );
 
     if (confirmed == true) {
       await authService.logout();
       if (mounted) {
-        // Restart the app to reset state and show login
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const ImboniApp()),
           (route) => false,
