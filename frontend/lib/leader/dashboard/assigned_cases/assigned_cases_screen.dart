@@ -56,11 +56,11 @@ class _AssignedCasesScreenState extends State<AssignedCasesScreen> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: isDark ? theme.scaffoldBackgroundColor : ImboniColors.primaryDark,
-        foregroundColor: isDark ? theme.colorScheme.onSurface : Colors.white,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        foregroundColor: theme.colorScheme.onSurface,
         elevation: 0,
-        title: const Text('Assigned Cases'),
-        centerTitle: true,
+        title: const Text('Assigned Cases', style: TextStyle(fontWeight: FontWeight.bold)),
+        centerTitle: false,
         actions: [
           IconButton(
             icon: const Icon(Icons.search), 
@@ -76,8 +76,9 @@ class _AssignedCasesScreenState extends State<AssignedCasesScreen> {
           ),
         ],
       ),
-      body: Column(children: [
+      body: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         _buildFilterChips(theme, isDark),
+        const Divider(height: 1),
         Expanded(
           child: RefreshIndicator(
             onRefresh: _loadCases,
@@ -88,7 +89,7 @@ class _AssignedCasesScreenState extends State<AssignedCasesScreen> {
                     : ListView.separated(
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         itemCount: _filteredCases.length,
-                        separatorBuilder: (_, __) => Divider(height: 1, color: theme.dividerColor),
+                        separatorBuilder: (_, __) => Divider(height: 1, color: theme.dividerColor.withAlpha(50), indent: 16, endIndent: 16),
                         itemBuilder: (context, index) => _buildCaseItem(_filteredCases[index], theme, isDark),
                       ),
           ),
@@ -106,31 +107,39 @@ class _AssignedCasesScreenState extends State<AssignedCasesScreen> {
     ];
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      color: isDark ? theme.scaffoldBackgroundColor : ImboniColors.primaryDark,
-      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-        ...filters.map((f) {
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      color: theme.scaffoldBackgroundColor,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(children: filters.map((f) {
           final isSelected = _selectedFilter == f.$1;
           return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
+            padding: const EdgeInsets.only(right: 8),
             child: FilterChip(
               label: Text(f.$2),
               selected: isSelected,
               onSelected: (_) => setState(() => _selectedFilter = f.$1),
-              backgroundColor: isDark ? theme.cardColor : Colors.transparent,
-              selectedColor: isDark ? ImboniColors.primary.withAlpha(50) : Colors.white,
+              backgroundColor: theme.cardColor,
+              selectedColor: theme.colorScheme.primary.withAlpha(25),
+              checkmarkColor: theme.colorScheme.primary,
               labelStyle: TextStyle(
                 color: isSelected 
-                    ? (isDark ? ImboniColors.primary : ImboniColors.primaryDark)
-                    : (isDark ? theme.colorScheme.onSurface : Colors.white70),
+                    ? theme.colorScheme.primary 
+                    : theme.colorScheme.onSurface,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
               ),
-              side: BorderSide(color: isSelected ? (isDark ? ImboniColors.primary : Colors.white) : Colors.transparent),
+              side: BorderSide(
+                color: isSelected ? theme.colorScheme.primary : theme.dividerColor,
+                width: isSelected ? 1.5 : 1,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              showCheckmark: false,
             ),
           );
-        }),
-      ]),
+        }).toList()),
+      ),
     );
   }
 
@@ -205,14 +214,36 @@ class _AssignedCasesScreenState extends State<AssignedCasesScreen> {
   }
 
   Widget _buildEmptyState(ThemeData theme) {
-    return Center(
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Icon(Icons.folder_open_outlined, size: 64, color: theme.colorScheme.onSurfaceVariant.withAlpha(100)),
-        const SizedBox(height: 16),
-        Text('Nta kibazo kigupfundikiye', style: theme.textTheme.titleMedium),
-        const SizedBox(height: 8),
-        Text('Ibibazo bizagaragara hano', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-      ]),
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: Center(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest.withAlpha(80),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.assignment_outlined, size: 48, color: theme.colorScheme.primary),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Nta kibazo kigupfundikiye', 
+                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Ibibazo bigenewe urwego rwawe\nbizagaragara hano', 
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              ),
+            ]),
+          ),
+        ),
+      ),
     );
   }
 

@@ -4,6 +4,8 @@ import '../../shared/services/auth_service.dart';
 import '../../shared/services/settings_service.dart';
 import '../../shared/widgets/location_selector.dart';
 import '../../shared/services/admin_units_service.dart';
+import '../../shared/widgets/dialogs/change_password_dialog.dart';
+import '../../main.dart';
 
 /// Settings Screen - Fully functional with real backend integration
 class ProfileScreen extends StatefulWidget {
@@ -304,213 +306,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showChangePasswordDialog() {
-    final oldPwd = TextEditingController();
-    final newPwd = TextEditingController();
-    final confirmPwd = TextEditingController();
-    bool obscureOld = true;
-    bool obscureNew = true;
-    bool obscureConfirm = true;
-    final formKey = GlobalKey<FormState>();
-    
     showDialog(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          final theme = Theme.of(context);
-          final colorScheme = theme.colorScheme;
-          final screenWidth = MediaQuery.of(context).size.width;
-          final isDesktop = screenWidth > 600;
-          final dialogWidth = isDesktop ? 500.0 : screenWidth * 0.92;
-          
-          return Dialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-            insetPadding: EdgeInsets.symmetric(horizontal: isDesktop ? 40 : 16, vertical: 24),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: dialogWidth, minWidth: 320),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Header
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
-                      decoration: BoxDecoration(
-                        color: colorScheme.surfaceContainerHighest,
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(24),
-                          topRight: Radius.circular(24),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: colorScheme.primaryContainer,
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: Icon(Icons.lock_outline_rounded, color: colorScheme.onPrimaryContainer, size: 28),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Hindura Ijambo ry\'Ibanga', 
-                                  style: theme.textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text('Injiza ijambo rishya kugirango uhindure', 
-                                  style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
-                                ),
-                              ],
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: () => Navigator.pop(ctx),
-                            icon: const Icon(Icons.close_rounded, color: Colors.white70),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Form Content
-                    Padding(
-                      padding: const EdgeInsets.all(28),
-                      child: Form(
-                        key: formKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            // Current password
-                            TextFormField(
-                              controller: oldPwd,
-                              obscureText: obscureOld,
-                              decoration: InputDecoration(
-                                labelText: 'Ijambo ry\'Ibanga rya kera',
-                                hintText: 'Injiza ijambo ryawe rya kera',
-                                prefixIcon: Icon(Icons.lock_clock_outlined, color: colorScheme.primary),
-                                suffixIcon: IconButton(
-                                  icon: Icon(obscureOld ? Icons.visibility_outlined : Icons.visibility_off_outlined),
-                                  onPressed: () => setDialogState(() => obscureOld = !obscureOld),
-                                ),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-                                filled: true,
-                                fillColor: colorScheme.surfaceContainerHighest.withAlpha(80),
-                              ),
-                              validator: (v) => (v == null || v.isEmpty) ? 'Injiza ijambo rya kera' : null,
-                            ),
-                            const SizedBox(height: 20),
-                            // New password
-                            TextFormField(
-                              controller: newPwd,
-                              obscureText: obscureNew,
-                              decoration: InputDecoration(
-                                labelText: 'Ijambo ry\'Ibanga rishya',
-                                hintText: 'Nibura inyuguti 6',
-                                prefixIcon: Icon(Icons.lock_outline_rounded, color: colorScheme.primary),
-                                suffixIcon: IconButton(
-                                  icon: Icon(obscureNew ? Icons.visibility_outlined : Icons.visibility_off_outlined),
-                                  onPressed: () => setDialogState(() => obscureNew = !obscureNew),
-                                ),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-                                filled: true,
-                                fillColor: colorScheme.surfaceContainerHighest.withAlpha(80),
-                              ),
-                              validator: (v) => (v == null || v.length < 6) ? 'Nibura inyuguti 6' : null,
-                            ),
-                            const SizedBox(height: 20),
-                            // Confirm password
-                            TextFormField(
-                              controller: confirmPwd,
-                              obscureText: obscureConfirm,
-                              decoration: InputDecoration(
-                                labelText: 'Emeza ijambo rishya',
-                                hintText: 'Subiramo ijambo rishya',
-                                prefixIcon: Icon(Icons.lock_reset_rounded, color: colorScheme.primary),
-                                suffixIcon: IconButton(
-                                  icon: Icon(obscureConfirm ? Icons.visibility_outlined : Icons.visibility_off_outlined),
-                                  onPressed: () => setDialogState(() => obscureConfirm = !obscureConfirm),
-                                ),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-                                filled: true,
-                                fillColor: colorScheme.surfaceContainerHighest.withAlpha(80),
-                              ),
-                              validator: (v) => (v != newPwd.text) ? 'Amagambo ntahura' : null,
-                            ),
-                            const SizedBox(height: 28),
-                            // Buttons Row
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: OutlinedButton(
-                                    onPressed: () => Navigator.pop(ctx),
-                                    style: OutlinedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(vertical: 16),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                                      side: BorderSide(color: colorScheme.outline, width: 1.5),
-                                    ),
-                                    child: Text('Reka', style: TextStyle(fontSize: 16, color: colorScheme.onSurface)),
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  flex: 2,
-                                  child: ElevatedButton(
-                                    onPressed: () async {
-                                      if (!formKey.currentState!.validate()) return;
-                                      Navigator.pop(ctx);
-                                      setState(() => _isLoading = true);
-                                      final result = await authService.changePassword(
-                                        currentPassword: oldPwd.text, 
-                                        newPassword: newPwd.text,
-                                      );
-                                      setState(() => _isLoading = false);
-                                      if (mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                          content: Row(children: [
-                                            Icon(result.isSuccess ? Icons.check_circle : Icons.error, color: Colors.white),
-                                            const SizedBox(width: 12),
-                                            Expanded(child: Text(result.isSuccess ? 'Ijambo ry\'Ibanga ryahinduwe!' : result.error ?? 'Byanze')),
-                                          ]),
-                                          backgroundColor: result.isSuccess ? Colors.green.shade600 : Colors.red.shade600,
-                                          behavior: SnackBarBehavior.floating,
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                          margin: const EdgeInsets.all(16),
-                                        ));
-                                      }
-                                    },
-                                    style: ElevatedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(vertical: 16),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                                      backgroundColor: colorScheme.primary,
-                                      foregroundColor: Colors.white,
-                                    ),
-                                    child: const Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(Icons.check_rounded, size: 22),
-                                        SizedBox(width: 10),
-                                        Text('Emeza', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
+      builder: (ctx) => const ChangePasswordDialog(),
     );
   }
 
@@ -546,7 +344,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Oya')),
           ElevatedButton(
-            onPressed: () { Navigator.pop(ctx); authService.logout(); Navigator.of(context).popUntil((route) => route.isFirst); },
+            onPressed: () {
+               Navigator.pop(ctx); 
+               authService.logout(); 
+               Navigator.of(context).pushAndRemoveUntil(
+                 MaterialPageRoute(builder: (_) => const ImboniApp()),
+                 (route) => false,
+               );
+            },
             style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
             child: const Text('Yego, sohoka'),
           ),

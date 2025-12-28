@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../../shared/theme/colors.dart';
+import '../../../../shared/theme/responsive.dart';
 import '../../../../shared/services/auth_service.dart';
 import '../../../../shared/models/models.dart';
-import '../../../../citizen/profile/profile_screen.dart'; // Reuse ChangePasswordDialog
+import '../../../../shared/services/settings_service.dart';
+import '../../../../shared/widgets/dialogs/change_password_dialog.dart';
+import '../../../../main.dart'; // For logout navigation
 
 class LeaderSettingsScreen extends StatefulWidget {
   const LeaderSettingsScreen({super.key});
@@ -24,7 +27,7 @@ class _LeaderSettingsScreenState extends State<LeaderSettingsScreen> {
   Future<void> _loadProfile() async {
     setState(() => _isLoading = true);
     try {
-      final user = authService.currentUser; // Using cached user
+      final user = authService.currentUser;
       if (mounted) setState(() => _user = user);
     } catch (e) {
       // Handle error
@@ -36,142 +39,222 @@ class _LeaderSettingsScreenState extends State<LeaderSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Settings'),
+        title: const Text('Settings'), // Kept simple to match style, though header is inside body for profile
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                _buildProfileHeader(theme),
-                const SizedBox(height: 24),
-                Text('Preferences', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 12),
-                _buildPreferenceItem(
-                  theme,
-                  icon: Icons.notifications_outlined,
-                  title: 'Notifications',
-                  subtitle: 'Case alerts, escalations, reminders',
-                  onTap: () {},
-                ),
-                const SizedBox(height: 8),
-                _buildPreferenceItem(
-                  theme,
-                  icon: Icons.language_outlined,
-                  title: 'Language',
-                  subtitle: 'English',
-                  onTap: () {},
-                ),
-                const SizedBox(height: 24),
-                Text('Security & Account', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 12),
-                _buildPreferenceItem(
-                  theme,
-                  icon: Icons.lock_outline,
-                  title: 'Change Password',
-                  onTap: () => _showChangePassword(context),
-                ),
-                 const SizedBox(height: 8),
-                _buildPreferenceItem(
-                  theme,
-                  icon: Icons.logout,
-                  title: 'Logout',
-                  color: ImboniColors.error,
-                  onTap: _logout,
-                ),
-              ],
+          : SingleChildScrollView(
+              padding: EdgeInsets.all(Responsive.horizontalPadding(context)),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isWide = constraints.maxWidth > 800;
+                  if (isWide) {
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: _buildAccountSection(theme, colorScheme)),
+                        const SizedBox(width: 16),
+                        Expanded(child: _buildPreferencesSection(theme, colorScheme)),
+                        const SizedBox(width: 16),
+                        Expanded(child: _buildSupportSection(theme, colorScheme)),
+                      ],
+                    );
+                  }
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildAccountSection(theme, colorScheme),
+                      const SizedBox(height: 16),
+                      _buildPreferencesSection(theme, colorScheme),
+                      const SizedBox(height: 16),
+                      _buildSupportSection(theme, colorScheme),
+                      const SizedBox(height: 32),
+                    ],
+                  );
+                },
+              ),
             ),
     );
   }
 
-  Widget _buildProfileHeader(ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withAlpha(50),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 30,
-            backgroundColor: ImboniColors.primary,
-            backgroundImage: _user?.profilePicture != null ? NetworkImage(_user!.profilePicture!) : null,
-            child: _user?.profilePicture == null
-                ? Text(
-                    _user?.name?.substring(0, 1).toUpperCase() ?? '?',
-                    style: const TextStyle(fontSize: 24, color: Colors.white),
-                  )
-                : null,
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildAccountSection(ThemeData theme, ColorScheme colorScheme) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('My Account', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            Row(
               children: [
-                Text(
-                  _user?.name ?? 'Leader Name',
-                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                CircleAvatar(
+                  radius: 28,
+                  backgroundColor: colorScheme.primary,
+                  backgroundImage: _user?.profilePicture != null ? NetworkImage(_user!.profilePicture!) : null,
+                  child: _user?.profilePicture == null
+                      ? Text(
+                          _user?.name?.substring(0, 1).toUpperCase() ?? '?',
+                          style: TextStyle(fontSize: 20, color: colorScheme.onPrimary, fontWeight: FontWeight.bold),
+                        )
+                      : null,
                 ),
-                const SizedBox(height: 4),
-                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: ImboniColors.primary.withAlpha(20),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    _user?.roleDisplayName ?? 'Leader',
-                    style: theme.textTheme.bodySmall?.copyWith(color: ImboniColors.primary, fontWeight: FontWeight.bold),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _user?.name ?? 'Leader Name',
+                        style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      Text(
+                        _user?.roleDisplayName ?? 'Leader',
+                        style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
+            const SizedBox(height: 16),
+            _buildInfoRow(theme, colorScheme, Icons.verified_user_outlined, 'Role', _user?.roleDisplayName ?? '-'),
+            _buildInfoRow(theme, colorScheme, Icons.location_on_outlined, 'Jurisdiction', _user?.fullLocation ?? '-'),
+            const SizedBox(height: 16),
+            const Divider(),
+            _buildActionTile(theme, colorScheme, 'Change Password', Icons.lock_outline_rounded, () => showDialog(context: context, builder: (_) => const ChangePasswordDialog())),
+            _buildActionTile(theme, colorScheme, 'Log Out', Icons.logout, _logout, isDestructive: true),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPreferencesSection(ThemeData theme, ColorScheme colorScheme) {
+    return ListenableBuilder(
+      listenable: settingsService,
+      builder: (context, _) => Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Preferences', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+               // Language
+              Row(
+                children: [
+                  Icon(Icons.language_outlined, color: colorScheme.primary, size: 22),
+                  const SizedBox(width: 12),
+                  Text('Language', style: theme.textTheme.bodyMedium),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(border: Border.all(color: colorScheme.outline), borderRadius: BorderRadius.circular(8)),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: settingsService.language,
+                        isDense: true,
+                        items: ['English', 'Kinyarwanda', 'Français'].map((o) => DropdownMenuItem(value: o, child: Text(o, style: theme.textTheme.bodySmall))).toList(),
+                        onChanged: (v) {
+                          if (v != null) settingsService.setLanguage(v);
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              // Notifications
+              Row(children: [Icon(Icons.notifications_outlined, color: colorScheme.primary, size: 22), const SizedBox(width: 12), Text('Notifications', style: theme.textTheme.bodyMedium)]),
+              _buildSwitch('Email Notifications', settingsService.emailNotifications, (v) => settingsService.setEmailNotifications(v), theme, colorScheme),
+              _buildSwitch('SMS Alerts', settingsService.smsNotifications, (v) => settingsService.setSmsNotifications(v), theme, colorScheme),
+              const SizedBox(height: 16),
+              // Theme
+              Row(children: [Icon(Icons.palette_outlined, color: colorScheme.primary, size: 22), const SizedBox(width: 12), Text('Theme', style: theme.textTheme.bodyMedium)]),
+              _buildSwitch('Dark Mode', settingsService.isDarkMode, (v) => settingsService.setDarkMode(v), theme, colorScheme),
+            ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSupportSection(ThemeData theme, ColorScheme colorScheme) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Support & About', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            _buildActionTile(theme, colorScheme, 'Help Center', Icons.help_outline_rounded, () {}),
+            _buildActionTile(theme, colorScheme, 'Privacy Policy', Icons.privacy_tip_outlined, () {}),
+            _buildActionTile(theme, colorScheme, 'About Imboni', Icons.info_outline_rounded, () => _showAboutDialog(context)),
+            const SizedBox(height: 16),
+            Row(children: [Text('Version', style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant)), const Spacer(), Text('1.2.0 (Build 45)', style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500))]),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(ThemeData theme, ColorScheme colorScheme, IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Icon(icon, color: colorScheme.primary, size: 20),
+          const SizedBox(width: 12),
+          Text(label, style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant)),
+          const Spacer(),
+          Text(value, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
         ],
       ),
     );
   }
 
-  Widget _buildPreferenceItem(ThemeData theme, {required IconData icon, required String title, String? subtitle, required VoidCallback onTap, Color? color}) {
+  Widget _buildActionTile(ThemeData theme, ColorScheme colorScheme, String title, IconData icon, VoidCallback onTap, {bool isDestructive = false}) {
+    final color = isDestructive ? colorScheme.error : colorScheme.primary;
     return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: color.withAlpha(25), borderRadius: BorderRadius.circular(8)), child: Icon(icon, color: color, size: 20)),
+      title: Text(title, style: TextStyle(color: isDestructive ? colorScheme.error : null)),
+      trailing: const Icon(Icons.chevron_right),
       onTap: onTap,
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: (color ?? theme.colorScheme.primary).withAlpha(20),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(icon, color: color ?? theme.colorScheme.primary, size: 20),
-      ),
-      title: Text(title, style: TextStyle(color: color, fontWeight: FontWeight.w500)),
-      subtitle: subtitle != null ? Text(subtitle) : null,
-      trailing: const Icon(Icons.chevron_right, size: 20),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      tileColor: theme.cardColor,
     );
   }
 
-  void _showChangePassword(BuildContext context) {
-    // This dialog is defined in profile_screen.dart but it's part of _ProfileScreenState. 
-    // Ideally it should be extracted to a reusable widget. 
-    // For now, I'll use a placeholder or check if I can make the dialog reusable.
-    // If not easily reusable, I might need to copy it or refactor.
-    // Given the constraints and the previous user task, I'll alert the user about extraction or just implement a basic one.
-    // Actually, I can quickly implement a basic placeholder and refine later, OR copy the logic.
-    // Refactoring to 'shared' would be best practice.
-    
-    // For now, showing a simple dialog to not break flow.
-     showDialog(
+  Widget _buildSwitch(String label, bool value, ValueChanged<bool> onChanged, ThemeData theme, ColorScheme colorScheme) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 34, top: 4),
+      child: Row(children: [Expanded(child: Text(label, style: theme.textTheme.bodyMedium)), Switch(value: value, onChanged: onChanged, activeColor: colorScheme.primary)]),
+    );
+  }
+
+  void _showAboutDialog(BuildContext context) {
+    showDialog(
       context: context,
-      builder: (context) => AlertDialog(title: Text("Coming Soon"), content: Text("Change password feature will be linked properly.")),
+      builder: (context) => AboutDialog(
+        applicationName: 'Imboni',
+        applicationVersion: '1.2.0',
+        applicationIcon: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, borderRadius: BorderRadius.circular(12)),
+          child: const Icon(Icons.shield, color: Colors.white),
+        ),
+        children: const [
+          Text('Imboni is a comprehensive dashboard for Rwandan leaders to monitor and manage cases effectively.'),
+        ],
+      ),
     );
   }
 
@@ -190,7 +273,13 @@ class _LeaderSettingsScreenState extends State<LeaderSettingsScreen> {
 
     if (confirmed == true) {
       await authService.logout();
-      if (mounted) Navigator.pushReplacementNamed(context, '/login');
+      if (mounted) {
+        // Restart the app to reset state and show login
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const ImboniApp()),
+          (route) => false,
+        );
+      }
     }
   }
 }
