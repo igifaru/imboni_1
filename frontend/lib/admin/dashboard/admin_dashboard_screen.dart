@@ -9,6 +9,7 @@ import '../../shared/widgets/dashboard/status_chips.dart';
 import '../../shared/widgets/forms/register_leader_form.dart';
 import '../users/user_management_screen.dart';
 import 'widgets/province_cases_widget.dart';
+import 'settings/admin_settings_screen.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   final VoidCallback onLogout;
@@ -32,6 +33,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       const _AdminHome(),
       const UserManagementScreen(),
       const RegisterLeaderForm(), // Index 2
+      const AdminSettingsScreen(), // Index 3
     ];
 
     return isDesktop ? _buildDesktop(theme, screens) : _buildMobile(theme, screens);
@@ -67,6 +69,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             icon: Icon(Icons.person_add_outlined),
             selectedIcon: Icon(Icons.person_add),
             label: 'Register',
+          ),
+          NavigationDestination(
+             icon: Icon(Icons.settings_outlined),
+             selectedIcon: Icon(Icons.settings),
+             label: 'Settings',
           ),
         ],
       ),
@@ -115,17 +122,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 _buildNavItem(theme, Icons.dashboard_outlined, 'Dashboard', 0),
                 _buildNavItem(theme, Icons.people_outline, 'User Management', 1),
                 _buildNavItem(theme, Icons.person_add_outlined, 'Register Leader', 2),
-                const Spacer(), // Pushes logout to bottom
-                const Divider(),
-                ListTile(
-                  leading: Icon(Icons.logout, color: theme.colorScheme.error),
-                  title: Text(
-                    'Logout',
-                    style: TextStyle(color: theme.colorScheme.error),
-                  ),
-                  onTap: widget.onLogout,
-                ),
-                const SizedBox(height: 24),
+                _buildNavItem(theme, Icons.settings_outlined, 'Settings', 3),
               ],
             ),
           ),
