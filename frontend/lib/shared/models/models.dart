@@ -365,6 +365,7 @@ class EvidenceModel {
     required this.mimeType,
   });
 
+
   factory EvidenceModel.fromJson(Map<String, dynamic> json) {
     return EvidenceModel(
       id: json['id'] as String,
@@ -372,6 +373,33 @@ class EvidenceModel {
       url: json['url'] as String,
       fileName: json['fileName'] as String,
       mimeType: json['mimeType'] as String,
+    );
+  }
+}
+
+/// Case Action/History model
+class CaseAction {
+  final String id;
+  final String actionType;
+  final String? notes;
+  final String? performedBy;
+  final DateTime createdAt;
+
+  CaseAction({
+    required this.id,
+    required this.actionType,
+    this.notes,
+    this.performedBy,
+    required this.createdAt,
+  });
+
+  factory CaseAction.fromJson(Map<String, dynamic> json) {
+    return CaseAction(
+      id: json['id'] as String,
+      actionType: json['actionType'] as String,
+      notes: json['notes'] as String?,
+      performedBy: json['performedBy'] as String?,
+      createdAt: DateTime.parse(json['createdAt'] as String),
     );
   }
 }

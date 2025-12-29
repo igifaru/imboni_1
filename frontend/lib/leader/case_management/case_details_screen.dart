@@ -5,7 +5,8 @@ import '../../shared/theme/colors.dart';
 import '../../shared/localization/app_localizations.dart';
 import '../../shared/widgets/loading_overlay.dart';
 import 'package:audioplayers/audioplayers.dart';
-import 'package:imboni/shared/services/api_client.dart'; // Ensure ApiClient is imported
+import 'package:imboni/shared/services/api_client.dart';
+import '../../shared/widgets/timeline_widget.dart';
 
 class LeaderCaseDetailsScreen extends StatefulWidget {
   final CaseModel caseData;
@@ -20,12 +21,14 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
   late CaseModel _case;
   bool _isLoading = false;
   final _player = AudioPlayer();
+  List<CaseAction> _actions = [];
 
   @override
   void initState() {
     super.initState();
     _case = widget.caseData;
     _refreshCaseDetails();
+    _fetchActions();
   }
 
   @override
@@ -41,6 +44,13 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
     }
   }
 
+  Future<void> _fetchActions() async {
+     final result = await CaseService.instance.getCaseActions(_case.id);
+     if (result.isSuccess && result.data != null) {
+       if (mounted) setState(() => _actions = result.data!);
+     }
+  }
+
   Future<void> _performAction(String action, {String? notes}) async {
     setState(() => _isLoading = true);
     try {
@@ -48,6 +58,7 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
       if (result.isSuccess && result.data != null) {
         if (mounted) {
           setState(() => _case = result.data!);
+          _fetchActions(); // Refresh timeline
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Igikorwa cyagenze neza'), backgroundColor: ImboniColors.success),
           );
@@ -88,6 +99,7 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
         if (result.isSuccess && result.data != null) {
           if (mounted) {
             setState(() => _case = result.data!);
+            _fetchActions();
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Ikibazo cyakemuwe!'), backgroundColor: ImboniColors.success),
             );
@@ -136,6 +148,7 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
         if (result.isSuccess && result.data != null) {
           if (mounted) {
             setState(() => _case = result.data!);
+            _fetchActions();
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Ikibazo cyoherejwe hejuru!'), backgroundColor: ImboniColors.success),
             );
@@ -151,77 +164,72 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Redesigned UI matching 'Guhunga umungu' style
     final theme = Theme.of(context);
     final hasEvidence = _case.evidence != null && _case.evidence!.isNotEmpty;
 
     return LoadingOverlay(
       isLoading: _isLoading,
       child: Scaffold(
-        backgroundColor: theme.colorScheme.surfaceContainerLow, // Slightly grey background
-        appBar: AppBar(
-          title: Text('Dosiye #${_case.caseReference.substring(0, 8)}...'),
-          elevation: 0,
-        ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              // 1. Header Card
-              _buildHeaderCard(theme),
-              const SizedBox(height: 16),
-              
-              // 2. Info Grid Card
-              _buildInfoGridCard(theme),
-              const SizedBox(height: 16),
-              
-              // 3. Description Card
-              _buildDescriptionCard(theme),
-              const SizedBox(height: 16),
-              
-              // 4. Evidence Card
-              _buildEvidenceCard(theme, hasEvidence),
-              
-              const SizedBox(height: 80), // Space for FAB/Bottom Bar
-            ],
-          ),
+        backgroundColor: theme.colorScheme.surfaceContainerLow,
+        body: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            _buildSliverAppBar(theme),
+            SliverPadding(
+              padding: const EdgeInsets.all(16),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  // 1. Info Grid
+                  _buildInfoGridCard(theme),
+                  const SizedBox(height: 16),
+                  
+                  // 2. Description
+                  _buildDescriptionCard(theme),
+                  const SizedBox(height: 16),
+                  
+                  // 3. Evidence
+                  _buildEvidenceCard(theme, hasEvidence),
+                  const SizedBox(height: 16),
+                  
+                  // 4. Timeline
+                  _buildTimelineCard(theme),
+
+                  const SizedBox(height: 100), // Space for bottom bar
+                ]),
+              ),
+            ),
+          ],
         ),
         bottomNavigationBar: _buildBottomAction(theme),
       ),
     );
   }
 
-  Widget _buildHeaderCard(ThemeData theme) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+  Widget _buildSliverAppBar(ThemeData theme) {
+    return SliverAppBar.large(
+      pinned: true,
+      backgroundColor: theme.colorScheme.surface,
+      surfaceTintColor: theme.colorScheme.primary.withAlpha(10),
+      title: Text(
+        'Dosiye #${_case.caseReference.substring(0, 8)}...',
+        style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  _case.title,
-                  style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-                ),
-              ),
-              const SizedBox(width: 8),
-              _buildStatusChip(_case.status),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Dosiye #${_case.caseReference}',
-            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-          ),
-        ],
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 16),
+          child: _buildStatusChip(_case.status),
+        ),
+      ],
+      flexibleSpace: FlexibleSpaceBar(
+         background: Container(
+           decoration: BoxDecoration(
+             gradient: LinearGradient(
+               begin: Alignment.topCenter,
+               end: Alignment.bottomCenter,
+               colors: [theme.colorScheme.surface, theme.colorScheme.surfaceContainerLow],
+             ),
+           ),
+         ),
       ),
     );
   }
@@ -232,13 +240,19 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 15, offset: const Offset(0, 5))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Amakuru y'Ingenzi", style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 16),
+          Row(
+            children: [
+               Icon(Icons.info_outline, size: 20, color: theme.colorScheme.primary),
+               const SizedBox(width: 8),
+               Text("Amakuru y'Ingenzi", style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            ],
+          ),
+          const SizedBox(height: 20),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -247,9 +261,8 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildInfoItem(theme, Icons.balance, 'Icyiciro:', _case.category),
-                    const SizedBox(height: 16),
-                    _buildInfoItem(theme, Icons.location_on_outlined, 'Aho biri:', 'Umudugudu'), // Hardcoded level for now or extract from ID?
-                    // Actually case model has currentLevel?
+                    const SizedBox(height: 20),
+                    _buildInfoItem(theme, Icons.location_on_outlined, 'Aho biri:', 'Umudugudu'), 
                   ],
                 ),
               ),
@@ -259,7 +272,7 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildInfoItem(theme, Icons.calendar_today_outlined, 'Itariki:', _case.createdAt.toString().split(' ')[0]),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
                      _buildInfoItem(theme, Icons.person_outline, 'Uwabitangaje:', _case.isAnonymous ? 'Anonyme' : 'Umuturage'),
                   ],
                 ),
@@ -276,12 +289,12 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             color: theme.colorScheme.surfaceContainerHighest.withAlpha(50),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(icon, size: 20, color: theme.colorScheme.onSurfaceVariant),
+          child: Icon(icon, size: 20, color: theme.colorScheme.primary.withAlpha(200)),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -289,8 +302,8 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(label, style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-              const SizedBox(height: 2),
-              Text(value, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
+              const SizedBox(height: 4),
+              Text(value, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
             ],
           ),
         ),
@@ -305,14 +318,20 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 15, offset: const Offset(0, 5))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-           Text("Ibisobanuro Birambuye", style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+           Row(
+            children: [
+               Icon(Icons.description_outlined, size: 20, color: theme.colorScheme.primary),
+               const SizedBox(width: 8),
+               Text("Ibisobanuro", style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            ],
+          ),
            const SizedBox(height: 12),
-           Text(_case.description, style: theme.textTheme.bodyMedium?.copyWith(height: 1.5)),
+           Text(_case.description, style: theme.textTheme.bodyMedium?.copyWith(height: 1.6, fontSize: 15)),
         ],
       ),
     );
@@ -325,12 +344,18 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 15, offset: const Offset(0, 5))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-           Text("Ibimenyetso", style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+           Row(
+            children: [
+               Icon(Icons.attach_file, size: 20, color: theme.colorScheme.primary),
+               const SizedBox(width: 8),
+               Text("Ibimenyetso (Evidence)", style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            ],
+          ),
            const SizedBox(height: 16),
            if (!hasEvidence)
              Center(
@@ -338,9 +363,9 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
                  padding: const EdgeInsets.symmetric(vertical: 24),
                  child: Column(
                    children: [
-                     Icon(Icons.folder_off_outlined, size: 48, color: theme.colorScheme.outline),
+                     Icon(Icons.folder_off_outlined, size: 48, color: theme.colorScheme.outline.withOpacity(0.5)),
                      const SizedBox(height: 12),
-                     Text('Nta bimenyetso byatanzwe kuri iyi dosiye.', style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
+                     Text('Nta bimenyetso byatanzwe.', style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
                    ],
                  ),
                ),
@@ -360,36 +385,123 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
         final isImage = e.mimeType.startsWith('image/');
         final isAudio = e.mimeType.startsWith('audio/');
         
-        return Container(
-          width: 100,
-          height: 100,
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.withAlpha(50)),
-            borderRadius: BorderRadius.circular(8),
-            color: Colors.grey.withAlpha(20),
-          ),
-          child: isImage
-              ? ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                child: Image.network('${ApiClient.baseUrl}${e.url}', fit: BoxFit.cover, errorBuilder: (c,e,s) => const Icon(Icons.broken_image)),
-                )
-              : isAudio
-                  ? InkWell(
-                      onTap: () => _player.play(UrlSource('${ApiClient.baseUrl}${e.url}')),
-                      child: const Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                        Icon(Icons.play_circle_fill, size: 32, color: ImboniColors.primary),
+        return GestureDetector(
+          onTap: isImage ? () => _openLightbox(e) : null,
+          child: Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.withAlpha(50)),
+              borderRadius: BorderRadius.circular(12),
+              color: Colors.grey.withAlpha(10),
+            ),
+            child: isImage
+                ? Hero(
+                    tag: e.url,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        '${ApiClient.storageUrl}${e.url}', 
+                        fit: BoxFit.cover, 
+                        errorBuilder: (c,e,s) => const Icon(Icons.broken_image)
+                      ),
+                    ),
+                  )
+                : isAudio
+                    ? InkWell(
+                        onTap: () => _player.play(UrlSource('${ApiClient.storageUrl}${e.url}')),
+                        borderRadius: BorderRadius.circular(12),
+                        child: const Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                          Icon(Icons.play_circle_fill, size: 32, color: ImboniColors.primary),
+                          SizedBox(height: 4),
+                          Text('Audio', style: TextStyle(fontSize: 10)),
+                        ]),
+                      )
+                    : const Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                        Icon(Icons.insert_drive_file, size: 32),
                         SizedBox(height: 4),
-                        Text('Audio', style: TextStyle(fontSize: 10)),
+                        Text('File', style: TextStyle(fontSize: 10)),
                       ]),
-                    )
-                  : const Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      Icon(Icons.insert_drive_file, size: 32),
-                      SizedBox(height: 4),
-                      Text('File', style: TextStyle(fontSize: 10)),
-                    ]),
+          ),
         );
       }).toList(),
     );
+  }
+
+  void _openLightbox(EvidenceModel evidence) {
+    Navigator.of(context).push(PageRouteBuilder(
+      opaque: false,
+      pageBuilder: (BuildContext context, _, __) {
+        return Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(backgroundColor: Colors.transparent, iconTheme: const IconThemeData(color: Colors.white)),
+          body: Center(
+            child: Hero(
+              tag: evidence.url,
+              child: Image.network(
+                '${ApiClient.storageUrl}${evidence.url}',
+                 fit: BoxFit.contain,
+              ),
+            ),
+          ),
+        );
+      },
+    ));
+  }
+
+  Widget _buildTimelineCard(ThemeData theme) {
+    if (_actions.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 15, offset: const Offset(0, 5))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+           Row(
+            children: [
+               Icon(Icons.history, size: 20, color: theme.colorScheme.primary),
+               const SizedBox(width: 8),
+               Text("Amateka ya Dosiye", style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            ],
+          ),
+           const SizedBox(height: 16),
+           TimelineWidget(
+             items: _actions.map((a) => TimelineItem(
+               title: _getActionTitle(a.actionType),
+               description: a.notes ?? '',
+               date: a.createdAt,
+               color: _getActionColor(a.actionType),
+             )).toList().reversed.toList(), // Show newest first? Or oldest? TimelineWidget renders top-down. Usually newest top?
+           ),
+        ],
+      ),
+    );
+  }
+
+  String _getActionTitle(String type) {
+    switch (type) {
+      case 'CREATED': return 'Yarasibwe (Created)';
+      case 'ESCALATED': return 'Yoherejwe Hejuru';
+      case 'RESOLVED': return 'Yakemuwe';
+      case 'VIEWED': return 'Yarebwe';
+      case 'ASSIGNED': return 'Yahawe Umuyobozi';
+       default: return type;
+    }
+  }
+
+  Color _getActionColor(String type) {
+    switch (type) {
+      case 'CREATED': return Colors.blue;
+      case 'ESCALATED': return Colors.purple;
+      case 'RESOLVED': return Colors.green;
+      default: return Colors.grey;
+    }
   }
 
   Widget _buildStatusChip(String status) {
@@ -423,10 +535,11 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color,
+        color: color.withOpacity(0.1),
+        border: Border.all(color: color.withOpacity(0.5)),
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Text(label, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+      child: Text(label, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
     );
   }
 
@@ -445,7 +558,7 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
           children: [
             SizedBox(
               width: double.infinity,
-              height: 48,
+              height: 52,
               child: FilledButton(
                 onPressed: (_case.status == 'OPEN') 
                     ? () => _performAction('ACCEPT') 
@@ -453,14 +566,15 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
                 style: FilledButton.styleFrom(
                   backgroundColor: ImboniColors.primary,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon((_case.status == 'OPEN') ? Icons.pan_tool_alt : Icons.check_circle_outline),
                     const SizedBox(width: 8),
-                    Text((_case.status == 'OPEN') ? 'Fata Iyi Dosiye' : 'Kemura Burundu'),
+                    Text((_case.status == 'OPEN') ? 'Fata Iyi Dosiye' : 'Kemura Burundu', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                   ],
                 ),
               ),
@@ -469,13 +583,17 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
             if (_case.status == 'IN_PROGRESS' || _case.status == 'OPEN')
               SizedBox(
                 width: double.infinity,
-                child: OutlinedButton(
+                child: TextButton(
                    onPressed: _escalateCase,
-                   style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: theme.colorScheme.outline),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                   style: TextButton.styleFrom(
+                      foregroundColor: theme.colorScheme.error,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                    ),
-                   child: const Text('Ohereza hejuru (Escalate)'),
+                   child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                     Icon(Icons.arrow_upward, size: 16),
+                     SizedBox(width: 8),
+                     Text('Ohereza hejuru (Escalate)', style: TextStyle(fontWeight: FontWeight.w600)),
+                   ]),
                 ),
               ),
           ],
