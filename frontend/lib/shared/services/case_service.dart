@@ -196,36 +196,5 @@ class CaseService {
   }
 }
 
-/// Performance Metrics Model
-
-/// Case Action Model
-class CaseAction {
-  final String id;
-  final String caseId;
-  final String actionType;
-  final String description;
-  final String performedBy;
-  final DateTime performedAt;
-
-  CaseAction({
-    required this.id,
-    required this.caseId,
-    required this.actionType,
-    required this.description,
-    required this.performedBy,
-    required this.performedAt,
-  });
-
-  factory CaseAction.fromJson(Map<String, dynamic> json) {
-    return CaseAction(
-      id: json['id'] ?? '',
-      caseId: json['caseId'] ?? '',
-      actionType: json['actionType'] ?? '',
-      description: json['description'] ?? '',
-      performedBy: json['performedBy'] ?? '',
-      performedAt: json['performedAt'] != null ? DateTime.parse(json['performedAt']) : DateTime.now(),
-    );
-  }
-}
 
 final caseService = CaseService.instance;
