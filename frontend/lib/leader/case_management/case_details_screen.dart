@@ -164,60 +164,65 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    // Force specific colors to ensure visibility regardless of system theme
+    final bgColor = Colors.grey[50]!;
+    final cardColor = Colors.white;
+    final textColor = Colors.black87;
+    final subTextColor = Colors.grey[700]!;
+    
+    final theme = Theme.of(context).copyWith(
+      textTheme: Theme.of(context).textTheme.apply(bodyColor: textColor, displayColor: textColor),
+    );
+    
     final hasEvidence = _case.evidence != null && _case.evidence!.isNotEmpty;
     final isDesktop = MediaQuery.of(context).size.width > 900;
 
     return LoadingOverlay(
       isLoading: _isLoading,
       child: Scaffold(
-        backgroundColor: Colors.grey[50], // Safe standard background
+        backgroundColor: bgColor,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: const BackButton(color: Colors.black),
           title: const Text(''), 
         ),
-        body: Align(
-          alignment: Alignment.topCenter,
+        body: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1100),
-            child: SingleChildScrollView(
+            child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch, // Force full width
-                children: [
-                   // 1. Header Card
-                  _buildHeaderCard(theme),
+              children: [
+                // 1. Header Card
+                _buildHeaderCard(theme, cardColor),
+                const SizedBox(height: 16),
+                
+                // 2. Info & Description
+                if (isDesktop)
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: _buildInfoGridCard(theme, cardColor)),
+                      const SizedBox(width: 16),
+                      Expanded(child: _buildDescriptionCard(theme, cardColor)),
+                    ],
+                  )
+                else ...[
+                  _buildInfoGridCard(theme, cardColor),
                   const SizedBox(height: 16),
-                  
-                  // 2. Info & Description
-                  if (isDesktop)
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(child: _buildInfoGridCard(theme)),
-                        const SizedBox(width: 16),
-                        Expanded(child: _buildDescriptionCard(theme)),
-                      ],
-                    )
-                  else ...[
-                    _buildInfoGridCard(theme),
-                    const SizedBox(height: 16),
-                    _buildDescriptionCard(theme),
-                  ],
-                  const SizedBox(height: 16),
-                  
-                  // 3. Evidence
-                  _buildEvidenceCard(theme, hasEvidence),
-                  const SizedBox(height: 16),
-                  
-                  // 4. Timeline
-                  _buildTimelineCard(theme),
-
-                  const SizedBox(height: 100), // Space for bottom bar
+                  _buildDescriptionCard(theme, cardColor),
                 ],
-              ),
+                const SizedBox(height: 16),
+                
+                // 3. Evidence
+                _buildEvidenceCard(theme, cardColor, hasEvidence),
+                const SizedBox(height: 16),
+                
+                // 4. Timeline
+                _buildTimelineCard(theme, cardColor),
+
+                const SizedBox(height: 100), // Space for bottom bar
+              ],
             ),
           ),
         ),
@@ -296,12 +301,12 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
     );
   }
 
-  Widget _buildHeaderCard(ThemeData theme) {
+  Widget _buildHeaderCard(ThemeData theme, Color cardColor) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: cardColor,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
       ),
@@ -331,11 +336,11 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
     );
   }
 
-  Widget _buildInfoGridCard(ThemeData theme) {
+  Widget _buildInfoGridCard(ThemeData theme, Color cardColor) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: cardColor,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
       ),
@@ -384,7 +389,6 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
           decoration: BoxDecoration(
             color: Colors.grey.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
-            // border: Border.all(color: Colors.grey.withOpacity(0.2)),
           ),
           child: Icon(icon, size: 20, color: Colors.black87),
         ),
@@ -403,14 +407,13 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
     );
   }
 
-  Widget _buildDescriptionCard(ThemeData theme) {
+  Widget _buildDescriptionCard(ThemeData theme, Color cardColor) {
     return Container(
       width: double.infinity,
-      // Fixed height to match Info Card roughly if desired, or auto
       constraints: const BoxConstraints(minHeight: 200),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: cardColor,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
       ),
@@ -425,15 +428,12 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
     );
   }
 
-  // ... (Evidence Card and others remain largely similar, updated decoration)
-
-
-  Widget _buildEvidenceCard(ThemeData theme, bool hasEvidence) {
+  Widget _buildEvidenceCard(ThemeData theme, Color cardColor, bool hasEvidence) {
      return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 15, offset: const Offset(0, 5))],
       ),
@@ -472,7 +472,7 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
     return Wrap(
       spacing: 12,
       runSpacing: 12,
-      children: _case.evidence!.map((e) {
+      children: (_case.evidence ?? []).map((e) {
         final isImage = e.mimeType.startsWith('image/');
         final isAudio = e.mimeType.startsWith('audio/');
         
@@ -540,14 +540,14 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
     ));
   }
 
-  Widget _buildTimelineCard(ThemeData theme) {
+  Widget _buildTimelineCard(ThemeData theme, Color cardColor) {
     if (_actions.isEmpty) return const SizedBox.shrink();
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 15, offset: const Offset(0, 5))],
       ),
@@ -568,7 +568,7 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
                description: a.notes ?? '',
                date: a.createdAt,
                color: _getActionColor(a.actionType),
-             )).toList().reversed.toList(), // Show newest first? Or oldest? TimelineWidget renders top-down. Usually newest top?
+             )).toList().reversed.toList(),
            ),
         ],
       ),
