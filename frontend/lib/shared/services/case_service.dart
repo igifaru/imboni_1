@@ -96,12 +96,23 @@ class CaseService {
   /// Resolve case (for leaders)
   Future<ApiResponse<CaseModel>> resolveCase(String caseId, String resolution) async {
     final response = await apiClient.post('/cases/$caseId/resolve', {
-      'resolution': resolution,
+      'notes': resolution, // Backend expects 'notes', frontend code passed 'resolution'
     });
     if (response.isSuccess && response.data != null) {
       return ApiResponse.success(CaseModel.fromJson(response.data));
     }
     return ApiResponse.error(response.error ?? 'Failed to resolve case');
+  }
+
+  /// Escalate case (for leaders)
+  Future<ApiResponse<CaseModel>> escalateCase(String caseId, String reason) async {
+    final response = await apiClient.post('/cases/$caseId/escalate', {
+      'reason': reason,
+    });
+    if (response.isSuccess && response.data != null) {
+      return ApiResponse.success(CaseModel.fromJson(response.data));
+    }
+    return ApiResponse.error(response.error ?? 'Failed to escalate case');
   }
 
   /// Get assigned cases (for leaders)

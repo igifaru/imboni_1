@@ -357,6 +357,30 @@ router.post('/:id/resolve', async (req: Request, res: Response, next: NextFuncti
 });
 
 
+/**
+ * POST /cases/:id/escalate - Escalate case to next level
+ */
+router.post('/:id/escalate', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { id } = req.params;
+        const { reason } = req.body;
+        const userId = (req as any).user?.userId;
+
+        if (!reason) return res.status(400).json({ error: 'Reason required' });
+
+        const result = await caseService.escalateCase(id, reason, userId);
+
+        res.json({
+            success: true,
+            data: result,
+            message: 'Case escalated successfully'
+        });
+    } catch (error) {
+        logger.error('Failed to escalate case', error);
+        next(error);
+    }
+});
+
 // Import upload middleware
 import { uploadMiddleware } from '../middleware/upload.middleware';
 

@@ -12,6 +12,10 @@ class ApiClient {
     // Your computer's local IP address (run 'hostname -I' to find it)
     return 'http://10.24.143.221:3000/api';
   }
+  
+  static String get baseUrl => _baseUrl;
+  static String get storageUrl => _baseUrl.replaceAll('/api', '');
+  
   final http.Client _client;
   String? _authToken;
 
