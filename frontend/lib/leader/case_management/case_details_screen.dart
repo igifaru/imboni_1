@@ -294,7 +294,6 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
       ),
     );
   }
-}
 
   Widget _buildHeaderCard(ThemeData theme) {
     return Container(
