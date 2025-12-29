@@ -12,7 +12,8 @@ export const CreateCaseSchema = z.object({
     urgency: z.enum(['NORMAL', 'HIGH', 'EMERGENCY']).default('NORMAL'),
     title: z.string().min(5).max(200),
     description: z.string().min(20).max(5000),
-    administrativeUnitId: z.string().cuid(),
+    // Accept either CUID (real unit ID) or location path string (Province_District_Sector_Cell_Village)
+    administrativeUnitId: z.string().min(1),
     submittedAnonymously: z.boolean().default(false),
 });
 

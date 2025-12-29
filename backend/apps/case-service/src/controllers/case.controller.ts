@@ -15,9 +15,34 @@ const router = Router();
 router.post('/', async (req: Request, res: Response, next: NextFunction) => {
     try {
         const validation = CreateCaseSchema.safeParse(req.body);
-        // ... existing code ...
-    } catch (error) {
-        // ... existing code ...
+
+        if (!validation.success) {
+            logger.warn('Invalid case creation request', { errors: validation.error.errors });
+            return res.status(400).json({
+                success: false,
+                error: 'Validation failed',
+                details: validation.error.errors.map(e => ({
+                    field: e.path.join('.'),
+                    message: e.message
+                }))
+            });
+        }
+
+        // Get user ID from auth token (may be undefined for anonymous submissions)
+        const userId = (req as any).user?.userId;
+
+        // Create case
+        const newCase = await caseService.createCase(validation.data, userId);
+
+        logger.info('Case created successfully', { caseReference: newCase.caseReference });
+
+        res.status(201).json({
+            success: true,
+            data: newCase
+        });
+    } catch (error: any) {
+        logger.error('Failed to create case', { error: error.message });
+        next(error);
     }
 });
 
@@ -33,6 +58,39 @@ router.get('/stats/global', async (req: Request, res: Response, next: NextFuncti
         });
     } catch (error) {
         logger.error('Failed to get global stats', error);
+        next(error);
+    }
+});
+
+/**
+ * GET /cases/my-cases - Get current user's cases
+ */
+router.get('/my-cases', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const userId = (req as any).user?.userId;
+
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                error: 'Authentication required'
+            });
+        }
+
+        const limit = parseInt(req.query.limit as string) || 20;
+        const offset = parseInt(req.query.offset as string) || 0;
+        const status = req.query.status as string;
+
+        const result = await caseService.getUserCases(userId, { limit, offset, status });
+
+        res.json({
+            success: true,
+            data: {
+                cases: result.cases,
+                total: result.total
+            }
+        });
+    } catch (error) {
+        logger.error('Failed to fetch user cases', error);
         next(error);
     }
 });
@@ -245,5 +303,52 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
         next(error);
     }
 });
+
+
+// Import upload middleware
+import { uploadMiddleware } from '../middleware/upload.middleware';
+
+/**
+ * POST /cases/:id/evidence - Upload evidence file
+ */
+router.post('/:id/evidence',
+    uploadMiddleware.single('file'),
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { id } = req.params;
+            const file = req.file;
+
+            if (!file) {
+                return res.status(400).json({ error: 'No file provided' });
+            }
+
+            // Verify case exists
+            const caseExists = await caseService.getCaseById(id);
+            if (!caseExists) {
+                // Clean up uploaded file if case wrong
+                // fs.unlinkSync(file.path); 
+                return res.status(404).json({ error: 'Case not found' });
+            }
+
+            // Construct public URL (assuming static serve setup)
+            const publicUrl = `/uploads/evidence/${file.filename}`;
+
+            const evidence = await caseService.addEvidence(id, {
+                fileName: file.originalname,
+                fileSize: file.size,
+                mimeType: file.mimetype,
+                path: file.path,
+                url: publicUrl
+            });
+
+            res.status(201).json({
+                success: true,
+                data: evidence
+            });
+        } catch (error) {
+            logger.error('Failed to upload evidence', error);
+            next(error);
+        }
+    });
 
 export const caseController = router;

@@ -30,6 +30,10 @@ app.use(express.json({ limit: '10mb' }));
 // General rate limiting
 app.use(generalRateLimiter);
 
+// Serve static files (uploads)
+import path from 'path';
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
 // Health check (no auth)
 app.get('/health', (req, res) => {
     res.json({

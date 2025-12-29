@@ -108,8 +108,46 @@ export class CaseService {
     async createCase(dto: CreateCaseDto, userId?: string): Promise<CaseResponseDto> {
         logger.info('Creating new case', { category: dto.category, anonymous: dto.submittedAnonymously });
 
-        // Create the case
-        const newCase = await this.repository.create(dto, userId);
+        // Resolve administrativeUnitId - it may be a path string like "Kigali_Nyarugenge_Gitega_Akabahizi_Rurama"
+        let resolvedUnitId = dto.administrativeUnitId;
+
+        // Check if it's a path string (contains underscores) vs a real CUID
+        if (dto.administrativeUnitId.includes('_')) {
+            const parts = dto.administrativeUnitId.split('_');
+            const villageName = parts[parts.length - 1]; // Last part is village name
+
+            // Try to find the village unit by name
+            let villageUnit = await prisma.administrativeUnit.findFirst({
+                where: {
+                    name: villageName,
+                    level: 'VILLAGE'
+                }
+            });
+
+            if (villageUnit) {
+                resolvedUnitId = villageUnit.id;
+                logger.info('Resolved location path to unit ID', { path: dto.administrativeUnitId, unitId: resolvedUnitId });
+            } else {
+                // Auto-create the village unit if it doesn't exist
+                // Build a code from the path for uniqueness
+                const code = parts.join('-').toUpperCase().replace(/\s+/g, '');
+
+                villageUnit = await prisma.administrativeUnit.create({
+                    data: {
+                        name: villageName,
+                        level: 'VILLAGE',
+                        code: code.substring(0, 50), // Limit to 50 chars
+                    }
+                });
+
+                resolvedUnitId = villageUnit.id;
+                logger.info('Created new village unit', { villageName, unitId: resolvedUnitId });
+            }
+        }
+
+        // Create the case with resolved unit ID
+        const modifiedDto = { ...dto, administrativeUnitId: resolvedUnitId };
+        const newCase = await this.repository.create(modifiedDto, userId);
 
         // Create initial assignment to village leader
         await this.createAssignment(newCase);
@@ -159,6 +197,34 @@ export class CaseService {
         }
 
         return this.toResponseDto(foundCase);
+    }
+
+    /**
+     * Get current user's cases
+     */
+    async getUserCases(userId: string, options: { limit?: number; offset?: number; status?: string }) {
+        const { limit = 20, offset = 0, status } = options;
+
+        // Build where clause
+        const where: any = { submitterId: userId };
+        if (status) {
+            where.status = status;
+        }
+
+        const [cases, total] = await Promise.all([
+            prisma.case.findMany({
+                where,
+                orderBy: { createdAt: 'desc' },
+                take: limit,
+                skip: offset,
+            }),
+            prisma.case.count({ where })
+        ]);
+
+        return {
+            cases: cases.map((c: any) => this.toResponseDto(c)),
+            total
+        };
     }
 
     /**
@@ -610,6 +676,40 @@ export class CaseService {
             weeklyTrends,
             subUnitBreakdown
         };
+    }
+
+    /**
+     * Add evidence to a case
+     */
+    async addEvidence(
+        caseId: string,
+        fileData: {
+            fileName: string;
+            fileSize: number;
+            mimeType: string;
+            path: string;
+            url: string;
+        }
+    ) {
+        // Determine evidence type
+        let type: 'IMAGE' | 'VIDEO' | 'AUDIO' | 'DOCUMENT' = 'DOCUMENT';
+        if (fileData.mimeType.startsWith('image/')) type = 'IMAGE';
+        else if (fileData.mimeType.startsWith('video/')) type = 'VIDEO';
+        else if (fileData.mimeType.startsWith('audio/')) type = 'AUDIO';
+
+        const evidence = await prisma.evidence.create({
+            data: {
+                caseId,
+                type,
+                url: fileData.url,
+                fileName: fileData.fileName,
+                fileSize: fileData.fileSize,
+                mimeType: fileData.mimeType,
+            }
+        });
+
+        logger.info('Evidence added to case', { caseId, evidenceId: evidence.id });
+        return evidence;
     }
 
     /**
