@@ -166,70 +166,91 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final hasEvidence = _case.evidence != null && _case.evidence!.isNotEmpty;
+    final isDesktop = MediaQuery.of(context).size.width > 900;
 
     return LoadingOverlay(
       isLoading: _isLoading,
       child: Scaffold(
         backgroundColor: theme.colorScheme.surfaceContainerLow,
-        body: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            _buildSliverAppBar(theme),
-            SliverPadding(
-              padding: const EdgeInsets.all(16),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  // 1. Info Grid
-                  _buildInfoGridCard(theme),
-                  const SizedBox(height: 16),
-                  
-                  // 2. Description
-                  _buildDescriptionCard(theme),
-                  const SizedBox(height: 16),
-                  
-                  // 3. Evidence
-                  _buildEvidenceCard(theme, hasEvidence),
-                  const SizedBox(height: 16),
-                  
-                  // 4. Timeline
-                  _buildTimelineCard(theme),
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: const BackButton(),
+          title: const Text(''), 
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 1. Header Card (Full Width)
+              _buildHeaderCard(theme),
+              const SizedBox(height: 16),
+              
+              // 2. Info & Description (Row on Desktop, Column on Mobile)
+              if (isDesktop)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: _buildInfoGridCard(theme)),
+                    const SizedBox(width: 16),
+                    Expanded(child: _buildDescriptionCard(theme)),
+                  ],
+                )
+              else ...[
+                _buildInfoGridCard(theme),
+                const SizedBox(height: 16),
+                _buildDescriptionCard(theme),
+              ],
+              const SizedBox(height: 16),
+              
+              // 3. Evidence (Full Width)
+              _buildEvidenceCard(theme, hasEvidence),
+              const SizedBox(height: 16),
+              
+              // 4. Timeline (Full Width)
+              _buildTimelineCard(theme),
 
-                  const SizedBox(height: 100), // Space for bottom bar
-                ]),
-              ),
-            ),
-          ],
+              const SizedBox(height: 100),
+            ],
+          ),
         ),
         bottomNavigationBar: _buildBottomAction(theme),
       ),
     );
   }
 
-  Widget _buildSliverAppBar(ThemeData theme) {
-    return SliverAppBar.large(
-      pinned: true,
-      backgroundColor: theme.colorScheme.surface,
-      surfaceTintColor: theme.colorScheme.primary.withAlpha(10),
-      title: Text(
-        'Dosiye #${_case.caseReference.substring(0, 8)}...',
-        style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface),
+  Widget _buildHeaderCard(ThemeData theme) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
       ),
-      actions: [
-        Padding(
-          padding: const EdgeInsets.only(right: 16),
-          child: _buildStatusChip(_case.status),
-        ),
-      ],
-      flexibleSpace: FlexibleSpaceBar(
-         background: Container(
-           decoration: BoxDecoration(
-             gradient: LinearGradient(
-               begin: Alignment.topCenter,
-               end: Alignment.bottomCenter,
-               colors: [theme.colorScheme.surface, theme.colorScheme.surfaceContainerLow],
-             ),
-           ),
-         ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _case.title,
+                  style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, fontSize: 22),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Dosiye #${_case.caseReference}',
+                  style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          _buildStatusChip(_case.status),
+        ],
       ),
     );
   }
@@ -239,20 +260,14 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 15, offset: const Offset(0, 5))],
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-               Icon(Icons.info_outline, size: 20, color: theme.colorScheme.primary),
-               const SizedBox(width: 8),
-               Text("Amakuru y'Ingenzi", style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-            ],
-          ),
-          const SizedBox(height: 20),
+          Text("Amakuru y'Ingenzi", style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 24),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -261,8 +276,8 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildInfoItem(theme, Icons.balance, 'Icyiciro:', _case.category),
-                    const SizedBox(height: 20),
-                    _buildInfoItem(theme, Icons.location_on_outlined, 'Aho biri:', 'Umudugudu'), 
+                    const SizedBox(height: 24),
+                    _buildInfoItem(theme, Icons.location_on_outlined, 'Aho biri:', 'Umudugudu wa Rutovu'), 
                   ],
                 ),
               ),
@@ -272,7 +287,7 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildInfoItem(theme, Icons.calendar_today_outlined, 'Itariki:', _case.createdAt.toString().split(' ')[0]),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 24),
                      _buildInfoItem(theme, Icons.person_outline, 'Uwabitangaje:', _case.isAnonymous ? 'Anonyme' : 'Umuturage'),
                   ],
                 ),
@@ -289,21 +304,22 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest.withAlpha(50),
-            borderRadius: BorderRadius.circular(10),
+            color: Colors.grey.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+            // border: Border.all(color: Colors.grey.withOpacity(0.2)),
           ),
-          child: Icon(icon, size: 20, color: theme.colorScheme.primary.withAlpha(200)),
+          child: Icon(icon, size: 20, color: Colors.black87),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-              const SizedBox(height: 4),
-              Text(value, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+              Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black)),
+              const SizedBox(height: 2),
+              Text(value, style: TextStyle(fontSize: 14, color: Colors.grey[700])),
             ],
           ),
         ),
@@ -314,28 +330,27 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
   Widget _buildDescriptionCard(ThemeData theme) {
     return Container(
       width: double.infinity,
+      // Fixed height to match Info Card roughly if desired, or auto
+      constraints: const BoxConstraints(minHeight: 200),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 15, offset: const Offset(0, 5))],
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-           Row(
-            children: [
-               Icon(Icons.description_outlined, size: 20, color: theme.colorScheme.primary),
-               const SizedBox(width: 8),
-               Text("Ibisobanuro", style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-            ],
-          ),
-           const SizedBox(height: 12),
-           Text(_case.description, style: theme.textTheme.bodyMedium?.copyWith(height: 1.6, fontSize: 15)),
+           Text("Ibisobanuro Birambuye", style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+           const SizedBox(height: 16),
+           Text(_case.description, style: theme.textTheme.bodyMedium?.copyWith(height: 1.5, fontSize: 14, color: Colors.grey[800])),
         ],
       ),
     );
   }
+
+  // ... (Evidence Card and others remain largely similar, updated decoration)
+
 
   Widget _buildEvidenceCard(ThemeData theme, bool hasEvidence) {
      return Container(
@@ -546,57 +561,61 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
   Widget _buildBottomAction(ThemeData theme) {
     if (_case.status == 'RESOLVED' || _case.status == 'CLOSED') return const SizedBox.shrink();
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, -5))],
-      ),
-      child: SafeArea(
-        child: Row(
-          children: [
-            Expanded(
-              child: FilledButton(
-                onPressed: (_case.status == 'OPEN') 
-                    ? () => _performAction('ACCEPT') 
-                    : (_case.status == 'IN_PROGRESS') ? _resolveCase : null,
-                style: FilledButton.styleFrom(
-                  backgroundColor: ImboniColors.primary,
-                  foregroundColor: Colors.white,
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon((_case.status == 'OPEN') ? Icons.pan_tool_alt : Icons.check_circle_outline),
-                    const SizedBox(width: 8),
-                    Text((_case.status == 'OPEN') ? 'Fata Iyi Dosiye' : 'Kemura Burundu', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  ],
-                ),
-              ),
-            ),
-            if (_case.status == 'IN_PROGRESS' || _case.status == 'OPEN') ...[
-              const SizedBox(width: 12),
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Container(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+          ),
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
               Expanded(
-                child: OutlinedButton(
-                   onPressed: _escalateCase,
-                   style: OutlinedButton.styleFrom(
-                      foregroundColor: theme.colorScheme.error,
-                      side: BorderSide(color: theme.colorScheme.error),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                   ),
-                   child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                     Icon(Icons.arrow_upward, size: 16),
-                     SizedBox(width: 8),
-                     Text('Ohereza hejuru', style: TextStyle(fontWeight: FontWeight.w600)),
-                   ]),
+                child: FilledButton(
+                  onPressed: (_case.status == 'OPEN') 
+                      ? () => _performAction('ACCEPT') 
+                      : (_case.status == 'IN_PROGRESS') ? _resolveCase : null,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: ImboniColors.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon((_case.status == 'OPEN') ? Icons.pan_tool_alt : Icons.check_circle_outline),
+                      const SizedBox(width: 8),
+                      Text((_case.status == 'OPEN') ? 'Fata Iyi Dosiye' : 'Kemura Burundu', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    ],
+                  ),
                 ),
               ),
+              if (_case.status == 'IN_PROGRESS' || _case.status == 'OPEN') ...[
+                const SizedBox(width: 16),
+                Expanded(
+                  child: OutlinedButton(
+                     onPressed: _escalateCase,
+                     style: OutlinedButton.styleFrom(
+                        foregroundColor: theme.colorScheme.error,
+                        side: BorderSide(color: theme.colorScheme.error),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(vertical: 20),
+                     ),
+                     child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                       Icon(Icons.arrow_upward, size: 16),
+                       SizedBox(width: 8),
+                       Text('Ohereza hejuru', style: TextStyle(fontWeight: FontWeight.w600)),
+                     ]),
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
