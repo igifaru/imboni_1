@@ -115,6 +115,18 @@ class CaseService {
     return ApiResponse.error(response.error ?? 'Failed to escalate case');
   }
 
+  /// Confirm resolution (for citizens)
+  Future<ApiResponse<CaseModel>> confirmResolution(String caseId) async {
+    final response = await apiClient.patch('/cases/$caseId', {
+      'status': 'CLOSED',
+      'notes': 'Citizen confirmed the issue is permanently solved.',
+    });
+    if (response.isSuccess && response.data != null) {
+      return ApiResponse.success(CaseModel.fromJson(response.data));
+    }
+    return ApiResponse.error(response.error ?? 'Failed to confirm resolution');
+  }
+
   /// Get assigned cases (for leaders)
   Future<ApiResponse<List<CaseModel>>> getAssignedCases({int limit = 20, String? status}) async {
     String endpoint = '/cases/assigned?limit=$limit';
