@@ -236,65 +236,86 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
   Widget _buildBottomAction(ThemeData theme) {
     if (_case.status == 'RESOLVED' || _case.status == 'CLOSED') return const SizedBox.shrink();
 
-    return SafeArea(
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1100),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Container(
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
-              ),
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: (_case.status == 'OPEN') 
-                          ? () => _performAction('ACCEPT') 
-                          : (_case.status == 'IN_PROGRESS') ? _resolveCase : null,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: ImboniColors.primary,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        padding: const EdgeInsets.symmetric(vertical: 20),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon((_case.status == 'OPEN') ? Icons.pan_tool_alt : Icons.check_circle_outline),
-                          const SizedBox(width: 8),
-                          Text((_case.status == 'OPEN') ? 'Fata Iyi Dosiye' : 'Kemura Burundu', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+    return Container(
+      color: Colors.white, // Ensure background isn't transparent if it overlays
+      padding: const EdgeInsets.only(top: 10), // Small spacer
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min, // Don't expand vertically
+            children: [
+              Flexible(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1100),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08), 
+                          blurRadius: 16, 
+                          offset: const Offset(0, 4)
+                        )
+                      ],
+                      border: Border.all(color: Colors.grey.withOpacity(0.1)),
+                    ),
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min, // Inner row also min
+                      children: [
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: (_case.status == 'OPEN') 
+                                ? () => _performAction('ACCEPT') 
+                                : (_case.status == 'IN_PROGRESS') ? _resolveCase : null,
+                            style: FilledButton.styleFrom(
+                              backgroundColor: ImboniColors.primary,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              padding: const EdgeInsets.symmetric(vertical: 20),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon((_case.status == 'OPEN') ? Icons.pan_tool_alt : Icons.check_circle_outline),
+                                const SizedBox(width: 8),
+                                Text(
+                                  (_case.status == 'OPEN') ? 'Fata Iyi Dosiye' : 'Kemura Burundu', 
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        if (_case.status == 'IN_PROGRESS' || _case.status == 'OPEN') ...[
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: OutlinedButton(
+                               onPressed: _escalateCase,
+                               style: OutlinedButton.styleFrom(
+                                  foregroundColor: theme.colorScheme.error,
+                                  side: BorderSide(color: theme.colorScheme.error),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  padding: const EdgeInsets.symmetric(vertical: 20),
+                               ),
+                               child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                                 Icon(Icons.arrow_upward, size: 16),
+                                 SizedBox(width: 8),
+                                 Text('Ohereza hejuru', style: TextStyle(fontWeight: FontWeight.w600)),
+                               ]),
+                            ),
+                          ),
                         ],
-                      ),
+                      ],
                     ),
                   ),
-                  if (_case.status == 'IN_PROGRESS' || _case.status == 'OPEN') ...[
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: OutlinedButton(
-                         onPressed: _escalateCase,
-                         style: OutlinedButton.styleFrom(
-                            foregroundColor: theme.colorScheme.error,
-                            side: BorderSide(color: theme.colorScheme.error),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            padding: const EdgeInsets.symmetric(vertical: 20),
-                         ),
-                         child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                           Icon(Icons.arrow_upward, size: 16),
-                           SizedBox(width: 8),
-                           Text('Ohereza hejuru', style: TextStyle(fontWeight: FontWeight.w600)),
-                         ]),
-                      ),
-                    ),
-                  ],
-                ],
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),
