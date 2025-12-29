@@ -71,103 +71,22 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
     }
   }
 
+import 'resolution_dialog.dart';
+
+// ... inside the class ...
+
   Future<void> _resolveCase() async {
-    final controller = TextEditingController();
-    final shouldSubmit = await showDialog<bool>(
+    final updatedCase = await showDialog<CaseModel>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        titlePadding: EdgeInsets.zero,
-        title: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: const BoxDecoration(
-            color: ImboniColors.primary,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-          ),
-          child: const Row(
-            children: [
-              Icon(Icons.check_circle_outline, color: Colors.white, size: 28),
-              SizedBox(width: 12),
-              Text('Kemura Burundu', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            ],
-          ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 8),
-            Text(
-              'Ugiye kwemeza ko iki kibazo cyakemuwe burundu. Ibintu byose bizahita bijya mububiko.',
-              style: TextStyle(color: Colors.grey[800], fontSize: 14),
-            ),
-            const SizedBox(height: 24),
-            TextField(
-              controller: controller,
-              decoration: InputDecoration(
-                labelText: 'Uko cyakemutse / Ibisobanuro',
-                hintText: 'Andika uburyo iki kibazo cyakemuwe...',
-                alignLabelWithHint: true,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: ImboniColors.primary, width: 2),
-                ),
-                filled: true,
-                fillColor: Colors.grey[50], 
-              ),
-              maxLines: 4,
-            ),
-          ],
-        ),
-        actionsPadding: const EdgeInsets.all(24),
-        actions: [
-          OutlinedButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            child: const Text('Reka'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: ImboniColors.primary,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            child: const Text('Emeza'),
-          ),
-        ],
-      ),
+      builder: (ctx) => ResolutionDialog(caseId: _case.id),
     );
 
-    if (shouldSubmit == true) {
-      if (controller.text.trim().isEmpty) {
-        if (mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Ugomba gutanga ibisobanuro byuko cyakemutse!'), backgroundColor: ImboniColors.error),
-           );
-        }
-        return;
-      }
-
-      setState(() => _isLoading = true);
-      try {
-        final result = await CaseService.instance.resolveCase(_case.id, controller.text);
-        if (result.isSuccess && result.data != null) {
-          if (mounted) {
-            setState(() => _case = result.data!);
-            _fetchActions();
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Ikibazo cyakemuwe!'), backgroundColor: ImboniColors.success),
-            );
-          }
-        }
-      } finally {
-        if (mounted) setState(() => _isLoading = false);
-      }
+    if (updatedCase != null && mounted) {
+      setState(() => _case = updatedCase);
+      _fetchActions();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ikibazo cyakemuwe!'), backgroundColor: ImboniColors.success),
+      );
     }
   }
 
