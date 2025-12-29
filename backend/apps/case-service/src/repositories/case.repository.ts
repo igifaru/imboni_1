@@ -42,7 +42,7 @@ export class CaseRepository {
     async findById(id: string): Promise<CaseEntity | null> {
         const result = await prisma.case.findUnique({
             where: { id },
-            include: { evidence: true },
+            include: { evidence: true, administrativeUnit: true },
         });
         return result as unknown as CaseEntity | null;
     }

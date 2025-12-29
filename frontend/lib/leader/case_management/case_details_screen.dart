@@ -379,7 +379,7 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
                   children: [
                     _buildInfoItem(theme, Icons.balance, 'Icyiciro:', _case.category),
                     const SizedBox(height: 24),
-                    _buildInfoItem(theme, Icons.location_on_outlined, 'Aho biri:', 'Umudugudu wa Rutovu'), 
+                    _buildInfoItem(theme, Icons.location_on_outlined, 'Aho biri:', _case.locationName ?? 'Unknown Location'), 
                   ],
                 ),
               ),

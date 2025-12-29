@@ -14,8 +14,7 @@ class CaseModel {
   final DateTime? deadline;
   final String? audioUrl;
   final String? imageUrl;
-  final String? citizenName;
-  final List<EvidenceModel>? evidence;
+  final String? locationName;
 
   const CaseModel({
     required this.id,
@@ -34,6 +33,7 @@ class CaseModel {
     this.imageUrl,
     this.citizenName,
     this.evidence,
+    this.locationName,
   });
 
   factory CaseModel.fromJson(Map<String, dynamic> json) {
@@ -56,6 +56,7 @@ class CaseModel {
       evidence: json['evidence'] != null 
           ? (json['evidence'] as List).map((e) => EvidenceModel.fromJson(e)).toList() 
           : null,
+      locationName: json['locationName'] as String?,
     );
   }
 

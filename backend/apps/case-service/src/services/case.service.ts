@@ -818,6 +818,7 @@ export class CaseService {
             title: entity.title,
             description: entity.description,
             currentLevel: entity.currentLevel,
+            locationName: (entity as any).administrativeUnit?.name || 'Unknown Location',
             status: entity.status,
             createdAt: entity.createdAt.toISOString(),
             resolvedAt: entity.resolvedAt?.toISOString() || null,

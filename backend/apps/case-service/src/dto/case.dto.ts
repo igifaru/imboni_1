@@ -40,6 +40,7 @@ export interface CaseResponseDto {
     title: string;
     description: string;
     currentLevel: string;
+    locationName: string;
     status: string;
     createdAt: string;
     resolvedAt: string | null;
