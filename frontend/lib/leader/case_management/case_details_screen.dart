@@ -178,47 +178,123 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
           leading: const BackButton(),
           title: const Text(''), 
         ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 1. Header Card (Full Width)
-              _buildHeaderCard(theme),
-              const SizedBox(height: 16),
-              
-              // 2. Info & Description (Row on Desktop, Column on Mobile)
-              if (isDesktop)
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(child: _buildInfoGridCard(theme)),
-                    const SizedBox(width: 16),
-                    Expanded(child: _buildDescriptionCard(theme)),
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1100),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 1. Header Card (Full Width)
+                  _buildHeaderCard(theme),
+                  const SizedBox(height: 16),
+                  
+                  // 2. Info & Description (Row on Desktop, Column on Mobile)
+                  if (isDesktop)
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: _buildInfoGridCard(theme)),
+                        const SizedBox(width: 16),
+                        Expanded(child: _buildDescriptionCard(theme)),
+                      ],
+                    )
+                  else ...[
+                    _buildInfoGridCard(theme),
+                    const SizedBox(height: 16),
+                    _buildDescriptionCard(theme),
                   ],
-                )
-              else ...[
-                _buildInfoGridCard(theme),
-                const SizedBox(height: 16),
-                _buildDescriptionCard(theme),
-              ],
-              const SizedBox(height: 16),
-              
-              // 3. Evidence (Full Width)
-              _buildEvidenceCard(theme, hasEvidence),
-              const SizedBox(height: 16),
-              
-              // 4. Timeline (Full Width)
-              _buildTimelineCard(theme),
+                  const SizedBox(height: 16),
+                  
+                  // 3. Evidence (Full Width)
+                  _buildEvidenceCard(theme, hasEvidence),
+                  const SizedBox(height: 16),
+                  
+                  // 4. Timeline (Full Width)
+                  _buildTimelineCard(theme),
 
-              const SizedBox(height: 100),
-            ],
+                  const SizedBox(height: 100), // Space for bottom bar
+                ],
+              ),
+            ),
           ),
         ),
         bottomNavigationBar: _buildBottomAction(theme),
       ),
     );
   }
+
+  // ... (Header Card, Info Grid, Description Card, Evidence Card, Timeline Card remain same)
+
+  Widget _buildBottomAction(ThemeData theme) {
+    if (_case.status == 'RESOLVED' || _case.status == 'CLOSED') return const SizedBox.shrink();
+
+    return SafeArea(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1100),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Container(
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+              ),
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: (_case.status == 'OPEN') 
+                          ? () => _performAction('ACCEPT') 
+                          : (_case.status == 'IN_PROGRESS') ? _resolveCase : null,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: ImboniColors.primary,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(vertical: 20),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon((_case.status == 'OPEN') ? Icons.pan_tool_alt : Icons.check_circle_outline),
+                          const SizedBox(width: 8),
+                          Text((_case.status == 'OPEN') ? 'Fata Iyi Dosiye' : 'Kemura Burundu', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (_case.status == 'IN_PROGRESS' || _case.status == 'OPEN') ...[
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: OutlinedButton(
+                         onPressed: _escalateCase,
+                         style: OutlinedButton.styleFrom(
+                            foregroundColor: theme.colorScheme.error,
+                            side: BorderSide(color: theme.colorScheme.error),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            padding: const EdgeInsets.symmetric(vertical: 20),
+                         ),
+                         child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                           Icon(Icons.arrow_upward, size: 16),
+                           SizedBox(width: 8),
+                           Text('Ohereza hejuru', style: TextStyle(fontWeight: FontWeight.w600)),
+                         ]),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
   Widget _buildHeaderCard(ThemeData theme) {
     return Container(
