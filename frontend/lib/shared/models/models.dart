@@ -11,6 +11,7 @@ class CaseModel {
   final bool isAnonymous;
   final DateTime createdAt;
   final DateTime? resolvedAt;
+  final DateTime? deadline;
   final String? audioUrl;
   final String? imageUrl;
   final String? citizenName;
