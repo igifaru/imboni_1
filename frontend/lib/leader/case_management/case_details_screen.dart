@@ -632,5 +632,6 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
       child: Text(label, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
     );
   }
+}
 
 
