@@ -86,6 +86,13 @@ enum NotificationChannel {
   PUSH
 }
 
+enum EvidenceType {
+  IMAGE
+  VIDEO
+  AUDIO
+  DOCUMENT
+}
+
 // ============ MODELS ============
 
 // 2.1 Administrative Hierarchy
@@ -182,6 +189,7 @@ model Case {
   escalationEvents EscalationEvent[]
   actions          CaseAction[]
   notifications    Notification[]
+  evidence         Evidence[]
 
   @@index([caseReference])
   @@index([status])
@@ -266,4 +274,20 @@ model Notification {
   createdAt DateTime            @default(now()) @map("created_at")
 
   @@map("notifications")
+}
+
+// 2.10 Case Evidence / Attachments
+model Evidence {
+  id        String       @id @default(cuid())
+  caseId    String       @map("case_id")
+  case      Case         @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  type      EvidenceType
+  url       String       // Storage URL (local or cloud)
+  fileName  String       @map("file_name")
+  fileSize  Int          @map("file_size") // bytes
+  mimeType  String       @map("mime_type")
+  createdAt DateTime     @default(now()) @map("created_at")
+
+  @@index([caseId])
+  @@map("evidence")
 }
