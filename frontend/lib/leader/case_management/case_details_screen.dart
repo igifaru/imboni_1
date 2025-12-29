@@ -171,26 +171,27 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
     return LoadingOverlay(
       isLoading: _isLoading,
       child: Scaffold(
-        backgroundColor: theme.colorScheme.surfaceContainerLow,
+        backgroundColor: Colors.grey[50], // Safe standard background
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
-          leading: const BackButton(),
+          leading: const BackButton(color: Colors.black),
           title: const Text(''), 
         ),
-        body: Center(
+        body: Align(
+          alignment: Alignment.topCenter,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1100),
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch, // Force full width
                 children: [
-                  // 1. Header Card (Full Width)
+                   // 1. Header Card
                   _buildHeaderCard(theme),
                   const SizedBox(height: 16),
                   
-                  // 2. Info & Description (Row on Desktop, Column on Mobile)
+                  // 2. Info & Description
                   if (isDesktop)
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -207,11 +208,11 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
                   ],
                   const SizedBox(height: 16),
                   
-                  // 3. Evidence (Full Width)
+                  // 3. Evidence
                   _buildEvidenceCard(theme, hasEvidence),
                   const SizedBox(height: 16),
                   
-                  // 4. Timeline (Full Width)
+                  // 4. Timeline
                   _buildTimelineCard(theme),
 
                   const SizedBox(height: 100), // Space for bottom bar
