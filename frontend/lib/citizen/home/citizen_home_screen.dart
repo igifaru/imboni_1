@@ -21,28 +21,37 @@ class CitizenHomeScreen extends StatefulWidget {
 
 class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
   List<CaseModel> _recentCases = [];
+  List<CaseModel> _allCases = [];
   bool _isLoading = true;
+  int _notificationCount = 0;
 
   @override
   void initState() {
     super.initState();
-    _loadRecentCases();
+    _loadData();
   }
 
-  Future<void> _loadRecentCases() async {
+  Future<void> _loadData() async {
     setState(() => _isLoading = true);
     try {
-      final response = await caseService.getUserCases(limit: 3);
+      // Load all user cases for accurate counts
+      final allResponse = await caseService.getUserCases(limit: 100);
       if (mounted) {
+        final cases = allResponse.isSuccess && allResponse.data != null ? allResponse.data! : <CaseModel>[];
         setState(() {
           _isLoading = false;
-          _recentCases = response.isSuccess && response.data != null ? response.data! : [];
+          _allCases = cases;
+          _recentCases = cases.take(3).toList();
+          // Notification count = pending cases (open or in progress)
+          _notificationCount = cases.where((c) => c.status == 'OPEN' || c.status == 'IN_PROGRESS').length;
         });
       }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
     }
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +64,7 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: _buildAppBar(theme, isDark),
       body: RefreshIndicator(
-        onRefresh: _loadRecentCases,
+        onRefresh: _loadData,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: EdgeInsets.all(Responsive.horizontalPadding(context)),
@@ -91,13 +100,19 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
         Text('Imboni', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
       ]),
       actions: [
-        IconButton(
-          icon: Badge(
-            label: const Text('1'),
-            child: Icon(Icons.notifications_outlined, color: theme.colorScheme.onSurface),
+        if (_notificationCount > 0)
+          IconButton(
+            icon: Badge(
+              label: Text('$_notificationCount'),
+              child: Icon(Icons.notifications_outlined, color: theme.colorScheme.onSurface),
+            ),
+            onPressed: () {},
+          )
+        else
+          IconButton(
+            icon: Icon(Icons.notifications_outlined, color: theme.colorScheme.onSurface),
+            onPressed: () {},
           ),
-          onPressed: () {},
-        ),
         const SizedBox(width: 4),
         GestureDetector(
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen())),
@@ -121,7 +136,8 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
   }
 
   Widget _buildWelcomeBanner(ThemeData theme, AppLocalizations l10n, bool isDark) {
-    final resolvedCount = _recentCases.where((c) => c.status == 'RESOLVED' || c.status == 'CLOSED').length;
+    final totalCount = _allCases.length;
+    final resolvedCount = _allCases.where((c) => c.status == 'RESOLVED' || c.status == 'CLOSED').length;
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -163,7 +179,7 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
             boxShadow: isDark ? null : [BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 10, offset: const Offset(0, 4))],
           ),
           child: Row(children: [
-            _buildStatItem(Icons.folder_outlined, '${_recentCases.length}', 'Ibibazo byawe', isDark),
+            _buildStatItem(Icons.folder_outlined, '$totalCount', 'Ibibazo byawe', isDark),
             Container(width: 1, height: 40, color: isDark ? Colors.white24 : theme.dividerColor, margin: const EdgeInsets.symmetric(horizontal: 16)),
             _buildStatItem(Icons.check_circle_outline, '$resolvedCount', 'Byakemutse', isDark),
           ]),
@@ -258,7 +274,12 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
     );
   }
 
-  void _navigateTo(Widget screen) => Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+  void _navigateTo(Widget screen) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => screen)).then((_) {
+      // Refresh data when returning from any screen
+      _loadData();
+    });
+  }
 }
 
 class _QuickActionCard extends StatelessWidget {
