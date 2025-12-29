@@ -65,6 +65,32 @@ class ApiClient {
     }
   }
 
+  Future<ApiResponse<T>> uploadFile<T>(String endpoint, String filePath, {String fieldName = 'file', T Function(dynamic)? fromJson}) async {
+    try {
+      final uri = Uri.parse('$_baseUrl$endpoint');
+      final request = http.MultipartRequest('POST', uri);
+      
+      // Add headers
+      request.headers.addAll(_headers);
+      request.headers.remove('Content-Type'); // Let http client set boundary
+      
+      // Add file
+      if (kIsWeb) {
+        // Web handling would come here (using bytes)
+        // For now focusing on Linux/Mobile
+      } else {
+        request.files.add(await http.MultipartFile.fromPath(fieldName, filePath));
+      }
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      
+      return _handleResponse(response, fromJson: fromJson);
+    } catch (e) {
+      return ApiResponse.error('Upload error: $e');
+    }
+  }
+
   ApiResponse<T> _handleResponse<T>(http.Response response, {T Function(dynamic)? fromJson}) {
     try {
       final body = jsonDecode(response.body);

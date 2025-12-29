@@ -148,6 +148,27 @@ class AppLocalizations {
   // statusOpen and statusResolved defined
   String get open => get('open'); // Short version for cards
   String get resolved => get('resolved'); // Short version for cards
+
+  // Attachments / Evidence
+  String get attachEvidence => get('attach_evidence');
+  String get takePhoto => get('take_photo');
+  String get gallery => get('gallery');
+  String get video => get('video');
+  String get document => get('document');
+  String get noAttachments => get('no_attachments');
+  String get maxFileSize => get('max_file_size');
+  String get fileTooLarge => get('file_too_large');
+  String get maxAttachmentsReached => get('max_attachments_reached');
+  String get voiceNote => get('voice_note');
+  String get voiceNoteRecorded => get('voice_note_recorded');
+  String get delete => get('delete');
+  String get recording => get('recording');
+  String get tapToRecord => get('tap_to_record');
+  String get tapToStop => get('tap_to_stop');
+  String get ready => get('ready');
+  String get microphonePermissionRequired => get('microphone_permission_required');
+  String get evidence => get('evidence');
+  String get addEvidence => get('add_evidence');
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
@@ -270,6 +291,26 @@ const Map<String, Map<String, String>> _translations = {
     'total': 'Yose',
     'open': 'Gifunguye',
     'resolved': 'Cyakemutse',
+    // Attachments RW
+    'attach_evidence': 'Ongeraho Ibimenyetso',
+    'take_photo': 'Fata Ifoto',
+    'gallery': 'Fata mu Bubiko',
+    'video': 'Video',
+    'document': 'Inyandiko',
+    'no_attachments': 'Nta bimenyetso byongewe',
+    'max_file_size': 'Ingano ntarengwa',
+    'file_too_large': 'Dosiye irenze ingano',
+    'max_attachments_reached': 'Wagezeho ibimenyetso byinshi',
+    'voice_note': 'Ijwi ry\'Icyemezo',
+    'voice_note_recorded': 'Ijwi ryafashwe',
+    'delete': 'Siba',
+    'recording': 'Gufata ijwi...',
+    'tap_to_record': 'Kanda kugirango ubone ijwi',
+    'tap_to_stop': 'Kanda guhagarika',
+    'ready': 'Byateguwe',
+    'microphone_permission_required': 'Usabwa kwemererwa gukoresha microphone',
+    'evidence': 'Ibimenyetso',
+    'add_evidence': 'Ongeraho Ibimenyetso',
   },
   'en': {
     'app_name': 'Imboni',
@@ -380,6 +421,26 @@ const Map<String, Map<String, String>> _translations = {
     'total': 'Total',
     'open': 'Open',
     'resolved': 'Resolved',
+    // Attachments EN
+    'attach_evidence': 'Attach Evidence',
+    'take_photo': 'Take Photo',
+    'gallery': 'Gallery',
+    'video': 'Video',
+    'document': 'Document',
+    'no_attachments': 'No attachments added',
+    'max_file_size': 'Max file size',
+    'file_too_large': 'File is too large',
+    'max_attachments_reached': 'Max attachments reached',
+    'voice_note': 'Voice Note',
+    'voice_note_recorded': 'Voice note recorded',
+    'delete': 'Delete',
+    'recording': 'Recording...',
+    'tap_to_record': 'Tap to record',
+    'tap_to_stop': 'Tap to stop',
+    'ready': 'Ready',
+    'microphone_permission_required': 'Microphone permission required',
+    'evidence': 'Evidence',
+    'add_evidence': 'Add Evidence',
   },
   'fr': {
     'app_name': 'Imboni',
@@ -490,5 +551,25 @@ const Map<String, Map<String, String>> _translations = {
     'total': 'Total',
     'open': 'Ouvert',
     'resolved': 'Résolu',
+    // Attachments FR
+    'attach_evidence': 'Joindre des preuves',
+    'take_photo': 'Prendre une photo',
+    'gallery': 'Galerie',
+    'video': 'Vidéo',
+    'document': 'Document',
+    'no_attachments': 'Aucune pièce jointe',
+    'max_file_size': 'Taille max du fichier',
+    'file_too_large': 'Fichier trop volumineux',
+    'max_attachments_reached': 'Nombre max de pièces jointes atteint',
+    'voice_note': 'Note vocale',
+    'voice_note_recorded': 'Note vocale enregistrée',
+    'delete': 'Supprimer',
+    'recording': 'Enregistrement...',
+    'tap_to_record': 'Appuyez pour enregistrer',
+    'tap_to_stop': 'Appuyez pour arrêter',
+    'ready': 'Prêt',
+    'microphone_permission_required': 'Permission microphone requise',
+    'evidence': 'Preuves',
+    'add_evidence': 'Ajouter des preuves',
   },
 };

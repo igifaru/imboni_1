@@ -26,6 +26,15 @@ class CaseService {
     return ApiResponse.error(response.error ?? 'Case not found');
   }
 
+  /// Upload evidence file
+  Future<ApiResponse<void>> uploadEvidence(String caseId, String filePath) async {
+    final response = await apiClient.uploadFile('/cases/$caseId/evidence', filePath);
+    if (response.isSuccess) {
+      return ApiResponse.success(null);
+    }
+    return ApiResponse.error(response.error ?? 'Failed to upload evidence');
+  }
+
   /// Get user's cases
   Future<ApiResponse<List<CaseModel>>> getUserCases({int limit = 20, int offset = 0, String? status}) async {
     String endpoint = '/cases/my-cases?limit=$limit&offset=$offset';
