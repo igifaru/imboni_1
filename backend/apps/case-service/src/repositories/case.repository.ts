@@ -77,9 +77,7 @@ export class CaseRepository {
                 include: { evidence: true, administrativeUnit: true },
                 skip,
                 take: limit,
-                take: limit,
                 orderBy: { createdAt: 'desc' },
-                include: { administrativeUnit: true, evidence: true },
             }),
             prisma.case.count({
                 where: {
@@ -106,7 +104,6 @@ export class CaseRepository {
             prisma.case.findMany({
                 where: { administrativeUnitId: unitId },
                 skip,
-                take: limit,
                 take: limit,
                 orderBy: { createdAt: 'desc' },
                 include: { administrativeUnit: true, evidence: true },

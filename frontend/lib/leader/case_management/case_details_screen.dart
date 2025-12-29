@@ -7,6 +7,7 @@ import '../../shared/widgets/loading_overlay.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:imboni/shared/services/api_client.dart';
 import '../../shared/widgets/timeline_widget.dart';
+import 'resolution_dialog.dart';
 
 class LeaderCaseDetailsScreen extends StatefulWidget {
   final CaseModel caseData;
@@ -71,9 +72,7 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
     }
   }
 
-import 'resolution_dialog.dart';
 
-// ... inside the class ...
 
   Future<void> _resolveCase() async {
     final updatedCase = await showDialog<CaseModel>(

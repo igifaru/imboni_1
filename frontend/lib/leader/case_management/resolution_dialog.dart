@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:imboni/shared/theme/colors.dart';
@@ -55,23 +56,25 @@ class _ResolutionDialogState extends State<ResolutionDialog> {
     setState(() => _isLoading = true);
 
     try {
+      String? attachmentId;
       // 1. Upload file if present
       if (_selectedFile != null && _selectedFile!.path != null) {
          final uploadResult = await CaseService.instance.uploadEvidence(widget.caseId, _selectedFile!.path!);
-         if (!uploadResult.isSuccess) {
+         if (!uploadResult.isSuccess || uploadResult.data == null) {
            throw Exception(uploadResult.error ?? 'Failed to upload evidence');
          }
+         attachmentId = uploadResult.data;
       }
 
       // 2. Resolve case
-      final result = await CaseService.instance.resolveCase(widget.caseId, _notesController.text);
+      final result = await CaseService.instance.resolveCase(widget.caseId, _notesController.text, attachmentId: attachmentId);
       
       if (mounted) {
         if (result.isSuccess) {
           Navigator.pop(context, result.data); // Return updated case
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(result.error), backgroundColor: ImboniColors.error),
+            SnackBar(content: Text(result.error ?? 'Unknown error'), backgroundColor: ImboniColors.error),
           );
         }
       }

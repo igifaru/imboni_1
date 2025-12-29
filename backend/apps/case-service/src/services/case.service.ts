@@ -393,8 +393,60 @@ export class CaseService {
     /**
      * Resolve case
      */
-    async resolveCase(caseId: string, resolutionNotes: string, userId: string): Promise<CaseResponseDto> {
-        return this.updateCase(caseId, { status: 'RESOLVED', notes: resolutionNotes }, userId);
+    /**
+     * Resolve case
+     */
+    async resolveCase(caseId: string, resolutionNotes: string, userId: string, attachmentId?: string): Promise<CaseResponseDto> {
+        const result = await prisma.$transaction(async (tx) => {
+            // 1. Update Case Status
+            const updatedCase = await tx.case.update({
+                where: { id: caseId },
+                data: {
+                    status: 'RESOLVED',
+                    resolvedAt: new Date(),
+                }
+            });
+
+            // 2. Create CaseResolution
+            await tx.caseResolution.create({
+                data: {
+                    caseId,
+                    notes: resolutionNotes,
+                    resolvedBy: userId,
+                    evidenceId: attachmentId,
+                }
+            });
+
+            // 3. Log Action
+            await tx.caseAction.create({
+                data: {
+                    caseId,
+                    performedBy: userId,
+                    actionType: 'STATUS_UPDATE',
+                    notes: `Status changed to RESOLVED. Notes: ${resolutionNotes}`,
+                }
+            });
+
+            // 4. Complete Assignment
+            await tx.caseAssignment.updateMany({
+                where: { caseId, isActive: true },
+                data: { isActive: false, completedAt: new Date() }
+            });
+
+            return updatedCase;
+        });
+
+        // Publish event (outside transaction)
+        await publishEvent(CHANNELS.CASE_UPDATED, {
+            caseId,
+            status: 'RESOLVED',
+            updatedBy: userId,
+        });
+        await publishEvent(CHANNELS.CASE_RESOLVED, { caseId });
+
+        // Return full DTO
+        const finalCase = await this.repository.findById(caseId);
+        return this.toResponseDto(finalCase!);
     }
 
     /**

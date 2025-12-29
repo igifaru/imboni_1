@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../shared/theme/colors.dart';
 import '../../../shared/services/case_service.dart';
-import '../../../shared/services/api_client.dart';
 import '../../../shared/models/models.dart';
 import '../../case_management/case_details_screen.dart';
+import '../widgets/professional_case_card.dart';
 
-/// Assigned Cases Screen - Professional design matching Figma
 class AssignedCasesScreen extends StatefulWidget {
   const AssignedCasesScreen({super.key});
 
@@ -16,7 +15,13 @@ class AssignedCasesScreen extends StatefulWidget {
 class _AssignedCasesScreenState extends State<AssignedCasesScreen> {
   List<CaseModel> _cases = [];
   bool _isLoading = true;
-  String _selectedFilter = 'all';
+  String _searchQuery = '';
+  
+  // Filters
+  String _statusFilter = 'All';
+  String _categoryFilter = 'All';
+  String _priorityFilter = 'All';
+  String _sortBy = 'Newest First';
 
   @override
   void initState() {
@@ -40,289 +45,148 @@ class _AssignedCasesScreenState extends State<AssignedCasesScreen> {
   }
 
   List<CaseModel> get _filteredCases {
-    switch (_selectedFilter) {
-      case 'open': return _cases.where((c) => c.status == 'OPEN').toList();
-      case 'in_progress': return _cases.where((c) => c.status == 'IN_PROGRESS').toList();
-      case 'escalated': return _cases.where((c) => c.status == 'ESCALATED').toList();
-      default: return _cases;
-    }
+    return _cases.where((c) {
+      final matchesSearch = c.title.toLowerCase().contains(_searchQuery.toLowerCase()) || 
+                            c.caseReference.toLowerCase().contains(_searchQuery.toLowerCase());
+      
+      final matchesStatus = _statusFilter == 'All' || c.status == _statusFilter.toUpperCase().replaceAll(' ', '_');
+      final matchesCategory = _categoryFilter == 'All' || c.category == _categoryFilter;
+      final matchesPriority = _priorityFilter == 'All' || c.urgency == _priorityFilter.toUpperCase();
+
+      return matchesSearch && matchesStatus && matchesCategory && matchesPriority;
+    }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: theme.scaffoldBackgroundColor,
-        foregroundColor: theme.colorScheme.onSurface,
-        elevation: 0,
-        title: const Text('Assigned Cases', style: TextStyle(fontWeight: FontWeight.bold)),
-        centerTitle: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search), 
-            onPressed: () {
-              showSearch(context: context, delegate: _CaseSearchDelegate(_cases));
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.filter_list), 
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Use the chips below to filter cases')));
-            },
+      backgroundColor: const Color(0xFFF5F6F8), // Light grey background like screenshot
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Header & Filters
+            Container(
+              color: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Assigned Cases', 
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.black87)
+                  ),
+                  const SizedBox(height: 24),
+                  
+                  // Filter Row
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        // Search
+                        SizedBox(
+                          width: 250,
+                          child: TextField(
+                             onChanged: (val) => setState(() => _searchQuery = val),
+                             decoration: InputDecoration(
+                               hintText: 'Search cases...',
+                               prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                               isDense: true,
+                               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Colors.grey)),
+                               enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
+                             ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+
+                        // Dropdowns
+                        _buildDropdown('Status', ['All', 'Open', 'In Progress', 'Resolved', 'Escalated'], _statusFilter, (v) => setState(() => _statusFilter = v!)),
+                        const SizedBox(width: 12),
+                        _buildDropdown('Category', ['All', 'Justice', 'Health', 'Land', 'Social'], _categoryFilter, (v) => setState(() => _categoryFilter = v!)),
+                        const SizedBox(width: 12),
+                        _buildDropdown('Priority', ['All', 'Normal', 'High', 'Emergency'], _priorityFilter, (v) => setState(() => _priorityFilter = v!)),
+                        
+                        const SizedBox(width: 24),
+                        // Sort (Push to right usually, but in scrollable row just append)
+                        const Text('Sort by: ', style: TextStyle(color: Colors.grey)),
+                        DropdownButton<String>(
+                          value: _sortBy,
+                          underline: const SizedBox(),
+                          style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.black87),
+                          icon: const Icon(Icons.keyboard_arrow_down),
+                          onChanged: (v) => setState(() => _sortBy = v!),
+                          items: ['Newest First', 'Oldest First', 'Priority'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Grid
+            Expanded(
+              child: _isLoading 
+                ? const Center(child: CircularProgressIndicator())
+                : _filteredCases.isEmpty 
+                  ? Center(child: Text("No cases found", style: TextStyle(color: Colors.grey[600])))
+                  : LayoutBuilder(
+                      builder: (context, constraints) {
+                        // Responsive logic: 1 column on mobile, 2 on tablet, 3 on wide
+                        int crossAxisCount = 1;
+                        if (constraints.maxWidth > 800) crossAxisCount = 2; // Tablet/Small Lap
+                        if (constraints.maxWidth > 1200) crossAxisCount = 3; // Wide
+
+                        return GridView.builder(
+                          padding: const EdgeInsets.all(24),
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: crossAxisCount,
+                            crossAxisSpacing: 20,
+                            mainAxisSpacing: 20,
+                            mainAxisExtent: 300, // Increased height to prevent overflow
+                          ),
+                          itemCount: _filteredCases.length,
+                          itemBuilder: (context, index) {
+                             return ProfessionalCaseCard(
+                               caseData: _filteredCases[index],
+                               onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => LeaderCaseDetailsScreen(caseData: _filteredCases[index])),
+                               ),
+                             );
+                          },
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDropdown(String label, List<String> items, String currentValue, ValueChanged<String?> onChanged) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(8),
+        color: Colors.white,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('$label: ', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+          DropdownButton<String>(
+            value: currentValue,
+            underline: const SizedBox(),
+            isDense: false,
+            style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w500),
+            onChanged: onChanged,
+            items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
           ),
         ],
       ),
-      body: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _buildFilterChips(theme, isDark),
-        const Divider(height: 1),
-        Expanded(
-          child: RefreshIndicator(
-            onRefresh: _loadCases,
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _filteredCases.isEmpty
-                    ? _buildEmptyState(theme)
-                    : ListView.separated(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        itemCount: _filteredCases.length,
-                        separatorBuilder: (_, __) => Divider(height: 1, color: theme.dividerColor.withAlpha(50), indent: 16, endIndent: 16),
-                        itemBuilder: (context, index) => _buildCaseItem(_filteredCases[index], theme, isDark),
-                      ),
-          ),
-        ),
-      ]),
-    );
-  }
-
-  Widget _buildFilterChips(ThemeData theme, bool isDark) {
-    final filters = [
-      ('all', 'All'),
-      ('open', 'Open'),
-      ('in_progress', 'In Progress'),
-      ('escalated', 'Escalated'),
-    ];
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      color: theme.scaffoldBackgroundColor,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(children: filters.map((f) {
-          final isSelected = _selectedFilter == f.$1;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: FilterChip(
-              label: Text(f.$2),
-              selected: isSelected,
-              onSelected: (_) => setState(() => _selectedFilter = f.$1),
-              backgroundColor: theme.cardColor,
-              selectedColor: theme.colorScheme.primary.withAlpha(25),
-              checkmarkColor: theme.colorScheme.primary,
-              labelStyle: TextStyle(
-                color: isSelected 
-                    ? theme.colorScheme.primary 
-                    : theme.colorScheme.onSurface,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-              ),
-              side: BorderSide(
-                color: isSelected ? theme.colorScheme.primary : theme.dividerColor,
-                width: isSelected ? 1.5 : 1,
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              showCheckmark: false,
-            ),
-          );
-        }).toList()),
-      ),
-    );
-  }
-
-  Widget _buildCaseItem(CaseModel c, ThemeData theme, bool isDark) {
-    final categoryColor = ImboniColors.getCategoryColor(c.category);
-    final statusColor = ImboniColors.getStatusColor(c.status);
-    final urgencyColor = ImboniColors.getUrgencyColor(c.urgency);
-    final timeAgo = _formatTimeAgo(c.createdAt);
-
-    return Container(
-      color: c.urgency == 'HIGH' || c.urgency == 'EMERGENCY' 
-          ? urgencyColor.withAlpha(isDark ? 20 : 10) 
-          : null,
-      child: InkWell(
-        onTap: () => _openCaseDetails(c),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              Row(children: [
-                _buildChip(c.category, categoryColor, isDark),
-                if (c.urgency != 'NORMAL') ...[
-                  const SizedBox(width: 8),
-                  _buildChip(c.urgency, urgencyColor, isDark),
-                ],
-              ]),
-              Text(timeAgo, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-            ]),
-            const SizedBox(height: 16),
-            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(c.caseReference, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-                  const SizedBox(height: 4),
-                  Text(c.title, style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w500)),
-                  const SizedBox(height: 8),
-                  Row(children: [
-                    Icon(Icons.location_on_outlined, size: 14, color: theme.colorScheme.onSurfaceVariant),
-                    const SizedBox(width: 4),
-                    Text(c.currentLevel, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-                  ]),
-                ]),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(color: statusColor, borderRadius: BorderRadius.circular(6)),
-                child: Text(
-                  c.status.replaceAll('_', ' '),
-                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
-                ),
-              ),
-            ]),
-          ]),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildChip(String label, Color color, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withAlpha(isDark ? 40 : 25),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(Icons.circle, size: 8, color: color),
-        const SizedBox(width: 6),
-        Text(label, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
-      ]),
-    );
-  }
-
-  Widget _buildEmptyState(ThemeData theme) {
-    return LayoutBuilder(
-      builder: (context, constraints) => SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(minHeight: constraints.maxHeight),
-          child: Center(
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest.withAlpha(80),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(Icons.assignment_outlined, size: 48, color: theme.colorScheme.primary),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Nta kibazo kigupfundikiye', 
-                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Ibibazo bigenewe urwego rwawe\nbizagaragara hano', 
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-              ),
-            ]),
-          ),
-        ),
-      ),
-    );
-  }
-
-  String _formatTimeAgo(DateTime date) {
-    final diff = DateTime.now().difference(date);
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return '${diff.inHours}h ago';
-    return '${diff.inDays}d ago';
-  }
-
-  void _openCaseDetails(CaseModel c) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => LeaderCaseDetailsScreen(caseData: c)),
-    );
-  }
-}
-
-class _CaseSearchDelegate extends SearchDelegate {
-  final List<CaseModel> cases;
-
-  _CaseSearchDelegate(this.cases);
-
-  @override
-  List<Widget>? buildActions(BuildContext context) {
-    return [
-      IconButton(
-        icon: const Icon(Icons.clear),
-        onPressed: () => query = '',
-      ),
-    ];
-  }
-
-  @override
-  Widget? buildLeading(BuildContext context) {
-    return IconButton(
-      icon: const Icon(Icons.arrow_back),
-      onPressed: () => close(context, null),
-    );
-  }
-
-  @override
-  Widget buildResults(BuildContext context) {
-    return _buildList(context);
-  }
-
-  @override
-  Widget buildSuggestions(BuildContext context) {
-    return _buildList(context);
-  }
-
-  Widget _buildList(BuildContext context) {
-    final theme = Theme.of(context);
-    final results = cases.where((c) => 
-      c.title.toLowerCase().contains(query.toLowerCase()) || 
-      c.caseReference.toLowerCase().contains(query.toLowerCase()) ||
-      c.description.toLowerCase().contains(query.toLowerCase())
-    ).toList();
-
-    if (results.isEmpty) {
-      return Center(child: Text('No cases found', style: theme.textTheme.bodyLarge));
-    }
-
-    return ListView.builder(
-      itemCount: results.length,
-      itemBuilder: (context, index) {
-        final c = results[index];
-        return ListTile(
-          title: Text(c.title),
-          subtitle: Text('${c.caseReference} • ${c.status}'),
-          onTap: () {
-            close(context, null);
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => LeaderCaseDetailsScreen(caseData: c)),
-            );
-          },
-        );
-      },
     );
   }
 }

@@ -190,6 +190,7 @@ model Case {
   actions          CaseAction[]
   notifications    Notification[]
   evidence         Evidence[]
+  resolution       CaseResolution?
 
   @@index([caseReference])
   @@index([status])
@@ -290,4 +291,21 @@ model Evidence {
 
   @@index([caseId])
   @@map("evidence")
+  resolution CaseResolution?
+}
+
+// 2.11 Case Resolution Details
+model CaseResolution {
+  id          String   @id @default(cuid())
+  caseId      String   @unique @map("case_id")
+  case        Case     @relation(fields: [caseId], references: [id])
+  notes       String
+  resolvedBy  String   @map("resolved_by")
+  resolvedAt  DateTime @default(now()) @map("resolved_at")
+  
+  // Optional attachment
+  evidenceId  String?  @unique @map("evidence_id")
+  evidence    Evidence? @relation(fields: [evidenceId], references: [id])
+
+  @@map("case_resolutions")
 }

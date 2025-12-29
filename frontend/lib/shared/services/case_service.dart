@@ -27,13 +27,17 @@ class CaseService {
   }
 
   /// Upload evidence file
-  Future<ApiResponse<void>> uploadEvidence(String caseId, String filePath) async {
+  Future<ApiResponse<String>> uploadEvidence(String caseId, String filePath) async {
     final response = await apiClient.uploadFile('/cases/$caseId/evidence', filePath);
-    if (response.isSuccess) {
-      return ApiResponse.success(null);
+    if (response.isSuccess && response.data != null) {
+       return ApiResponse.success(response.data['id'] as String? ?? '');
     }
     return ApiResponse.error(response.error ?? 'Failed to upload evidence');
   }
+
+// ... (existing code) ...
+
+
 
   /// Get user's cases
   Future<ApiResponse<List<CaseModel>>> getUserCases({int limit = 20, int offset = 0, String? status}) async {
@@ -94,9 +98,10 @@ class CaseService {
   }
 
   /// Resolve case (for leaders)
-  Future<ApiResponse<CaseModel>> resolveCase(String caseId, String resolution) async {
+  Future<ApiResponse<CaseModel>> resolveCase(String caseId, String resolution, {String? attachmentId}) async {
     final response = await apiClient.post('/cases/$caseId/resolve', {
-      'notes': resolution, // Backend expects 'notes', frontend code passed 'resolution'
+      'notes': resolution, 
+      'attachmentId': attachmentId,
     });
     if (response.isSuccess && response.data != null) {
       return ApiResponse.success(CaseModel.fromJson(response.data));
