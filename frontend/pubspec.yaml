@@ -23,6 +23,14 @@ dependencies:
   flutter_map: ^8.2.2
   latlong2: ^0.9.1
   fl_chart: ^1.1.1
+  
+  # Media & Files
+  image_picker: ^1.1.2
+  file_picker: ^8.0.0+1
+  
+  # Audio Recording & Playback
+  record: ^6.1.2
+  audioplayers: ^6.1.0
 
 dev_dependencies:
   flutter_test:
