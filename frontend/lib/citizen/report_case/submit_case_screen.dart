@@ -292,7 +292,8 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
         
         // 2. Upload Evidence
         final evidenceCount = _attachments.length + (_audioPath != null ? 1 : 0);
-        
+        final List<String> failedUploads = [];
+
         if (evidenceCount > 0) {
           int current = 0;
           
@@ -300,19 +301,39 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
           for (final attachment in _attachments) {
             current++;
             setState(() => _loadingMessage = 'Kohereza inyandiko ($current/$evidenceCount)...');
-            await caseService.uploadEvidence(caseId, attachment.path);
+            final uploadRes = await caseService.uploadEvidence(caseId, attachment.path);
+            if (!uploadRes.isSuccess) {
+              failedUploads.add(attachment.path.split('/').last);
+              debugPrint('Failed to upload ${attachment.path}: ${uploadRes.error}');
+            }
           }
           
           // Upload Audio
           if (_audioPath != null) {
             current++;
             setState(() => _loadingMessage = 'Kohereza amajwi ($current/$evidenceCount)...');
-            await caseService.uploadEvidence(caseId, _audioPath!);
+            final uploadRes = await caseService.uploadEvidence(caseId, _audioPath!);
+             if (!uploadRes.isSuccess) {
+              failedUploads.add('Ijwi (Voice Note)');
+              debugPrint('Failed to upload audio: ${uploadRes.error}');
+            }
           }
         }
         
-        // 3. Success
-        _showSuccessDialog(response.data!); 
+        // 3. Success (with warning if uploads failed)
+        if (failedUploads.isNotEmpty) {
+           ScaffoldMessenger.of(context).showSnackBar(
+             SnackBar(
+               content: Text('Ikibazo cyakiriwe, ariko ibimenyetso bimwe byanze: ${failedUploads.join(', ')}'), 
+               backgroundColor: Colors.orange,
+               duration: const Duration(seconds: 5),
+             )
+           );
+            _showSuccessDialog(response.data!); // Still show success as case is created
+        } else {
+             _showSuccessDialog(response.data!); 
+        }
+
       } else { 
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response.error ?? 'Byanze'), backgroundColor: ImboniColors.error)); 
       }

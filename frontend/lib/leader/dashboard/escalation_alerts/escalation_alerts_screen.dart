@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../shared/theme/colors.dart';
 import '../../../shared/models/models.dart';
 import '../../../shared/services/case_service.dart';
-import '../case_detail/case_detail_screen.dart';
+import '../../case_management/case_details_screen.dart';
 
 /// Escalation Alerts Screen
 class EscalationAlertsScreen extends StatefulWidget {
@@ -167,7 +167,7 @@ class _AlertCard extends StatelessWidget {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => CaseDetailScreen(caseModel: caseModel)),
+                        MaterialPageRoute(builder: (_) => LeaderCaseDetailsScreen(caseData: caseModel)),
                       );
                     },
                     child: const Text('View Details'),
@@ -180,7 +180,7 @@ class _AlertCard extends StatelessWidget {
                       // For now, same as View Details, or maybe pass a flag to open action sheet immediately
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => CaseDetailScreen(caseModel: caseModel)),
+                        MaterialPageRoute(builder: (_) => LeaderCaseDetailsScreen(caseData: caseModel)),
                       );
                     },
                     child: const Text('Take Action'),

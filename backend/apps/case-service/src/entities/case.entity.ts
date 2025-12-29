@@ -39,6 +39,18 @@ export interface CaseEntity {
     submitterId: string | null;
     createdAt: Date;
     resolvedAt: Date | null;
+    evidence?: EvidenceEntity[];
+}
+
+export interface EvidenceEntity {
+    id: string;
+    caseId: string;
+    type: 'IMAGE' | 'VIDEO' | 'AUDIO' | 'DOCUMENT';
+    url: string;
+    fileName: string;
+    fileSize: number;
+    mimeType: string;
+    createdAt: Date;
 }
 
 /**

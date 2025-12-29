@@ -304,6 +304,58 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
     }
 });
 
+/**
+ * POST /cases/:id/review - Review case (Accept/Reject)
+ */
+router.post('/:id/review', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { id } = req.params;
+        const { action, notes } = req.body;
+        const userId = (req as any).user?.userId;
+
+        if (!['ACCEPT', 'REJECT', 'REQUEST_INFO'].includes(action)) {
+            return res.status(400).json({ error: 'Invalid action' });
+        }
+
+        const result = await caseService.reviewCase(id, action, userId, notes);
+
+        res.json({
+            success: true,
+            data: result,
+            message: `Case ${action.toLowerCase()}ed successfully`
+        });
+    } catch (error) {
+        logger.error('Failed to review case', error);
+        next(error);
+    }
+});
+
+/**
+ * POST /cases/:id/resolve - Resolve case
+ */
+router.post('/:id/resolve', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { id } = req.params;
+        const { notes } = req.body;
+        const userId = (req as any).user?.userId;
+
+        if (!notes) {
+            return res.status(400).json({ error: 'Resolution notes are required' });
+        }
+
+        const result = await caseService.resolveCase(id, notes, userId);
+
+        res.json({
+            success: true,
+            data: result,
+            message: 'Case resolved successfully'
+        });
+    } catch (error) {
+        logger.error('Failed to resolve case', error);
+        next(error);
+    }
+});
+
 
 // Import upload middleware
 import { uploadMiddleware } from '../middleware/upload.middleware';
@@ -319,8 +371,17 @@ router.post('/:id/evidence',
             const file = req.file;
 
             if (!file) {
+                logger.warn('Evidence upload failed: No file received', { caseId: id });
                 return res.status(400).json({ error: 'No file provided' });
             }
+
+            logger.info('Received evidence upload', {
+                caseId: id,
+                fileName: file.filename,
+                mimeType: file.mimetype,
+                originalName: file.originalname,
+                size: file.size
+            });
 
             // Verify case exists
             const caseExists = await caseService.getCaseById(id);

@@ -45,6 +45,12 @@ export interface CaseResponseDto {
     resolvedAt: string | null;
     deadline: string | null;
     daysRemaining: number | null;
+    evidence?: {
+        id: string;
+        type: string;
+        url: string;
+        fileName: string;
+    }[];
 }
 
 export interface CaseListResponseDto {

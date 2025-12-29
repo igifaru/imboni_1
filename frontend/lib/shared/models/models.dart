@@ -15,6 +15,7 @@ class CaseModel {
   final String? audioUrl;
   final String? imageUrl;
   final String? citizenName;
+  final List<EvidenceModel>? evidence;
 
   const CaseModel({
     required this.id,
@@ -32,6 +33,7 @@ class CaseModel {
     this.audioUrl,
     this.imageUrl,
     this.citizenName,
+    this.evidence,
   });
 
   factory CaseModel.fromJson(Map<String, dynamic> json) {
@@ -51,6 +53,9 @@ class CaseModel {
       audioUrl: json['audioUrl'] as String?,
       imageUrl: json['imageUrl'] as String?,
       citizenName: json['citizenName'] as String?,
+      evidence: json['evidence'] != null 
+          ? (json['evidence'] as List).map((e) => EvidenceModel.fromJson(e)).toList() 
+          : null,
     );
   }
 
@@ -340,6 +345,33 @@ class SubUnitPerformance {
       avgResponseTimeHours: (json['avgResponseTimeHours'] ?? 0).toDouble(),
       escalationRate: (json['escalationRate'] ?? 0).toDouble(),
       status: json['status'] ?? 'On Track',
+    );
+  }
+}
+
+/// Evidence model
+class EvidenceModel {
+  final String id;
+  final String type;
+  final String url;
+  final String fileName;
+  final String mimeType;
+
+  EvidenceModel({
+    required this.id,
+    required this.type,
+    required this.url,
+    required this.fileName,
+    required this.mimeType,
+  });
+
+  factory EvidenceModel.fromJson(Map<String, dynamic> json) {
+    return EvidenceModel(
+      id: json['id'] as String,
+      type: json['type'] as String,
+      url: json['url'] as String,
+      fileName: json['fileName'] as String,
+      mimeType: json['mimeType'] as String,
     );
   }
 }

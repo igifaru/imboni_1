@@ -3,7 +3,7 @@ import '../../../shared/theme/colors.dart';
 import '../../../shared/services/case_service.dart';
 import '../../../shared/services/api_client.dart';
 import '../../../shared/models/models.dart';
-import '../case_detail/case_detail_screen.dart';
+import '../../case_management/case_details_screen.dart';
 
 /// Assigned Cases Screen - Professional design matching Figma
 class AssignedCasesScreen extends StatefulWidget {
@@ -257,7 +257,7 @@ class _AssignedCasesScreenState extends State<AssignedCasesScreen> {
   void _openCaseDetails(CaseModel c) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => CaseDetailScreen(caseModel: c)),
+      MaterialPageRoute(builder: (_) => LeaderCaseDetailsScreen(caseData: c)),
     );
   }
 }
@@ -318,7 +318,7 @@ class _CaseSearchDelegate extends SearchDelegate {
             close(context, null);
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => CaseDetailScreen(caseModel: c)),
+              MaterialPageRoute(builder: (_) => LeaderCaseDetailsScreen(caseData: c)),
             );
           },
         );

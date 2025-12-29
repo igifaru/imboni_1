@@ -14,6 +14,7 @@ import 'performance/performance_screen.dart';
 import 'settings/leader_settings_screen.dart';
 import '../../admin/services/admin_service.dart';
 import '../../shared/localization/app_localizations.dart';
+import '../case_management/case_details_screen.dart';
 
 /// Leader Dashboard Screen - Professional responsive design
 class LeaderDashboardScreen extends StatefulWidget {
@@ -201,23 +202,45 @@ class _DashboardHomeState extends State<_DashboardHome> {
 
   Future<void> _loadDashboardData() async {
     setState(() => _isLoading = true);
-    try {
-      // Load map data first to ensure parsing works
-      await LocationService().load();
+    
+    // Execute all loads but don't let one failure stop others
+    await Future.wait([
+      _loadLocationData(),
+      _loadAssignedCases(),
+      _loadEscalationAlerts(),
+    ]);
 
-      final results = await Future.wait([
-        caseService.getAssignedCases(limit: 50),
-        caseService.getEscalationAlerts(),
-      ]);
-      if (mounted) {
-        setState(() {
-          _assignedCases = results[0].data ?? [];
-          _escalationAlerts = results[1].data ?? [];
-          _isLoading = false;
-        });
+    if (mounted) setState(() => _isLoading = false);
+  }
+
+  Future<void> _loadLocationData() async {
+    try {
+      await LocationService().load();
+    } catch (e) {
+      debugPrint('Location Service Error: $e');
+      // Non-critical, just map won't work
+    }
+  }
+
+  Future<void> _loadAssignedCases() async {
+    try {
+      final response = await caseService.getAssignedCases(limit: 50);
+      if (mounted && response.isSuccess && response.data != null) {
+        setState(() => _assignedCases = response.data!);
       }
     } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
+      debugPrint('Assigned Cases Error: $e');
+    }
+  }
+
+  Future<void> _loadEscalationAlerts() async {
+    try {
+      final response = await caseService.getEscalationAlerts();
+      if (mounted && response.isSuccess && response.data != null) {
+        setState(() => _escalationAlerts = response.data!);
+      }
+    } catch (e) {
+      debugPrint('Escalation Alerts Error: $e');
     }
   }
 
@@ -342,6 +365,14 @@ class _DashboardHomeState extends State<_DashboardHome> {
     );
   }
 
+  void _openCaseDetails(CaseModel caseData) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => LeaderCaseDetailsScreen(caseData: caseData)),
+    );
+    _loadDashboardData(); // Refresh list on return
+  }
+
   Widget _buildDataTable(ThemeData theme, bool isDark) {
     final cases = _filteredCases;
     if (cases.isEmpty) {
@@ -354,21 +385,23 @@ class _DashboardHomeState extends State<_DashboardHome> {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: DataTable(
+        showCheckboxColumn: false,
         headingRowColor: WidgetStateProperty.all(isDark ? theme.cardColor : Colors.grey.shade50),
         columns: const [
-          DataColumn(label: Text('User ID', style: TextStyle(fontWeight: FontWeight.bold))),
-          DataColumn(label: Text('Location', style: TextStyle(fontWeight: FontWeight.bold))),
-          DataColumn(label: Text('Active', style: TextStyle(fontWeight: FontWeight.bold))),
-          DataColumn(label: Text('Tags', style: TextStyle(fontWeight: FontWeight.bold))),
-          DataColumn(label: Text('Beeline', style: TextStyle(fontWeight: FontWeight.bold))),
+          DataColumn(label: Text('Ref', style: TextStyle(fontWeight: FontWeight.bold))),
+          DataColumn(label: Text('Title', style: TextStyle(fontWeight: FontWeight.bold))),
+          DataColumn(label: Text('Status', style: TextStyle(fontWeight: FontWeight.bold))),
+          DataColumn(label: Text('Urgency', style: TextStyle(fontWeight: FontWeight.bold))),
+          DataColumn(label: Text('Age', style: TextStyle(fontWeight: FontWeight.bold))),
         ],
         rows: cases.take(10).map((c) => DataRow(
+          onSelectChanged: (_) => _openCaseDetails(c),
           color: WidgetStateProperty.resolveWith((states) {
             if (c.urgency == 'EMERGENCY') return ImboniColors.urgencyEmergency.withAlpha(isDark ? 30 : 15);
             return null;
           }),
           cells: [
-            DataCell(Text(c.caseReference, style: TextStyle(color: ImboniColors.info, fontWeight: FontWeight.w500))),
+            DataCell(Text(c.caseReference, style: const TextStyle(color: ImboniColors.info, fontWeight: FontWeight.w500))),
             DataCell(Text(c.title, overflow: TextOverflow.ellipsis)),
             DataCell(StatusChip(status: c.status)),
             DataCell(UrgencyChip(urgency: c.urgency)),

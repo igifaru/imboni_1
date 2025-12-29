@@ -81,6 +81,18 @@ class CaseService {
     return ApiResponse.error(response.error ?? 'Failed to add action');
   }
 
+  /// Review case (Accept/Reject/Info)
+  Future<ApiResponse<CaseModel>> reviewCase(String caseId, String action, String? notes) async {
+    final response = await apiClient.post('/cases/$caseId/review', {
+      'action': action,
+      'notes': notes,
+    });
+    if (response.isSuccess && response.data != null) {
+      return ApiResponse.success(CaseModel.fromJson(response.data));
+    }
+    return ApiResponse.error(response.error ?? 'Failed to review case');
+  }
+
   /// Resolve case (for leaders)
   Future<ApiResponse<CaseModel>> resolveCase(String caseId, String resolution) async {
     final response = await apiClient.post('/cases/$caseId/resolve', {

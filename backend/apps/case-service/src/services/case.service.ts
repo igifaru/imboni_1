@@ -304,6 +304,25 @@ export class CaseService {
     }
 
     /**
+     * Review case (Accept/Reject/Info)
+     */
+    async reviewCase(caseId: string, action: 'ACCEPT' | 'REJECT' | 'REQUEST_INFO', userId: string, notes?: string): Promise<CaseResponseDto> {
+        let status: 'IN_PROGRESS' | 'CLOSED' | 'OPEN' | undefined;
+
+        if (action === 'ACCEPT') status = 'IN_PROGRESS';
+        else if (action === 'REJECT') status = 'CLOSED';
+
+        return this.updateCase(caseId, { status: status as any, notes }, userId);
+    }
+
+    /**
+     * Resolve case
+     */
+    async resolveCase(caseId: string, resolutionNotes: string, userId: string): Promise<CaseResponseDto> {
+        return this.updateCase(caseId, { status: 'RESOLVED', notes: resolutionNotes }, userId);
+    }
+
+    /**
      * Create assignment to leader of administrative unit
      */
     private async createAssignment(caseData: CaseEntity): Promise<void> {
@@ -729,6 +748,13 @@ export class CaseService {
             resolvedAt: entity.resolvedAt?.toISOString() || null,
             deadline: null, // Will be populated from assignment
             daysRemaining: null,
+            evidence: entity.evidence?.map(e => ({
+                id: e.id,
+                type: e.type,
+                url: e.url,
+                fileName: e.fileName,
+                mimeType: e.mimeType,
+            }))
         };
     }
 }
