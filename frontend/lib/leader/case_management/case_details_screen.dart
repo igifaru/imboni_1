@@ -553,12 +553,9 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, -5))],
       ),
       child: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        child: Row(
           children: [
-            SizedBox(
-              width: double.infinity,
-              height: 52,
+            Expanded(
               child: FilledButton(
                 onPressed: (_case.status == 'OPEN') 
                     ? () => _performAction('ACCEPT') 
@@ -568,6 +565,7 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
                   foregroundColor: Colors.white,
                   elevation: 2,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -579,23 +577,25 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 12),
-            if (_case.status == 'IN_PROGRESS' || _case.status == 'OPEN')
-              SizedBox(
-                width: double.infinity,
-                child: TextButton(
+            if (_case.status == 'IN_PROGRESS' || _case.status == 'OPEN') ...[
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton(
                    onPressed: _escalateCase,
-                   style: TextButton.styleFrom(
+                   style: OutlinedButton.styleFrom(
                       foregroundColor: theme.colorScheme.error,
+                      side: BorderSide(color: theme.colorScheme.error),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                    ),
                    child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                      Icon(Icons.arrow_upward, size: 16),
                      SizedBox(width: 8),
-                     Text('Ohereza hejuru (Escalate)', style: TextStyle(fontWeight: FontWeight.w600)),
+                     Text('Ohereza hejuru', style: TextStyle(fontWeight: FontWeight.w600)),
                    ]),
                 ),
               ),
+            ],
           ],
         ),
       ),
