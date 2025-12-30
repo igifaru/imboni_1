@@ -154,7 +154,9 @@ class AppLocalizations {
   // statusOpen and statusResolved defined above
   String get open => get('open'); // Short version for cards
   // resolved defined above
-
+  // resolved defined above
+  String get statusUpdate => get('status_update');
+  String get resolution => get('resolution');
   // Attachments / Evidence
   String get attachEvidence => get('attach_evidence');
   String get takePhoto => get('take_photo');
@@ -495,6 +497,8 @@ const Map<String, Map<String, String>> _translations = {
     'action_success': 'Igikorwa cyagenze neza',
     'case_resolved_success': 'Ikibazo cyakemuwe!',
     'case_escalated_success': 'Ikibazo cyoherejwe hejuru!',
+    'status_update': 'Ivugurura',
+    'resolution': 'Umwanzuro',
     'urgency_normal': 'Bisanzwe',
     'urgency_high': 'Byihutirwa',
     'urgency_emergency': 'Byihutirwa Cyane',
@@ -741,6 +745,8 @@ const Map<String, Map<String, String>> _translations = {
     'action_success': 'Action completed successfully',
     'case_resolved_success': 'Case has been resolved!',
     'case_escalated_success': 'Case has been escalated!',
+    'status_update': 'Status Update',
+    'resolution': 'Resolution',
     'urgency_normal': 'Normal',
     'urgency_high': 'High',
     'urgency_emergency': 'Emergency',
@@ -994,6 +1000,8 @@ const Map<String, Map<String, String>> _translations = {
     'action_success': 'Action effectuée avec succès',
     'case_resolved_success': 'Le cas a été résolu!',
     'case_escalated_success': 'Le cas a été escaladé!',
+    'status_update': 'Mise à jour du statut',
+    'resolution': 'Résolution',
     'urgency_normal': 'Normal',
     'urgency_high': 'Élevé',
     'urgency_emergency': 'Urgence',
