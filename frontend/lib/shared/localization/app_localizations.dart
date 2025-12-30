@@ -151,8 +151,8 @@ class AppLocalizations {
   String get casesByProvince => get('cases_by_province');
   String get total => get('total');
   // statusOpen and statusResolved defined
-  String get open => get('open'); // Short version for cards
-  String get resolved => get('resolved'); // Short version for cards
+  // statusOpen and statusResolved defined above
+  // open and resolved getters defined above
 
   // Attachments / Evidence
   String get attachEvidence => get('attach_evidence');
@@ -192,9 +192,9 @@ class AppLocalizations {
   String get noEvidenceProvided => get('no_evidence_provided');
   String get timeline => get('timeline');
   String get caseCreated => get('case_created');
-  String get caseEscalated => get('case_escalated');
-  String get caseResolved => get('case_resolved');
-  String get caseViewed => get('case_viewed');
+  // caseEscalated, caseResolved already defined above
+  // String get caseResolved => get('case_resolved');
+  // String get caseEscalated => get('case_escalated');
   String get caseAssigned => get('case_assigned');
   String get caseAccepted => get('case_accepted');
   String get takeCase => get('take_case');
@@ -442,7 +442,7 @@ const Map<String, Map<String, String>> _translations = {
     'cases_by_province': 'Ibibazo mu Ntara',
     'total': 'Yose',
     'open': 'Gifunguye',
-    'resolved': 'Cyakemutse',
+    // resolved defined above
     // Attachments RW
     'attach_evidence': 'Ongeraho Ibimenyetso',
     'take_photo': 'Fata Ifoto',
