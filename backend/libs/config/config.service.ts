@@ -57,11 +57,11 @@ export const config = {
         from: process.env.EMAIL_FROM || 'noreply@imboni.gov.rw',
     },
 
-    // Escalation Deadlines (in hours)
+    // Escalation Deadlines (in hours - supports decimals)
     escalation: {
-        normalHours: parseInt(process.env.ESCALATION_NORMAL_HOURS || '48'),
-        highHours: parseInt(process.env.ESCALATION_HIGH_HOURS || '24'),
-        emergencyHours: parseInt(process.env.ESCALATION_EMERGENCY_HOURS || '4'),
+        normalHours: parseFloat(process.env.ESCALATION_NORMAL_HOURS || '48'),
+        highHours: parseFloat(process.env.ESCALATION_HIGH_HOURS || '24'),
+        emergencyHours: parseFloat(process.env.ESCALATION_EMERGENCY_HOURS || '0.5'), // 30 minutes
     },
 };
 

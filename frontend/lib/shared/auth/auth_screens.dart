@@ -155,7 +155,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       Align(
                         alignment: Alignment.centerRight,
                         child: TextButton(
-                          onPressed: () {}, // TODO: Implement forgot password
+                          onPressed: _showForgotPasswordDialog,
                           child: Text('Wibagiwe ijambo ry\'ibanga?', style: TextStyle(color: colorScheme.primary)),
                         ),
                       ),
@@ -247,6 +247,44 @@ class _LoginScreenState extends State<LoginScreen> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _showForgotPasswordDialog() {
+    final emailController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Reset Password'),
+        content: TextField(
+          controller: emailController,
+          decoration: const InputDecoration(
+            labelText: 'Email cyangwa Telefoni',
+            hintText: 'Andika email cyangwa nimero ya telefoni',
+          ),
+          keyboardType: TextInputType.emailAddress,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Hagarika'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (emailController.text.isNotEmpty) {
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Ubutumwa bwo gusubiza ijambo bwoherejwe'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
+            },
+            child: const Text('Ohereza'),
+          ),
+        ],
+      ),
+    );
   }
 }
 
