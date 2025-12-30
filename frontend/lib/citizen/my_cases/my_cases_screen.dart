@@ -4,6 +4,9 @@ import '../../shared/theme/colors.dart';
 import '../../shared/services/case_service.dart';
 import '../../shared/models/models.dart';
 import '../../shared/localization/app_localizations.dart';
+import '../../shared/services/api_client.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// My Cases Screen - List of user's submitted cases
 class MyCasesScreen extends StatefulWidget {
@@ -886,25 +889,57 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
             )
           else
             Wrap(
-              spacing: 10,
-              runSpacing: 10,
+              spacing: 12,
+              runSpacing: 12,
               children: caseModel.evidence!.map((e) {
                 final isImage = e.mimeType.startsWith('image/');
                 final isAudio = e.mimeType.startsWith('audio/');
+                final isVideo = e.mimeType.startsWith('video/');
                 
-                return Container(
-                  width: 70,
-                  height: 70,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: isDark ? Colors.white12 : Colors.grey.withAlpha(50)),
-                    borderRadius: BorderRadius.circular(12),
-                    color: isDark ? Colors.white.withAlpha(12) : Colors.grey.withAlpha(15),
+                IconData icon;
+                Color iconColor;
+                if (isImage) {
+                  icon = Icons.image;
+                  iconColor = ImboniColors.primary;
+                } else if (isAudio) {
+                  icon = Icons.audiotrack;
+                  iconColor = ImboniColors.secondary;
+                } else if (isVideo) {
+                  icon = Icons.play_circle_outline;
+                  iconColor = Colors.red;
+                } else {
+                  icon = Icons.description;
+                  iconColor = isDark ? Colors.white54 : Colors.grey[600]!;
+                }
+
+                return GestureDetector(
+                  onTap: () => _handleEvidenceTap(context, e),
+                  child: Container(
+                    width: 70,
+                    height: 70,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: isDark ? Colors.white12 : Colors.grey.withAlpha(50)),
+                      borderRadius: BorderRadius.circular(12),
+                      color: isDark ? Colors.white.withAlpha(12) : Colors.grey.withAlpha(15),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(icon, color: iconColor, size: 28),
+                        if (!isImage) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            e.fileName.split('.').last.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 10, 
+                              fontWeight: FontWeight.bold,
+                              color: isDark ? Colors.white70 : Colors.grey[700],
+                            ),
+                          ),
+                        ]
+                      ],
+                    ),
                   ),
-                  child: isImage
-                      ? const Icon(Icons.image, color: ImboniColors.primary)
-                      : isAudio
-                          ? const Icon(Icons.audiotrack, color: ImboniColors.secondary)
-                          : Icon(Icons.insert_drive_file, color: isDark ? Colors.white54 : Colors.grey[600]),
                 );
               }).toList(),
             ),
@@ -1176,6 +1211,198 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
 
   String _formatDate(DateTime date) => DateFormat('dd/MM/yyyy').format(date);
   String _formatTime(DateTime date) => DateFormat('HH:mm').format(date);
+
+  void _handleEvidenceTap(BuildContext context, EvidenceModel e) {
+    if (e.url == null) return;
+    
+    // Construct full URL
+    final fullUrl = e.url!.startsWith('http') 
+        ? e.url! 
+        : '${ApiClient.storageUrl}${e.url!.startsWith('/') ? '' : '/'}${e.url}';
+        
+    debugPrint('Opening evidence: $fullUrl');
+
+    if (e.mimeType.startsWith('image/')) {
+        _showImagePreview(context, fullUrl, e.fileName);
+    } else if (e.mimeType.startsWith('audio/')) {
+        showDialog(
+          context: context,
+          builder: (_) => _AudioPlayerDialog(url: fullUrl, fileName: e.fileName),
+        );
+    } else {
+        // Video or Document -> Open externally
+        _launchUrl(fullUrl);
+    }
+  }
+  
+  void _showImagePreview(BuildContext context, String url, String fileName) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.zero,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            InteractiveViewer(
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: Image.network(
+                url,
+                loadingBuilder: (_, child, prog) => prog == null ? child : const CircularProgressIndicator(color: Colors.white),
+                errorBuilder: (_, __, ___) => const Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [Icon(Icons.broken_image, color: Colors.white, size: 48), Text('Failed to load image', style: TextStyle(color: Colors.white))],
+                ),
+              ),
+            ),
+            Positioned(
+              top: 40,
+              right: 20,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _launchUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not open file: $url')),
+        );
+      }
+    }
+  }
+}
+
+class _AudioPlayerDialog extends StatefulWidget {
+  final String url;
+  final String fileName;
+
+  const _AudioPlayerDialog({required this.url, required this.fileName});
+
+  @override
+  State<_AudioPlayerDialog> createState() => _AudioPlayerDialogState();
+}
+
+class _AudioPlayerDialogState extends State<_AudioPlayerDialog> {
+  final AudioPlayer _player = AudioPlayer();
+  bool _isPlaying = false;
+  Duration _duration = Duration.zero;
+  Duration _position = Duration.zero;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _initPlayer();
+  }
+  
+  Future<void> _initPlayer() async {
+    try {
+      await _player.setSourceUrl(widget.url);
+      _duration = await _player.getDuration() ?? Duration.zero;
+      
+      _player.onDurationChanged.listen((d) => setState(() => _duration = d));
+      _player.onPositionChanged.listen((p) => setState(() => _position = p));
+      _player.onPlayerComplete.listen((_) => setState(() { _isPlaying = false; _position = Duration.zero; }));
+      
+      if (mounted) setState(() => _isLoading = false);
+    } catch (e) {
+      debugPrint('Audio init error: $e');
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _player.dispose();
+    super.dispose();
+  }
+
+  Future<void> _togglePlay() async {
+    if (_isPlaying) {
+      await _player.pause();
+    } else {
+      await _player.resume();
+    }
+    setState(() => _isPlaying = !_isPlaying);
+  }
+
+  String _formatDuration(Duration d) {
+    final mm = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final ss = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$mm:$ss';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+             Icon(Icons.audiotrack, size: 48, color: theme.colorScheme.secondary),
+             const SizedBox(height: 16),
+             Text(
+               widget.fileName,
+               style: theme.textTheme.titleMedium,
+               textAlign: TextAlign.center,
+               maxLines: 2,
+             ),
+             const SizedBox(height: 24),
+             if (_isLoading)
+               const CircularProgressIndicator()
+             else ...[
+               Slider(
+                 value: _position.inSeconds.toDouble(),
+                 max: _duration.inSeconds.toDouble() > 0 ? _duration.inSeconds.toDouble() : 1,
+                 onChanged: (v) async {
+                   final pos = Duration(seconds: v.toInt());
+                   await _player.seek(pos);
+                 },
+               ),
+               Row(
+                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                 children: [
+                   Text(_formatDuration(_position), style: theme.textTheme.bodySmall),
+                   Text(_formatDuration(_duration), style: theme.textTheme.bodySmall),
+                 ],
+               ),
+               const SizedBox(height: 16),
+               IconButton.filled(
+                 onPressed: _togglePlay,
+                 icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
+                 iconSize: 32,
+                 style: IconButton.styleFrom(
+                   backgroundColor: theme.colorScheme.secondary,
+                   foregroundColor: Colors.white,
+                 ),
+               ),
+             ],
+             const SizedBox(height: 16),
+             TextButton(
+               onPressed: () => Navigator.pop(context),
+               child: Text('Close'),
+             ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 /// Timeline data helper class

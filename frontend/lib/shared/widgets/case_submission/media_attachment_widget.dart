@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -142,30 +143,30 @@ class _MediaAttachmentWidgetState extends State<MediaAttachmentWidget> {
       child: Row(
         children: [
           _AttachmentButton(
-            icon: Icons.photo_camera_rounded,
+            icon: Icons.camera_alt,
             label: l10n.takePhoto,
-            color: Colors.blue,
+            color: const Color(0xFF2196F3), // Blue
             onTap: () => _pickImage(ImageSource.camera),
           ),
           const SizedBox(width: 8),
           _AttachmentButton(
-            icon: Icons.photo_library_rounded,
+            icon: Icons.photo_library,
             label: l10n.gallery,
-            color: Colors.teal,
+            color: const Color(0xFF009688), // Teal
             onTap: () => _pickImage(ImageSource.gallery),
           ),
           const SizedBox(width: 8),
           _AttachmentButton(
-            icon: Icons.videocam_rounded,
+            icon: Icons.videocam,
             label: l10n.video,
-            color: Colors.purple,
+            color: const Color(0xFF9C27B0), // Purple
             onTap: _pickVideo,
           ),
           const SizedBox(width: 8),
           _AttachmentButton(
-            icon: Icons.description_rounded,
+            icon: Icons.description,
             label: l10n.document,
-            color: colorScheme.primary,
+            color: const Color(0xFF4CAF50), // Green for doc
             onTap: _pickDocument,
           ),
         ],
@@ -183,11 +184,12 @@ class _MediaAttachmentWidgetState extends State<MediaAttachmentWidget> {
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(8),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3,
-          crossAxisSpacing: 8,
-          mainAxisSpacing: 8,
+        padding: const EdgeInsets.all(12),
+        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: 150, // Responsive: fits columns based on width
+          childAspectRatio: 0.8,   // Taller than wide for preview + info
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
         ),
         itemCount: widget.attachments.length,
         itemBuilder: (context, index) {
@@ -199,57 +201,181 @@ class _MediaAttachmentWidgetState extends State<MediaAttachmentWidget> {
   }
 
   Widget _buildAttachmentTile(CaseAttachment attachment, ThemeData theme, ColorScheme colorScheme) {
+    final isImage = attachment.type == AttachmentType.image;
+    
     return Stack(
       children: [
-        Container(
-          decoration: BoxDecoration(
-            color: attachment.getColor(colorScheme).withAlpha(25),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: attachment.getColor(colorScheme).withAlpha(100)),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(attachment.icon, size: 28, color: attachment.getColor(colorScheme)),
-              const SizedBox(height: 4),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Text(
-                  attachment.name,
-                  style: theme.textTheme.labelSmall,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
+        GestureDetector(
+          onTap: () {
+            if (isImage) {
+              _showImagePreview(context, attachment);
+            }
+          },
+          child: Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: colorScheme.outline.withAlpha(30)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
                 ),
-              ),
-              Text(
-                attachment.sizeFormatted,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                  fontSize: 10,
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Preview Area
+                Expanded(
+                  flex: 3,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: attachment.getColor(colorScheme).withAlpha(15),
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                    ),
+                    child: Center(
+                      child: isImage
+                          ? ClipRRect(
+                              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                              child: Hero(
+                                tag: 'image_${attachment.id}',
+                                child: _buildImagePreview(attachment),
+                              ),
+                            )
+                          : Icon(attachment.icon, size: 32, color: attachment.getColor(colorScheme)),
+                    ),
+                  ),
                 ),
-              ),
-            ],
+                
+                // Info Area
+                Expanded(
+                  flex: 2,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            attachment.name,
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              fontWeight: FontWeight.w500,
+                              fontSize: 11, // Slightly smaller font
+                            ),
+                            maxLines: 1, // Limit lines strictly
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          attachment.sizeFormatted,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                            fontSize: 9, 
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
         // Remove button
         Positioned(
-          top: 2,
-          right: 2,
+          top: -4,
+          right: -4,
           child: GestureDetector(
             onTap: () => _removeAttachment(attachment),
             child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: colorScheme.error,
-                shape: BoxShape.circle,
+              padding: const EdgeInsets.all(6), // Larger touch target
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: colorScheme.error,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: colorScheme.surface, width: 2), // White border for separation
+                  boxShadow: [
+                     BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4)
+                  ],
+                ),
+                child: Icon(Icons.close, size: 12, color: colorScheme.onError),
               ),
-              child: Icon(Icons.close, size: 12, color: colorScheme.onError),
             ),
           ),
         ),
       ],
     );
+  }
+
+  void _showImagePreview(BuildContext context, CaseAttachment attachment) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.zero,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Backdrop
+            GestureDetector(
+              onTap: () => Navigator.of(context).pop(),
+              child: Container(color: Colors.black87),
+            ),
+            // Image
+            InteractiveViewer(
+               panEnabled: true,
+               minScale: 0.5,
+               maxScale: 4,
+               child: Hero(
+                 tag: 'image_${attachment.id}',
+                 child: _buildImagePreview(attachment),
+               ),
+            ),
+            // Close Button
+            Positioned(
+              top: 40,
+              right: 20,
+              child: IconButton(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(Icons.close, color: Colors.white, size: 30),
+              ),
+            ),
+            // Name label
+             Positioned(
+              bottom: 40,
+              left: 20,
+              right: 20,
+              child: Text(
+                attachment.name,
+                style: const TextStyle(color: Colors.white, fontSize: 16),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildImagePreview(CaseAttachment attachment) {
+    if (kIsWeb && attachment.bytes != null) {
+      return Image.memory(attachment.bytes!, fit: BoxFit.cover, width: double.infinity);
+    } else if (!kIsWeb && attachment.path.isNotEmpty) {
+      return Image.file(
+        File(attachment.path), 
+        fit: BoxFit.cover, 
+        width: double.infinity,
+        errorBuilder: (ctx, err, stack) => const Icon(Icons.broken_image_rounded, size: 30, color: Colors.grey),
+      );
+    }
+    return Icon(Icons.image, size: 32);
   }
 
   Widget _buildEmptyState(ThemeData theme, ColorScheme colorScheme) {
@@ -279,6 +405,22 @@ class _MediaAttachmentWidgetState extends State<MediaAttachmentWidget> {
       return;
     }
 
+    // On Desktop/Linux, ImageSource.camera is often not supported directly by image_picker.
+    // Use native ffmpeg capture
+    if (!kIsWeb && Platform.isLinux && source == ImageSource.camera) {
+       await _captureLinuxPhoto();
+       return;
+    }
+
+    if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.windows || defaultTargetPlatform == TargetPlatform.macOS)) {
+      if (source == ImageSource.camera) {
+         ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context).cameraNotSupported ?? 'Camera not supported on this platform.')),
+        );
+        return;
+      }
+    }
+
     try {
       final XFile? image = await _imagePicker.pickImage(
         source: source,
@@ -301,6 +443,63 @@ class _MediaAttachmentWidgetState extends State<MediaAttachmentWidget> {
       }
     } catch (e) {
       debugPrint('Error picking image: $e');
+      if (mounted) {
+         ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
+  Future<void> _captureLinuxPhoto() async {
+    try {
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final dir = Directory.systemTemp.createTempSync();
+      final path = '${dir.path}/photo_$timestamp.jpg';
+      
+      // Use ffmpeg to capture a single frame from the default video device
+      // -f video4linux2: format
+      // -i /dev/video0: input device (usually default webcam)
+      // -vframes 1: capture 1 frame
+      // -y: overwrite
+      final result = await Process.run('ffmpeg', [
+        '-f', 'video4linux2',
+        '-s', '1280x720', // Try HD resolution
+        '-i', '/dev/video0', 
+        '-vframes', '1', 
+        '-y', 
+        path
+      ]);
+
+      if (result.exitCode == 0) {
+        final file = File(path);
+        if (await file.exists()) {
+           final bytes = await file.readAsBytes();
+           if (_validateSize(bytes.length)) {
+            _addAttachment(CaseAttachment(
+              id: timestamp.toString(),
+              path: path,
+              name: 'photo_$timestamp.jpg',
+              type: AttachmentType.image,
+              size: bytes.length,
+            ));
+           }
+        } else {
+           throw Exception('Photo file not created');
+        }
+      } else {
+        throw Exception('ffmpeg failed: ${result.stderr}');
+      }
+    } catch (e) {
+      debugPrint('Error capturing linux photo: $e');
+      if (mounted) {
+         ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not capture photo. Ensure webcam is available.'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
     }
   }
 

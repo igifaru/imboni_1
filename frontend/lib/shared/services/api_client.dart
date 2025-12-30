@@ -14,10 +14,18 @@ class ApiClient {
       return 'http://localhost:3000/api';
     }
     
-    // For Mobile (Android/iOS): use the computer's local IP address
-    // Make sure your phone is on the same WiFi network as your computer
-    // Run 'hostname -I' to find your current IP
-    return 'http://172.31.123.85:3000/api';
+    // For Android Emulator: use 10.0.2.2
+    if (Platform.isAndroid) {
+       // A crude check for emulator vs real device isn't always reliable in pure Dart without plugins,
+       // but 10.0.2.2 is the standard loopback for Android emulators.
+       // However, for physical devices, we need the LAN IP.
+       // Best practice: Use the hosting machine's LAN IP.
+       // REPLACE THIS WITH YOUR MACHINE'S CURRENT LAN IP:
+       return 'http://10.24.143.221:3000/api'; 
+    }
+    
+    // For iOS / fallback: use LAN IP
+    return 'http://10.24.143.221:3000/api';
   }
   
   static String get baseUrl => _baseUrl;

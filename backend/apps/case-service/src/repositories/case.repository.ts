@@ -29,7 +29,9 @@ export class CaseRepository {
                 currentLevel: 'VILLAGE', // Always starts at village level
                 status: 'OPEN',
                 submittedAnonymously: dto.submittedAnonymously,
-                submitterId: dto.submittedAnonymously ? null : submitterId,
+                // persist submitterId so user can track it in "My Cases", 
+                // but use the anonymous flag to hide identity from leaders
+                submitterId: submitterId,
             },
         });
 

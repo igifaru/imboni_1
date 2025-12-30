@@ -31,6 +31,7 @@ dependencies:
   # Audio Recording & Playback
   record: ^6.1.2
   audioplayers: ^6.1.0
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:

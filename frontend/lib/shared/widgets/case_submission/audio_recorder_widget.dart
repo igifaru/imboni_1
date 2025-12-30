@@ -1,4 +1,7 @@
 import 'dart:async';
+import 'dart:ui';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:record/record.dart';
 import 'package:audioplayers/audioplayers.dart';
@@ -96,62 +99,47 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> {
   }
 
   Widget _buildRecordingControls(ThemeData theme, ColorScheme colorScheme, AppLocalizations l10n) {
-    return Column(
-      children: [
-        // Recording indicator
-        if (_isRecording) ...[
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 12,
-                height: 12,
-                decoration: BoxDecoration(
-                  color: colorScheme.error,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: colorScheme.error.withAlpha(100),
-                      blurRadius: 8,
-                      spreadRadius: 2,
-                    ),
-                  ],
-                ),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.1)),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Timer if recording
+          if (_isRecording) ...[
+            Text(
+              _formatDuration(_recordingDuration),
+              style: theme.textTheme.headlineLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: colorScheme.error,
+                fontFeatures: [const FontFeature.tabularFigures()],
               ),
-              const SizedBox(width: 8),
-              Text(
-                _formatDuration(_recordingDuration),
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.error,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            l10n.recording,
-            style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
-          ),
-          const SizedBox(height: 16),
-        ],
+            ),
+            const SizedBox(height: 8),
+            Text(l10n.recording, style: TextStyle(color: colorScheme.error, fontWeight: FontWeight.w500)),
+            const SizedBox(height: 24),
+          ],
 
-        // Record/Stop button
-        Center(
-          child: GestureDetector(
+          // Big Record Button
+          GestureDetector(
             onTap: _isRecording ? _stopRecording : _startRecording,
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: _isRecording ? 70 : 64,
-              height: _isRecording ? 70 : 64,
+              duration: const Duration(milliseconds: 300),
+              width: _isRecording ? 80 : 72,
+              height: _isRecording ? 80 : 72,
               decoration: BoxDecoration(
-                color: _isRecording ? colorScheme.error : colorScheme.primary,
+                color: _isRecording ? colorScheme.error : const Color(0xFF00C853), // Green for record
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: (_isRecording ? colorScheme.error : colorScheme.primary).withAlpha(60),
-                    blurRadius: 16,
-                    spreadRadius: 2,
+                    color: (_isRecording ? colorScheme.error : const Color(0xFF00C853)).withOpacity(0.4),
+                    blurRadius: _isRecording ? 20 : 10,
+                    spreadRadius: _isRecording ? 4 : 0,
                   ),
                 ],
               ),
@@ -162,13 +150,16 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> {
               ),
             ),
           ),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          _isRecording ? l10n.tapToStop : l10n.tapToRecord,
-          style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
-        ),
-      ],
+          const SizedBox(height: 16),
+          Text(
+            _isRecording ? l10n.tapToStop : l10n.tapToRecord,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -238,15 +229,48 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> {
     );
   }
 
+  // Linux-specific recording process
+  Process? _linuxRecordingProcess;
+
   Future<void> _startRecording() async {
     try {
-      if (await _recorder.hasPermission()) {
-        final path = '${DateTime.now().millisecondsSinceEpoch}.m4a';
-        await _recorder.start(const RecordConfig(), path: path);
+      // Check permissions (handled by OS/plugin usually, but good to wrap)
+      // Plugin permission check might fail or be irrelevant for native process on Linux, 
+      // but we keep it for consistency on other platforms.
+      bool hasPermission = true;
+      if (!kIsWeb && (Platform.isMacOS || Platform.isAndroid || Platform.isIOS)) {
+        hasPermission = await _recorder.hasPermission();
+      }
+
+      if (hasPermission) {
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        
+        // Setup path
+        String path = '';
+        if (kIsWeb) {
+           // Plugin handles web path (blob)
+           path = ''; 
+        } else {
+           // For local files
+           final dir = Directory.systemTemp.createTempSync();
+           path = '${dir.path}/audio_$timestamp.${Platform.isLinux ? "wav" : "m4a"}';
+        }
+
+        if (!kIsWeb && Platform.isLinux) {
+           // Use native 'arecord' on Linux as fallback/primary
+           // -f cd (16 bit little endian, 44100Hz, stereo)
+           // -t wav (file type)
+           // -d maxDuration (optional, but we manage manually)
+           await _startLinuxRecording(path);
+        } else {
+           // Use plugin for others
+           await _recorder.start(const RecordConfig(), path: path);
+        }
         
         setState(() {
           _isRecording = true;
           _recordingDuration = 0;
+          _recordingPath = path; // Store path immediately for Linux
         });
         
         _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -266,13 +290,50 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> {
       }
     } catch (e) {
       debugPrint('Error starting recording: $e');
+      if (mounted) {
+        String errorMessage = AppLocalizations.of(context).recordingError ?? 'Could not start recording.';
+        if (!kIsWeb && Platform.isLinux && e.toString().contains('ProcessException')) {
+           // Even our fallback failed?
+           errorMessage = 'Linux recording requires "arecord" (ALSA) or "parecord".';
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage), backgroundColor: Theme.of(context).colorScheme.error),
+        );
+      }
+      _resetState();
     }
+  }
+
+  Future<void> _startLinuxRecording(String path) async {
+     // Ensure directory exists
+     final file = File(path);
+     if (!file.parent.existsSync()) file.parent.createSync(recursive: true);
+
+     // Check for arecord availability (simple heuristic: try running it)
+     // Actually, we'll just try spawning.
+     _linuxRecordingProcess = await Process.start('arecord', [
+       '-f', 'cd', // Quality: CD (16 bit, 44.1kHz)
+       '-t', 'wav',
+       path
+     ]);
   }
 
   Future<void> _stopRecording() async {
     try {
       _timer?.cancel();
-      final path = await _recorder.stop();
+      
+      String? path = _recordingPath;
+
+      if (!kIsWeb && Platform.isLinux) {
+         // Stop Linux process
+         _linuxRecordingProcess?.kill(ProcessSignal.sigterm); // Try nice kill
+         _linuxRecordingProcess = null;
+         // Wait a tiny bit for file verify?
+         await Future.delayed(const Duration(milliseconds: 200));
+      } else {
+         // Stop plugin
+         path = await _recorder.stop();
+      }
       
       if (path != null) {
         setState(() {
@@ -281,10 +342,21 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> {
           _recordingPath = path;
         });
         widget.onRecordingComplete(path);
+      } else {
+        _resetState();
       }
     } catch (e) {
       debugPrint('Error stopping recording: $e');
+      _resetState();
     }
+  }
+
+  void _resetState() {
+     setState(() {
+      _isRecording = false;
+      _recordingDuration = 0;
+    });
+    _timer?.cancel();
   }
 
   Future<void> _playRecording() async {
@@ -298,6 +370,11 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> {
       });
     } catch (e) {
       debugPrint('Error playing recording: $e');
+      if (mounted) {
+         ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error playing audio: $e')),
+        );
+      }
     }
   }
 
@@ -311,6 +388,7 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> {
       _hasRecording = false;
       _recordingPath = null;
       _recordingDuration = 0;
+      _isRecording = false; 
     });
     widget.onRecordingComplete(null);
   }

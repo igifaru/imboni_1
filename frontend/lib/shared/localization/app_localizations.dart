@@ -169,6 +169,8 @@ class AppLocalizations {
   String get microphonePermissionRequired => get('microphone_permission_required');
   String get evidence => get('evidence');
   String get addEvidence => get('add_evidence');
+  String get cameraNotSupported => get('camera_not_supported');
+  String get recordingError => get('recording_error');
 
   // Case Details Screen
   String get caseDetails => get('case_details');
@@ -429,6 +431,8 @@ const Map<String, Map<String, String>> _translations = {
     'microphone_permission_required': 'Usabwa kwemererwa gukoresha microphone',
     'evidence': 'Ibimenyetso',
     'add_evidence': 'Ongeraho Ibimenyetso',
+    'camera_not_supported': 'Camera ntabwo ikunda kuri mudasobwa. Mwatuvugisha cyangwa mugahitamo ifoto isanzwe.',
+    'recording_error': 'Ikibazo mu gufata amajwi.',
     // Case Details Screen RW
     'case_details': 'Ibisobanuro by\'Ikibazo',
     'important_info': 'Amakuru y\'Ingenzi',
@@ -668,6 +672,8 @@ const Map<String, Map<String, String>> _translations = {
     'microphone_permission_required': 'Microphone permission required',
     'evidence': 'Evidence',
     'add_evidence': 'Add Evidence',
+    'camera_not_supported': 'Camera not supported on Desktop. Please upload a file.',
+    'recording_error': 'Could not start recording.',
     // Case Details Screen EN
     'case_details': 'Case Details',
     'important_info': 'Important Information',
@@ -906,7 +912,9 @@ const Map<String, Map<String, String>> _translations = {
     'ready': 'Prêt',
     'microphone_permission_required': 'Permission microphone requise',
     'evidence': 'Preuves',
-    'add_evidence': 'Ajouter des preuves',
+    'add_evidence': 'Ajouter une preuve',
+    'camera_not_supported': 'Caméra non prise en charge sur l\'ordinateur. Veuillez télécharger un fichier.',
+    'recording_error': 'Impossible de démarrer l\'enregistrement.',
     // Case Details Screen FR
     'case_details': 'Détails du Cas',
     'important_info': 'Informations Importantes',

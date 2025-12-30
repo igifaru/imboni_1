@@ -217,6 +217,7 @@ export class CaseService {
                 orderBy: { createdAt: 'desc' },
                 take: limit,
                 skip: offset,
+                include: { evidence: true, administrativeUnit: true },
             }),
             prisma.case.count({ where })
         ]);
