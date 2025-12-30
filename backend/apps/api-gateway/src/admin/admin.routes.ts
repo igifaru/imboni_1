@@ -232,7 +232,7 @@ router.get('/users', authMiddleware, async (req: Request, res: Response) => {
         const [users, total] = await Promise.all([
             prisma.user.findMany({
                 where,
-                select: { id: true, name: true, email: true, role: true, status: true, createdAt: true },
+                select: { id: true, name: true, email: true, phone: true, role: true, status: true, createdAt: true },
                 skip,
                 take: Number(limit),
                 orderBy: { createdAt: 'desc' }
