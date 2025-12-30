@@ -10,6 +10,7 @@ import '../report_case/submit_case_screen.dart';
 import '../track_case/track_case_screen.dart';
 import '../profile/profile_screen.dart';
 import '../my_cases/my_cases_screen.dart';
+import '../../leader/dashboard/widgets/professional_case_card.dart';
 
 /// Citizen Home Screen - Professional design with theme support
 class CitizenHomeScreen extends StatefulWidget {
@@ -67,15 +68,22 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
         onRefresh: _loadData,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.all(Responsive.horizontalPadding(context)),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            _buildWelcomeBanner(theme, l10n, isDark),
-            const SizedBox(height: 24),
-            if (isWide) _buildWideQuickActions(context, l10n, theme) else _buildMobileQuickActions(context, l10n, theme),
-            const SizedBox(height: 32),
-            _buildRecentCasesSection(theme, isDark),
-            const SizedBox(height: 40),
-          ]),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1100),
+              child: Padding(
+                padding: EdgeInsets.all(Responsive.horizontalPadding(context)),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  _buildWelcomeBanner(theme, l10n, isDark),
+                  const SizedBox(height: 24),
+                  if (isWide) _buildWideQuickActions(context, l10n, theme) else _buildMobileQuickActions(context, l10n, theme),
+                  const SizedBox(height: 32),
+                  _buildRecentCasesSection(theme, isDark),
+                  const SizedBox(height: 40),
+                ]),
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -136,66 +144,178 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
   Widget _buildWelcomeBanner(ThemeData theme, AppLocalizations l10n, bool isDark) {
     final totalCount = _allCases.length;
     final resolvedCount = _allCases.where((c) => c.status == 'RESOLVED' || c.status == 'CLOSED').length;
+    
     return Container(
-      padding: const EdgeInsets.all(24),
+      width: double.infinity,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDark
-              ? [ImboniColors.primaryDark.withAlpha(200), ImboniColors.primary.withAlpha(150)]
-              : [ImboniColors.primary.withAlpha(30), ImboniColors.secondary.withAlpha(20)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: isDark ? null : Border.all(color: ImboniColors.primary.withAlpha(50)),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: ImboniColors.primary.withAlpha(isDark ? 50 : 30),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          )
+        ],
       ),
-      child: Row(children: [
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(
-              l10n.welcomeMessage,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : ImboniColors.textPrimary,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Stack(
+          children: [
+            // Background Gradient
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      ImboniColors.primary.withAlpha(isDark ? 255 : 230),
+                      ImboniColors.primaryDark.withAlpha(isDark ? 255 : 230),
+                      ImboniColors.primary.withAlpha(isDark ? 230 : 200),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.welcomeSubtitle,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: isDark ? Colors.white70 : ImboniColors.textSecondary,
+
+            // Decorative Background Circles
+            Positioned(
+              top: -50,
+              right: -50,
+              child: Container(
+                width: 150,
+                height: 150,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withAlpha(20),
+                ),
               ),
             ),
-          ]),
+            Positioned(
+              bottom: -30,
+              left: 50,
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withAlpha(15),
+                ),
+              ),
+            ),
+
+            // Content
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isWideBanner = constraints.maxWidth > 650;
+                  
+                  return Flex(
+                    direction: isWideBanner ? Axis.horizontal : Axis.vertical,
+                    crossAxisAlignment: isWideBanner ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: isWideBanner ? 1 : 0,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              l10n.welcomeMessage,
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              l10n.welcomeSubtitle,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: Colors.white.withAlpha(200),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(
+                        width: isWideBanner ? 20 : 0,
+                        height: isWideBanner ? 0 : 20,
+                      ),
+                      
+                      // Glassmorphic Stats Container
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha(40),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.white.withAlpha(50), width: 1.5),
+                        ),
+                        child: IntrinsicHeight(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _buildStatItem(Icons.folder_copy_rounded, '$totalCount', l10n.yourCases, true),
+                              Container(
+                                width: 1.5,
+                                margin: const EdgeInsets.symmetric(horizontal: 20),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [Colors.white.withAlpha(0), Colors.white.withAlpha(150), Colors.white.withAlpha(0)],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  ),
+                                ),
+                              ),
+                              _buildStatItem(Icons.verified_rounded, '$resolvedCount', l10n.resolvedCases, true),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 16),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: isDark ? Colors.white.withAlpha(20) : Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: isDark ? null : [BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 10, offset: const Offset(0, 4))],
-          ),
-          child: Row(children: [
-            _buildStatItem(Icons.folder_outlined, '$totalCount', l10n.yourCases, isDark),
-            Container(width: 1, height: 40, color: isDark ? Colors.white24 : theme.dividerColor, margin: const EdgeInsets.symmetric(horizontal: 16)),
-            _buildStatItem(Icons.check_circle_outline, '$resolvedCount', l10n.resolvedCases, isDark),
-          ]),
-        ),
-      ]),
+      ),
     );
   }
 
-  Widget _buildStatItem(IconData icon, String count, String label, bool isDark) {
-    return Column(mainAxisSize: MainAxisSize.min, children: [
-      Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icon, size: 18, color: isDark ? Colors.white70 : ImboniColors.textSecondary),
-        const SizedBox(width: 6),
-        Text(count, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: isDark ? Colors.white : ImboniColors.textPrimary)),
-      ]),
-      const SizedBox(height: 4),
-      Text(label, style: TextStyle(fontSize: 11, color: isDark ? Colors.white60 : ImboniColors.textSecondary)),
-    ]);
+  Widget _buildStatItem(IconData icon, String count, String label, bool isBanner) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 20, color: Colors.white),
+            const SizedBox(width: 8),
+            Text(
+              count,
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: Colors.white.withAlpha(180),
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildMobileQuickActions(BuildContext context, AppLocalizations l10n, ThemeData theme) {
@@ -242,11 +362,30 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
         )
       else if (_recentCases.isEmpty)
         _buildEmptyState(theme, isDark, l10n)
-      else
-        ..._recentCases.map((c) => Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: CaseCard(caseReference: c.caseReference, title: c.title, category: c.category, status: c.status, urgency: c.urgency, currentLevel: c.currentLevel, createdAt: c.createdAt, onTap: () {}),
-        )),
+    else
+      LayoutBuilder(
+        builder: (context, constraints) {
+          final crossAxisCount = constraints.maxWidth > 900 ? 2 : 1;
+          return GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _recentCases.length,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossAxisCount,
+              crossAxisSpacing: 20,
+              mainAxisSpacing: 20,
+              mainAxisExtent: 250,
+            ),
+            itemBuilder: (context, index) {
+              final c = _recentCases[index];
+              return ProfessionalCaseCard(
+                caseData: c,
+                onTap: () => _navigateTo(CitizenCaseDetailsScreen(caseModel: c)),
+              );
+            },
+          );
+        }
+      ),
     ]);
   }
 

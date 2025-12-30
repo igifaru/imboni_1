@@ -16,21 +16,22 @@ class ProfessionalCaseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final statusColor = ImboniColors.getStatusColor(caseData.status);
-    final categoryColor = ImboniColors.getCategoryColor(caseData.category);
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(12), // 0.05 opacity approx
+            color: isDark ? Colors.black.withAlpha(50) : Colors.black.withAlpha(12),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
-        border: Border.all(color: Colors.grey.withAlpha(30)),
+        border: Border.all(color: theme.dividerColor.withAlpha(isDark ? 50 : 30)),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
@@ -46,10 +47,10 @@ class ProfessionalCaseCard extends StatelessWidget {
               // Content Area
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.all(16), // Reduced from 20
+                  padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min, // Added
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       // Header: Title + Status
                       Row(
@@ -58,10 +59,8 @@ class ProfessionalCaseCard extends StatelessWidget {
                           Expanded(
                             child: Text(
                               caseData.title,
-                              style: const TextStyle(
-                                fontSize: 16, // Reduced from 18
+                              style: theme.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
-                                color: Colors.black87,
                               ),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
@@ -72,7 +71,7 @@ class ProfessionalCaseCard extends StatelessWidget {
                         ],
                       ),
                       
-                      const SizedBox(height: 16), // Reduced from 24
+                      const SizedBox(height: 16),
 
                       // Details Grid
                       Row(
@@ -82,15 +81,17 @@ class ProfessionalCaseCard extends StatelessWidget {
                           Expanded(
                             flex: 2,
                             child: _buildDetailItem(
+                              context: context,
                               label: 'Case ID',
                               value: '#${caseData.caseReference}',
-                              valueStyle: const TextStyle(fontWeight: FontWeight.w600, color: Colors.black87),
+                              valueStyle: TextStyle(fontWeight: FontWeight.w600, color: theme.colorScheme.primary),
                             ),
                           ),
                           // Column 2: Category
                           Expanded(
                             flex: 3,
                             child: _buildDetailItem(
+                              context: context,
                               label: 'Category',
                               value: caseData.category,
                               icon: Icons.category_outlined,
@@ -98,7 +99,7 @@ class ProfessionalCaseCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12), // Reduced from 16
+                      const SizedBox(height: 12),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -106,6 +107,7 @@ class ProfessionalCaseCard extends StatelessWidget {
                           Expanded(
                             flex: 2,
                             child: _buildDetailItem(
+                              context: context,
                               label: 'Location',
                               value: caseData.locationName ?? 'Unknown',
                               icon: Icons.location_on_outlined,
@@ -115,6 +117,7 @@ class ProfessionalCaseCard extends StatelessWidget {
                           Expanded(
                             flex: 3,
                             child: _buildDetailItem(
+                              context: context,
                               label: 'Submitted',
                               value: _formatTimeAgo(caseData.createdAt),
                               icon: Icons.access_time,
@@ -124,23 +127,23 @@ class ProfessionalCaseCard extends StatelessWidget {
                       ),
 
                       const Spacer(),
-                      const SizedBox(height: 16),
-                      const Divider(height: 1),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
+                      Divider(height: 1, color: theme.dividerColor),
+                      const SizedBox(height: 8),
 
                       // Footer Actions
                       Row(
                         children: [
                           Expanded(
                             child: SizedBox(
-                              height: 36, // Fixed height for button
+                              height: 36,
                               child: OutlinedButton(
                                 onPressed: onTap,
                                 style: OutlinedButton.styleFrom(
-                                  side: BorderSide(color: ImboniColors.primary.withAlpha(100)),
+                                  side: BorderSide(color: theme.colorScheme.primary.withAlpha(100)),
                                   padding: EdgeInsets.zero,
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                  foregroundColor: ImboniColors.primary,
+                                  foregroundColor: theme.colorScheme.primary,
                                 ),
                                 child: const Text('View Details', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                               ),
@@ -150,11 +153,11 @@ class ProfessionalCaseCard extends StatelessWidget {
                           Container(
                             height: 36, width: 36,
                             decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey.withAlpha(50)),
+                              border: Border.all(color: theme.dividerColor),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: IconButton(
-                              icon: const Icon(Icons.more_vert, size: 18, color: Colors.grey),
+                              icon: Icon(Icons.more_vert, size: 18, color: theme.colorScheme.onSurfaceVariant),
                               onPressed: () {},
                               padding: EdgeInsets.zero,
                             ),
@@ -191,7 +194,10 @@ class ProfessionalCaseCard extends StatelessWidget {
     );
   }
 
-  Widget _buildDetailItem({required String label, required String value, IconData? icon, TextStyle? valueStyle}) {
+  Widget _buildDetailItem({required BuildContext context, required String label, required String value, IconData? icon, TextStyle? valueStyle}) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -199,7 +205,7 @@ class ProfessionalCaseCard extends StatelessWidget {
           label,
           style: TextStyle(
             fontSize: 12,
-            color: Colors.grey[600],
+            color: isDark ? Colors.white38 : Colors.grey[600],
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -215,7 +221,7 @@ class ProfessionalCaseCard extends StatelessWidget {
                 value,
                 style: valueStyle ?? TextStyle(
                   fontSize: 14,
-                  color: Colors.grey[900],
+                  color: isDark ? Colors.white70 : Colors.grey[900],
                   fontWeight: FontWeight.w500,
                 ),
                 maxLines: 1,
