@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/colors.dart';
 import '../services/admin_units_service.dart';
+import '../models/models.dart';
 
 /// Location Selector Widget - Cascading dropdowns for Rwanda's admin hierarchy
 class LocationSelector extends StatefulWidget {

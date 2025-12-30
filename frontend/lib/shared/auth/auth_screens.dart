@@ -4,6 +4,7 @@ import '../widgets/loading_overlay.dart';
 import '../widgets/location_selector.dart';
 import '../services/auth_service.dart';
 import '../services/admin_units_service.dart';
+import '../models/models.dart';
 
 /// Login Screen - Professional Design
 class LoginScreen extends StatefulWidget {

@@ -258,6 +258,33 @@ class AppLocalizations {
   String get saveFailed => get('save_failed');
   String get notProvided => get('not_provided');
   String get aboutApp => get('about_app');
+
+  String get selectCategoryError => get('select_category_error');
+  // Submit Case Screen
+  String get processing => get('processing');
+  String get problem => get('problem');
+  // 'location' and 'selectCategory' already exist
+  String get urgencyTitle => get('urgency_title');
+  String get caseTitle => get('case_title');
+  String get caseTitleHint => get('case_title_hint');
+  String get caseTitleError => get('case_title_error');
+  String get descHint => get('desc_hint');
+  String get descError => get('desc_error');
+  String get continueBtn => get('continue_btn');
+  String get selectLocPrompt => get('select_loc_prompt');
+  String get confirmLoc => get('confirm_loc');
+  String get backBtn => get('back_btn');
+  String get summary => get('summary');
+  String get emergencyWarning => get('emergency_warning');
+  String get uploadingDocs => get('uploading_docs');
+  String get uploadingAudio => get('uploading_audio');
+  String get partialSuccess => get('partial_success');
+  String get successTitle => get('success_title');
+  String get successMessage => get('success_message');
+  String get trackingNumber => get('tracking_number');
+  String get saveTrackingHint => get('save_tracking_hint');
+  String get ok => get('ok');
+  String get failed => get('failed');
   String get notificationsLabel => get('notifications_label');
   String get themeLabel => get('theme_label');
 }
@@ -486,6 +513,31 @@ const Map<String, Map<String, String>> _translations = {
     'about_app': 'Ibyerekeye Porogaramu',
     'notifications_label': 'Menyesha',
     'theme_label': 'Insanganyamatsiko',
+    // Submit Case Screen RW
+    'processing': 'Gutunganya...',
+    'problem': 'Ikibazo',
+    'select_category_error': 'Hitamo icyiciro',
+    'urgency_title': 'Ubukana',
+    'case_title': 'Umutwe w\'ikibazo',
+    'case_title_hint': 'Umutwe muto usobanura ikibazo',
+    'case_title_error': 'Umutwe ugomba kuba nibura inyuguti 5',
+    'desc_hint': 'Sobanura neza ikibazo cyawe',
+    'desc_error': 'Ibisobanuro bigomba kuba nibura inyuguti 20',
+    'continue_btn': 'Komeza',
+    'select_loc_prompt': 'Hitamo aho ikibazo kibarizwa (aho cyabereye)',
+    'confirm_loc': 'Aho ikibazo kibarizwa',
+    'back_btn': 'Subira inyuma',
+    'summary': 'Incamake',
+    'emergency_warning': 'Ikibazo cy\'ubutabazi bwihutirwa kiremerwa vuba',
+    'uploading_docs': 'Kohereza inyandiko...',
+    'uploading_audio': 'Kohereza amajwi...',
+    'partial_success': 'Ikibazo cyakiriwe, ariko ibimenyetso bimwe byanze',
+    'success_title': 'Byagenze neza!',
+    'success_message': 'Ikibazo cyawe cyoherejwe neza.',
+    'tracking_number': 'Nimero yo gukurikirana:',
+    'save_tracking_hint': 'Bika iyi nimero kugirango ukurikirane ikibazo cyawe.',
+    'ok': 'Sawa',
+    'failed': 'Byanze',
   },
   'en': {
     'app_name': 'Imboni',
@@ -700,6 +752,31 @@ const Map<String, Map<String, String>> _translations = {
     'about_app': 'About App',
     'notifications_label': 'Notifications',
     'theme_label': 'Theme',
+    // Submit Case Screen EN
+    'processing': 'Processing...',
+    'problem': 'Problem',
+    'select_category_error': 'Select category',
+    'urgency_title': 'Urgency',
+    'case_title': 'Case Title',
+    'case_title_hint': 'Short title describing the issue',
+    'case_title_error': 'Title must be at least 5 characters',
+    'desc_hint': 'Describe your issue in detail',
+    'desc_error': 'Description must be at least 20 characters',
+    'continue_btn': 'Continue',
+    'select_loc_prompt': 'Select where the issue is located',
+    'confirm_loc': 'Issue Location',
+    'back_btn': 'Back',
+    'summary': 'Summary',
+    'emergency_warning': 'Emergency cases are handled immediately',
+    'uploading_docs': 'Uploading documents...',
+    'uploading_audio': 'Uploading audio...',
+    'partial_success': 'Case received, but some evidence failed to upload',
+    'success_title': 'Success!',
+    'success_message': 'Your case has been submitted successfully.',
+    'tracking_number': 'Tracking Number:',
+    'save_tracking_hint': 'Save this number to track your case.',
+    'ok': 'OK',
+    'failed': 'Failed',
   },
   'fr': {
     'app_name': 'Imboni',
@@ -914,5 +991,30 @@ const Map<String, Map<String, String>> _translations = {
     'about_app': 'À propos de l\'Application',
     'notifications_label': 'Notifications',
     'theme_label': 'Thème',
+    // Submit Case Screen FR
+    'processing': 'Traitement...',
+    'problem': 'Problème',
+    'select_category_error': 'Sélectionner une catégorie',
+    'urgency_title': 'Urgence',
+    'case_title': 'Titre du Dossier',
+    'case_title_hint': 'Titre court décrivant le problème',
+    'case_title_error': 'Le titre doit contenir au moins 5 caractères',
+    'desc_hint': 'Décrivez votre problème en détail',
+    'desc_error': 'La description doit contenir au moins 20 caractères',
+    'continue_btn': 'Continuer',
+    'select_loc_prompt': 'Sélectionnez où se situe le problème',
+    'confirm_loc': 'Lieu du Problème',
+    'back_btn': 'Retour',
+    'summary': 'Résumé',
+    'emergency_warning': 'Les cas d\'urgence sont traités immédiatement',
+    'uploading_docs': 'Chargement des documents...',
+    'uploading_audio': 'Chargement de l\'audio...',
+    'partial_success': 'Cas reçu, mais certaines preuves n\'ont pas pu être téléchargées',
+    'success_title': 'Succès!',
+    'success_message': 'Votre cas a été soumis avec succès.',
+    'tracking_number': 'Numéro de Suivi:',
+    'save_tracking_hint': 'Enregistrez ce numéro pour suivre votre cas.',
+    'ok': 'D\'accord',
+    'failed': 'Échoué',
   },
 };

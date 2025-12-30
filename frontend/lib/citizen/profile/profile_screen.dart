@@ -4,7 +4,9 @@ import '../../shared/services/auth_service.dart';
 import '../../shared/services/settings_service.dart';
 import '../../shared/widgets/location_selector.dart';
 import '../../shared/services/admin_units_service.dart';
+import '../../shared/models/models.dart';
 import '../../shared/widgets/dialogs/change_password_dialog.dart';
+import '../../shared/widgets/dialogs/confirmation_dialog.dart';
 import '../../shared/localization/app_localizations.dart';
 import '../../main.dart';
 
@@ -342,24 +344,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.logout),
-        content: Text(l10n.logoutConfirm),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.no)),
-          ElevatedButton(
-            onPressed: () {
-               Navigator.pop(ctx); 
-               authService.logout(); 
-               Navigator.of(context).pushAndRemoveUntil(
-                 MaterialPageRoute(builder: (_) => const ImboniApp()),
-                 (route) => false,
-               );
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
-            child: Text('${l10n.yes}, ${l10n.logout.toLowerCase()}'),
-          ),
-        ],
+      builder: (ctx) => ConfirmationDialog(
+        title: l10n.logout,
+        content: l10n.logoutConfirm,
+        confirmText: '${l10n.yes}, ${l10n.logout.toLowerCase()}',
+        cancelText: l10n.no,
+        icon: Icons.logout_rounded,
+        isDestructive: true,
+        onConfirm: () {
+          Navigator.pop(ctx); 
+          authService.logout(); 
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const ImboniApp()),
+            (route) => false,
+          );
+        },
       ),
     );
   }

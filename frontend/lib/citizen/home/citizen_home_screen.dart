@@ -205,7 +205,7 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
       Row(children: [
         Expanded(child: _QuickActionCard(icon: Icons.add_circle_outline, label: l10n.submitCase, subtitle: l10n.submitCaseSubtitle, color: ImboniColors.primary, theme: theme, onTap: () => _navigateTo(const SubmitCaseScreen()))),
         const SizedBox(width: 12),
-        Expanded(child: _QuickActionCard(icon: Icons.search, label: l10n.trackCase, subtitle: l10n.trackCaseSubtitle, color: ImboniColors.secondary, theme: theme, onTap: () => _navigateTo(const TrackCaseScreen()))),
+        Expanded(child: _QuickActionCard(icon: Icons.search, label: l10n.trackCase, subtitle: l10n.trackCaseSubtitle, color: ImboniColors.secondary, theme: theme, onTap: _showTrackCaseDialog)),
       ]),
       const SizedBox(height: 12),
       Row(children: [
@@ -220,7 +220,7 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
     return Row(children: [
       Expanded(child: _QuickActionCard(icon: Icons.add_circle_outline, label: l10n.submitCase, subtitle: l10n.submitCaseSubtitle, color: ImboniColors.primary, theme: theme, onTap: () => _navigateTo(const SubmitCaseScreen()))),
       const SizedBox(width: 16),
-      Expanded(child: _QuickActionCard(icon: Icons.search, label: l10n.trackCase, subtitle: l10n.trackCaseSubtitle, color: ImboniColors.secondary, theme: theme, onTap: () => _navigateTo(const TrackCaseScreen()))),
+      Expanded(child: _QuickActionCard(icon: Icons.search, label: l10n.trackCase, subtitle: l10n.trackCaseSubtitle, color: ImboniColors.secondary, theme: theme, onTap: _showTrackCaseDialog)),
       const SizedBox(width: 16),
       Expanded(child: _QuickActionCard(icon: Icons.warning_amber_rounded, label: l10n.emergency, subtitle: l10n.emergencySubtitle, color: ImboniColors.urgencyEmergency, theme: theme, onTap: () => _navigateTo(const SubmitCaseScreen(isEmergency: true)))),
       const SizedBox(width: 16),
@@ -281,6 +281,168 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
       _loadData();
     });
   }
+
+  void _showTrackCaseDialog() {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    final controller = TextEditingController();
+    String? error;
+    bool loading = false;
+
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: l10n.cancel,
+      barrierColor: Colors.black.withOpacity(0.5),
+      transitionDuration: const Duration(milliseconds: 200),
+      pageBuilder: (ctx, anim1, anim2) => StatefulBuilder(
+        builder: (context, setStateDialog) {
+          
+          Future<void> performTrack() async {
+            final ref = controller.text.trim();
+            if (ref.isEmpty) return;
+
+            setStateDialog(() {
+              loading = true;
+              error = null;
+            });
+
+            try {
+              final result = await caseService.trackCase(ref);
+              
+              if (!ctx.mounted) return;
+
+              setStateDialog(() {
+                loading = false;
+              });
+
+              if (result.isSuccess && result.data != null) {
+                Navigator.pop(ctx);
+                Navigator.push(
+                  this.context, 
+                  MaterialPageRoute(builder: (_) => CitizenCaseDetailsScreen(caseModel: result.data!))
+                );
+              } else {
+                 setStateDialog(() {
+                   error = l10n.caseNotFound;
+                 });
+              }
+            } catch (e) {
+              if (ctx.mounted) {
+                setStateDialog(() {
+                  loading = false;
+                  error = l10n.caseNotFound;
+                });
+              }
+            }
+          }
+
+          return Center(
+            child: Material(
+              color: Colors.transparent,
+              child: Container(
+                width: MediaQuery.of(context).size.width * 0.9,
+                constraints: const BoxConstraints(maxWidth: 600),
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: theme.cardColor,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 20, offset: const Offset(0, 10)),
+                  ],
+                  border: isDark ? Border.all(color: Colors.white.withOpacity(0.1)) : null,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Header Icon
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: ImboniColors.primary.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.search_rounded, size: 32, color: ImboniColors.primary),
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    // Title
+                    Text(l10n.trackCase, style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    Text(l10n.trackCaseSubtitle, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant), textAlign: TextAlign.center),
+                    const SizedBox(height: 24),
+                    
+                    // Input
+                    TextField(
+                      controller: controller,
+                      style: const TextStyle(fontWeight: FontWeight.w500),
+                      decoration: InputDecoration(
+                        hintText: l10n.enterReference,
+                        filled: true,
+                        fillColor: isDark ? Colors.black.withOpacity(0.2) : Colors.grey.withOpacity(0.05),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: ImboniColors.primary, width: 2)),
+                        errorText: error,
+                        prefixIcon: const Icon(Icons.tag, color: ImboniColors.primary),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      ),
+                      textInputAction: TextInputAction.search,
+                      textCapitalization: TextCapitalization.characters,
+                      enabled: !loading,
+                      onSubmitted: (_) => performTrack(),
+                    ),
+                    
+                    const SizedBox(height: 32),
+                    
+                    // Action Buttons Row
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              foregroundColor: theme.colorScheme.onSurfaceVariant,
+                            ),
+                            child: Text(l10n.cancel),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          flex: 2,
+                          child: ElevatedButton(
+                            onPressed: loading ? null : performTrack,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: ImboniColors.primary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            ),
+                            child: loading 
+                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                              : Text(l10n.search, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+      transitionBuilder: (ctx, anim1, anim2, child) {
+        return Transform.scale(
+          scale: Curves.easeOutBack.transform(anim1.value),
+          child: FadeTransition(opacity: anim1, child: child),
+        );
+      },
+    );
+  }
 }
 
 class _QuickActionCard extends StatelessWidget {
@@ -324,3 +486,4 @@ class _QuickActionCard extends StatelessWidget {
     );
   }
 }
+

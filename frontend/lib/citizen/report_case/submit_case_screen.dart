@@ -7,7 +7,6 @@ import '../../shared/widgets/case_submission/media_attachment_widget.dart';
 import '../../shared/widgets/case_submission/audio_recorder_widget.dart';
 import '../../shared/localization/app_localizations.dart';
 import '../../shared/services/case_service.dart';
-import '../../shared/services/admin_units_service.dart';
 import '../../shared/models/models.dart';
 
 /// Submit Case Screen - with location selection
@@ -54,7 +53,7 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
 
     return LoadingOverlay(
       isLoading: _isLoading,
-      message: _loadingMessage ?? 'Gutanga ikibazo...',
+      message: _loadingMessage ?? l10n.processing,
       child: Scaffold(
         appBar: AppBar(
           title: Text(widget.isEmergency ? l10n.emergency : l10n.submitCase),
@@ -79,9 +78,9 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
       child: Row(children: [
-        _buildStepDot(0, 'Ikibazo', theme),
+        _buildStepDot(0, l10n.problem, theme),
         Expanded(child: Container(height: 2, color: _currentStep >= 1 ? ImboniColors.primary : theme.colorScheme.outline)),
-        _buildStepDot(1, 'Aho kibarizwa', theme),
+        _buildStepDot(1, l10n.location, theme),
         Expanded(child: Container(height: 2, color: _currentStep >= 2 ? ImboniColors.primary : theme.colorScheme.outline)),
         _buildStepDot(2, l10n.evidence, theme),
       ]),
@@ -103,7 +102,7 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
 
   Widget _buildStep1(ThemeData theme, AppLocalizations l10n) {
     return ListView(padding: const EdgeInsets.all(16), children: [
-      if (widget.isEmergency) _buildEmergencyBanner(theme),
+      if (widget.isEmergency) _buildEmergencyBanner(theme, l10n),
       _buildAnonymousToggle(l10n, theme),
       const SizedBox(height: 24),
       
@@ -113,28 +112,40 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
       const SizedBox(height: 24),
       
       if (!widget.isEmergency) ...[
-        Text('Ubukana', style: theme.textTheme.titleMedium),
+        Text(l10n.urgencyTitle, style: theme.textTheme.titleMedium),
         const SizedBox(height: 12),
-        _buildUrgencySelector(theme),
+        _buildUrgencySelector(theme, l10n),
         const SizedBox(height: 24),
       ],
       
-      Text('Umutwe w\'ikibazo', style: theme.textTheme.titleMedium),
+      Text(l10n.caseTitle, style: theme.textTheme.titleMedium),
       const SizedBox(height: 8),
-      TextFormField(controller: _titleController, decoration: const InputDecoration(hintText: 'Umutwe muto usobanura ikibazo'), validator: (v) => (v == null || v.length < 5) ? 'Umutwe ugomba kuba nibura inyuguti 5' : null),
+      TextFormField(
+        controller: _titleController,
+        decoration: InputDecoration(hintText: l10n.caseTitleHint),
+        validator: (v) => (v == null || v.length < 5) ? l10n.caseTitleError : null,
+      ),
       const SizedBox(height: 24),
       
       Text(l10n.describeIssue, style: theme.textTheme.titleMedium),
       const SizedBox(height: 8),
-      TextFormField(controller: _descriptionController, decoration: const InputDecoration(hintText: 'Sobanura neza ikibazo cyawe'), maxLines: 5, validator: (v) => (v == null || v.length < 20) ? 'Ibisobanuro bigomba kuba nibura inyuguti 20' : null),
+      TextFormField(
+        controller: _descriptionController,
+        decoration: InputDecoration(hintText: l10n.descHint),
+        maxLines: 5,
+        validator: (v) => (v == null || v.length < 20) ? l10n.descError : null,
+      ),
       const SizedBox(height: 32),
       
       ElevatedButton(
         onPressed: () {
-          if (_formKey.currentState!.validate() && _selectedCategory != null) setState(() => _currentStep = 1);
-          else if (_selectedCategory == null) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Hitamo icyiciro')));
+          if (_formKey.currentState!.validate() && _selectedCategory != null) {
+            setState(() => _currentStep = 1);
+          } else if (_selectedCategory == null) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.selectCategoryError)));
+          }
         },
-        child: const Text('Komeza'),
+        child: Text(l10n.continueBtn),
       ),
     ]);
   }
@@ -147,7 +158,7 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
         child: Row(children: [
           const Icon(Icons.info_outline, color: ImboniColors.info),
           const SizedBox(width: 12),
-          Expanded(child: Text('Hitamo aho ikibazo kibarizwa (aho cyabereye)', style: theme.textTheme.bodyMedium)),
+          Expanded(child: Text(l10n.selectLocPrompt, style: theme.textTheme.bodyMedium)),
         ]),
       ),
       const SizedBox(height: 24),
@@ -166,7 +177,7 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
             Row(children: [
               const Icon(Icons.check_circle, color: ImboniColors.success, size: 20),
               const SizedBox(width: 8),
-              Text('Aho ikibazo kibarizwa', style: theme.textTheme.labelLarge?.copyWith(color: ImboniColors.success)),
+              Text(l10n.confirmLoc, style: theme.textTheme.labelLarge?.copyWith(color: ImboniColors.success)),
             ]),
             const SizedBox(height: 8),
             Text(_location.fullAddress, style: theme.textTheme.bodyMedium),
@@ -175,9 +186,9 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
       const SizedBox(height: 32),
       
       Row(children: [
-        Expanded(child: OutlinedButton(onPressed: () => setState(() => _currentStep = 0), child: const Text('Subira inyuma'))),
+        Expanded(child: OutlinedButton(onPressed: () => setState(() => _currentStep = 0), child: Text(l10n.backBtn))),
         const SizedBox(width: 16),
-        Expanded(child: ElevatedButton(onPressed: _location.isComplete ? () => setState(() => _currentStep = 2) : null, child: const Text('Komeza'))),
+        Expanded(child: ElevatedButton(onPressed: _location.isComplete ? () => setState(() => _currentStep = 2) : null, child: Text(l10n.continueBtn))),
       ]),
     ]);
   }
@@ -225,10 +236,10 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
           border: Border.all(color: theme.colorScheme.outline.withAlpha(50)),
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Incamake', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+          Text(l10n.summary, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
           const SizedBox(height: 12),
-          _SummaryRow(icon: Icons.category_outlined, label: 'Icyiciro', value: _selectedCategory ?? '-'),
-          _SummaryRow(icon: Icons.location_on_outlined, label: 'Ahantu', value: _location.village ?? '-'),
+          _SummaryRow(icon: Icons.category_outlined, label: l10n.selectCategory, value: _selectedCategory ?? '-'),
+          _SummaryRow(icon: Icons.location_on_outlined, label: l10n.location, value: _location.village ?? '-'),
           _SummaryRow(icon: Icons.attach_file, label: l10n.evidence, value: '${_attachments.length + (_audioPath != null ? 1 : 0)}'),
         ]),
       ),
@@ -236,7 +247,7 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
 
       // Navigation buttons
       Row(children: [
-        Expanded(child: OutlinedButton(onPressed: () => setState(() => _currentStep = 1), child: const Text('Subira inyuma'))),
+        Expanded(child: OutlinedButton(onPressed: () => setState(() => _currentStep = 1), child: Text(l10n.backBtn))),
         const SizedBox(width: 16),
         Expanded(child: ElevatedButton(
           onPressed: _submitCase,
@@ -246,29 +257,30 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
     ]);
   }
 
-  Widget _buildEmergencyBanner(ThemeData theme) => Container(
+  Widget _buildEmergencyBanner(ThemeData theme, AppLocalizations l10n) => Container(
     margin: const EdgeInsets.only(bottom: 16),
     padding: const EdgeInsets.all(12),
     decoration: BoxDecoration(color: ImboniColors.urgencyEmergency.withAlpha(25), borderRadius: BorderRadius.circular(8), border: Border.all(color: ImboniColors.urgencyEmergency)),
-    child: Row(children: [const Icon(Icons.warning_amber_rounded, color: ImboniColors.urgencyEmergency), const SizedBox(width: 12), Expanded(child: Text('Ikibazo cy\'ubutabazi bwihutirwa kiremerwa vuba', style: theme.textTheme.bodyMedium?.copyWith(color: ImboniColors.urgencyEmergency)))]),
+    child: Row(children: [const Icon(Icons.warning_amber_rounded, color: ImboniColors.urgencyEmergency), const SizedBox(width: 12), Expanded(child: Text(l10n.emergencyWarning, style: theme.textTheme.bodyMedium?.copyWith(color: ImboniColors.urgencyEmergency)))]),
   );
 
   Widget _buildAnonymousToggle(AppLocalizations l10n, ThemeData theme) => Card(
     child: SwitchListTile(title: Text(l10n.submitAnonymously), subtitle: Text(l10n.anonymousExplanation, style: theme.textTheme.bodySmall), value: _isAnonymous, onChanged: (v) => setState(() => _isAnonymous = v), secondary: Icon(_isAnonymous ? Icons.visibility_off : Icons.visibility, color: _isAnonymous ? ImboniColors.primary : null)),
   );
 
-  Widget _buildUrgencySelector(ThemeData theme) => Row(children: [
-    _UrgencyChip(label: 'Bisanzwe', isSelected: _urgency == 'NORMAL', color: ImboniColors.urgencyNormal, onTap: () => setState(() => _urgency = 'NORMAL')),
+  Widget _buildUrgencySelector(ThemeData theme, AppLocalizations l10n) => Row(children: [
+    _UrgencyChip(label: l10n.urgencyNormal, isSelected: _urgency == 'NORMAL', color: ImboniColors.urgencyNormal, onTap: () => setState(() => _urgency = 'NORMAL')),
     const SizedBox(width: 8),
-    _UrgencyChip(label: 'Bikomeye', isSelected: _urgency == 'HIGH', color: ImboniColors.urgencyHigh, onTap: () => setState(() => _urgency = 'HIGH')),
+    _UrgencyChip(label: l10n.urgencyHigh, isSelected: _urgency == 'HIGH', color: ImboniColors.urgencyHigh, onTap: () => setState(() => _urgency = 'HIGH')),
     const SizedBox(width: 8),
-    _UrgencyChip(label: 'Ubutabazi', isSelected: _urgency == 'EMERGENCY', color: ImboniColors.urgencyEmergency, onTap: () => setState(() => _urgency = 'EMERGENCY')),
+    _UrgencyChip(label: l10n.urgencyEmergency, isSelected: _urgency == 'EMERGENCY', color: ImboniColors.urgencyEmergency, onTap: () => setState(() => _urgency = 'EMERGENCY')),
   ]);
 
   Future<void> _submitCase() async {
+    final l10n = AppLocalizations.of(context);
     setState(() {
       _isLoading = true;
-      _loadingMessage = 'Gutunganya ikibazo...';
+      _loadingMessage = l10n.processing;
     });
     
     try {
@@ -300,7 +312,7 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
           // Upload Attachments
           for (final attachment in _attachments) {
             current++;
-            setState(() => _loadingMessage = 'Kohereza inyandiko ($current/$evidenceCount)...');
+            setState(() => _loadingMessage = '${l10n.uploadingDocs} ($current/$evidenceCount)...');
             final uploadRes = await caseService.uploadEvidence(caseId, attachment.path);
             if (!uploadRes.isSuccess) {
               failedUploads.add(attachment.path.split('/').last);
@@ -311,10 +323,10 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
           // Upload Audio
           if (_audioPath != null) {
             current++;
-            setState(() => _loadingMessage = 'Kohereza amajwi ($current/$evidenceCount)...');
+            setState(() => _loadingMessage = '${l10n.uploadingAudio} ($current/$evidenceCount)...');
             final uploadRes = await caseService.uploadEvidence(caseId, _audioPath!);
              if (!uploadRes.isSuccess) {
-              failedUploads.add('Ijwi (Voice Note)');
+              failedUploads.add('Ijwi');
               debugPrint('Failed to upload audio: ${uploadRes.error}');
             }
           }
@@ -324,41 +336,41 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
         if (failedUploads.isNotEmpty) {
            ScaffoldMessenger.of(context).showSnackBar(
              SnackBar(
-               content: Text('Ikibazo cyakiriwe, ariko ibimenyetso bimwe byanze: ${failedUploads.join(', ')}'), 
+               content: Text('${l10n.partialSuccess}: ${failedUploads.join(', ')}'), 
                backgroundColor: Colors.orange,
                duration: const Duration(seconds: 5),
              )
            );
-            _showSuccessDialog(response.data!); // Still show success as case is created
+            _showSuccessDialog(response.data!, l10n); // Still show success as case is created
         } else {
-             _showSuccessDialog(response.data!); 
+             _showSuccessDialog(response.data!, l10n); 
         }
 
       } else { 
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response.error ?? 'Byanze'), backgroundColor: ImboniColors.error)); 
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response.error ?? l10n.failed), backgroundColor: ImboniColors.error)); 
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: ImboniColors.error));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${l10n.failed}: $e'), backgroundColor: ImboniColors.error));
     } finally { 
       if (mounted) setState(() => _isLoading = false); 
     }
   }
 
-  void _showSuccessDialog(CaseModel caseData) {
+  void _showSuccessDialog(CaseModel caseData, AppLocalizations l10n) {
     showDialog(context: context, barrierDismissible: false, builder: (ctx) => AlertDialog(
-      title: const Row(children: [Icon(Icons.check_circle, color: ImboniColors.success), SizedBox(width: 8), Text('Byagenze neza!')]),
+      title: Row(children: [const Icon(Icons.check_circle, color: ImboniColors.success), const SizedBox(width: 8), Text(l10n.successTitle)]),
       content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('Ikibazo cyawe cyoherejwe neza.'),
+        Text(l10n.successMessage),
         const SizedBox(height: 16),
         Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: ImboniColors.primary.withAlpha(25), borderRadius: BorderRadius.circular(8)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Nimero yo gukurikirana:'),
+          Text(l10n.trackingNumber),
           const SizedBox(height: 4),
           SelectableText(caseData.caseReference, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: ImboniColors.primary)),
         ])),
         const SizedBox(height: 12),
-        const Text('Bika iyi nimero kugirango ukurikirane ikibazo cyawe.', style: TextStyle(fontSize: 12)),
+        Text(l10n.saveTrackingHint, style: const TextStyle(fontSize: 12)),
       ]),
-      actions: [TextButton(onPressed: () { Navigator.of(ctx).pop(); Navigator.of(context).pop(); }, child: const Text('Sawa'))],
+      actions: [TextButton(onPressed: () { Navigator.of(ctx).pop(); Navigator.of(context).pop(); }, child: Text(l10n.ok))],
     ));
   }
 }
