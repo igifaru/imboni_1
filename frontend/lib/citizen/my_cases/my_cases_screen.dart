@@ -1412,7 +1412,7 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
          case 'PENDING_CONFIRMATION':
            statusColor = ImboniColors.warning;
            statusIcon = Icons.hourglass_bottom;
-           statusTitle = 'Resolution Confirmation Required'; // Use localized string if available
+           statusTitle = l10n.pendingConfirmation;
            break;
          case 'RESOLVED':
            statusColor = ImboniColors.success;
@@ -1712,7 +1712,7 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
       case 'ACCEPTED': return l10n.caseAccepted;
       case 'STATUS_UPDATE': return l10n.statusUpdate ?? 'Status Update';
       case 'RESOLUTION': return l10n.resolution ?? 'Resolution';
-      case 'PENDING_CONFIRMATION': return 'Resolution Confirmation Required';
+      case 'PENDING_CONFIRMATION': return l10n.pendingConfirmation;
       default: return type.replaceAll('_', ' ').toLowerCase().split(' ').map((s) => s.isNotEmpty ? '${s[0].toUpperCase()}${s.substring(1)}' : '').join(' ');
     }
   }
