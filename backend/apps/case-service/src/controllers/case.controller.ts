@@ -224,6 +224,31 @@ router.get('/metrics', async (req: Request, res: Response, next: NextFunction) =
 });
 
 /**
+ * GET /cases/:id/actions - Get case history/timeline
+ * IMPORTANT: This route MUST come before GET /:id to avoid conflicts
+ */
+router.get('/:id/actions', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { id } = req.params;
+        const userId = (req as any).user?.userId;
+
+        if (!userId) {
+            return res.status(401).json({ error: 'Authentication required' });
+        }
+
+        const history = await caseService.getCaseHistory(id);
+
+        res.json({
+            success: true,
+            data: history
+        });
+    } catch (error) {
+        logger.error('Failed to get case actions', error);
+        next(error);
+    }
+});
+
+/**
  * GET /cases/:id - Get case details
  */
 router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
@@ -267,6 +292,7 @@ router.get('/leader/:leaderId', async (req: Request, res: Response, next: NextFu
         next(error);
     }
 });
+
 
 /**
  * PATCH /cases/:id - Update case
@@ -377,6 +403,61 @@ router.post('/:id/escalate', async (req: Request, res: Response, next: NextFunct
         });
     } catch (error) {
         logger.error('Failed to escalate case', error);
+        next(error);
+    }
+});
+
+/**
+ * POST /cases/:id/confirm - Citizen confirms case resolution
+ */
+router.post('/:id/confirm', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { id } = req.params;
+        const userId = (req as any).user?.userId;
+
+        if (!userId) {
+            return res.status(401).json({ error: 'Authentication required' });
+        }
+
+        const result = await caseService.citizenConfirmResolution(id, userId);
+
+        res.json({
+            success: true,
+            data: result,
+            message: 'Resolution confirmed. Case is now closed.'
+        });
+    } catch (error) {
+        logger.error('Failed to confirm resolution', error);
+        next(error);
+    }
+});
+
+/**
+ * POST /cases/:id/dispute - Citizen disputes resolution, escalates case
+ */
+router.post('/:id/dispute', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { id } = req.params;
+        const { reason } = req.body;
+        const userId = (req as any).user?.userId;
+
+        if (!userId) {
+            return res.status(401).json({ error: 'Authentication required' });
+        }
+
+        if (!reason) {
+            return res.status(400).json({ error: 'Dispute reason required' });
+        }
+
+        const result = await caseService.citizenDisputeResolution(id, userId, reason);
+
+        res.json({
+            success: true,
+            data: result,
+            message: 'Resolution disputed. Case escalated to next level.'
+        });
+    } catch (error) {
+        logger.error('Failed to dispute resolution', error);
         next(error);
     }
 });
