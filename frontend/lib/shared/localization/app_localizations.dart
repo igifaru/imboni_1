@@ -153,7 +153,7 @@ class AppLocalizations {
   // statusOpen and statusResolved defined
   // statusOpen and statusResolved defined above
   String get open => get('open'); // Short version for cards
-  String get resolved => get('resolved'); // Short version for cards
+  // resolved defined above
 
   // Attachments / Evidence
   String get attachEvidence => get('attach_evidence');
@@ -690,7 +690,7 @@ const Map<String, Map<String, String>> _translations = {
     'cases_by_province': 'Cases by Province',
     'total': 'Total',
     'open': 'Open',
-    'resolved': 'Resolved',
+    // resolved defined above
     // Attachments EN
     'attach_evidence': 'Attach Evidence',
     'take_photo': 'Take Photo',
