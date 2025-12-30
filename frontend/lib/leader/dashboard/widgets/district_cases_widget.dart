@@ -1,142 +1,27 @@
 import 'package:flutter/material.dart';
-import '../../../shared/theme/colors.dart';
-import '../../../admin/services/admin_service.dart';
-import '../../../shared/models/models.dart';
+import '../../../../shared/theme/colors.dart';
+import '../../../../shared/models/models.dart';
 
 /// Widget to display cases broken down by sub-jurisdiction (e.g., Districts in a Province)
-class DistrictCasesWidget extends StatefulWidget {
-  final List<CaseModel> cases;
+class DistrictCasesWidget extends StatelessWidget {
+  final List<SubUnitPerformance> subUnitStats;
   final bool isDashboardLoading;
+  final String currentLevel; // E.g., 'Province'
 
   const DistrictCasesWidget({
     super.key,
-    required this.cases,
+    required this.subUnitStats,
     this.isDashboardLoading = false,
+    this.currentLevel = '',
   });
-
-  @override
-  State<DistrictCasesWidget> createState() => _DistrictCasesWidgetState();
-}
-
-class _DistrictCasesWidgetState extends State<DistrictCasesWidget> {
-  bool _isLoadingJurisdiction = true;
-  String? _error;
-  String? _jurisdictionName;
-  String _targetLevel = 'District'; // Default
-  String _currentLevel = 'Province'; // Default
-  List<String> _subUnits = [];
-  Map<String, int> _subUnitCounts = {};
-
-  @override
-  void initState() {
-    super.initState();
-    _loadJurisdiction();
-  }
-
-  Future<void> _loadJurisdiction() async {
-    if (!mounted) return;
-    setState(() {
-      _isLoadingJurisdiction = true;
-      _error = null;
-    });
-
-    try {
-      final data = await adminService.getMyJurisdiction();
-      
-      if (mounted) {
-        if (data != null && data['success'] == true) {
-          final level = data['level'] ?? 'PROVINCE';
-          final targetLevel = data['targetLevel'] ?? _getNextLevel(level);
-
-          setState(() {
-            _currentLevel = _formatLevel(level);
-            _targetLevel = _formatLevel(targetLevel);
-            _jurisdictionName = data['jurisdiction'] ?? 'Unknown Area';
-            
-            final rawChildren = data['children'] ?? [];
-            _subUnits = List<String>.from(rawChildren);
-
-            // Extract nested counts
-            final dynamic jurData = data['data'];
-            _subUnitCounts = {};
-            if (jurData is Map<String, dynamic>) {
-              for (final child in _subUnits) {
-                final subData = jurData[child];
-                if (subData is Map || subData is List) {
-                  _subUnitCounts[child] = (subData as dynamic).length;
-                }
-              }
-            }
-            
-            _isLoadingJurisdiction = false;
-          });
-        } else {
-          final errMsg = data?['error'] ?? adminService.error ?? 'Failed to load jurisdiction';
-          debugPrint('DistrictCasesWidget Error: $errMsg');
-          setState(() {
-            _error = errMsg;
-            _isLoadingJurisdiction = false;
-          });
-        }
-      }
-    } catch (e) {
-      debugPrint('Jurisdiction Load Error: $e');
-      if (mounted) {
-        setState(() {
-          _error = 'Error: ${e.toString()}';
-          _isLoadingJurisdiction = false;
-        });
-      }
-    }
-  }
-
-  /// Helper to guess next level if backend doesn't provide targetLevel
-  String _getNextLevel(String current) {
-    switch (current) {
-      case 'ADMIN': return 'PROVINCE';
-      case 'PROVINCE': return 'DISTRICT';
-      case 'DISTRICT': return 'SECTOR';
-      case 'SECTOR': return 'CELL';
-      case 'CELL': return 'VILLAGE';
-      default: return 'UNIT';
-    }
-  }
-
-  Map<String, Map<String, int>> _getCasesBySubUnit() {
-    final Map<String, Map<String, int>> result = {};
-    for (final unit in _subUnits) {
-      result[unit] = {'open': 0, 'resolved': 0, 'total': 0};
-    }
-    
-    if (_subUnits.isEmpty) return result;
-
-    for (final c in widget.cases) {
-      for (final unit in _subUnits) {
-        // Simple matching logic - implies case data contains unit name text
-        if (c.title.toLowerCase().contains(unit.toLowerCase()) || 
-            c.caseReference.toLowerCase().contains(unit.toLowerCase()) ||
-            c.description.toLowerCase().contains(unit.toLowerCase())) {
-          
-          result[unit]!['total'] = result[unit]!['total']! + 1;
-          if (c.status == 'RESOLVED' || c.status == 'CLOSED') {
-            result[unit]!['resolved'] = result[unit]!['resolved']! + 1;
-          } else {
-            result[unit]!['open'] = result[unit]!['open']! + 1;
-          }
-          break; // Count once per unit match
-        }
-      }
-    }
-    return result;
-  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     
-    // For Village/Cell leaders with no children, we don't show the list
-    final bool isLeafNode = _subUnits.isEmpty && !_isLoadingJurisdiction && _error == null;
+    final bool isLeafNode = subUnitStats.isEmpty && !isDashboardLoading;
+    String targetLevel = _guessTargetLevel(currentLevel);
 
     return Card(
       elevation: 2,
@@ -147,27 +32,38 @@ class _DistrictCasesWidgetState extends State<DistrictCasesWidget> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildHeader(theme, isDark),
+            _buildHeader(theme, isDark, targetLevel),
             const SizedBox(height: 16),
-            if (_isLoadingJurisdiction)
+            if (isDashboardLoading)
               const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator()))
-            else if (_error != null)
-              _buildErrorState(theme)
             else if (isLeafNode)
                _buildLeafNodeState(theme)
             else
-              _buildJurisdictionList(theme),
+              _buildJurisdictionList(context, targetLevel),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader(ThemeData theme, bool isDark) {
+  String _guessTargetLevel(String current) {
+    switch (current.toUpperCase()) {
+      case 'ADMIN': return 'Province';
+      case 'PROVINCE': return 'District';
+      case 'DISTRICT': return 'Sector';
+      case 'SECTOR': return 'Cell';
+      case 'CELL': return 'Village';
+      default: return 'Sub-unit';
+    }
+  }
+
+  Widget _buildHeader(ThemeData theme, bool isDark, String targetLevel) {
     // If it's a leaf node, don't say "Cases by X", say "My Unit Cases"
-    final title = _subUnits.isNotEmpty 
-        ? 'Cases by $_targetLevel' 
+    final title = subUnitStats.isNotEmpty 
+        ? 'Cases by $targetLevel' 
         : 'Overview';
+
+    final totalCases = subUnitStats.fold(0, (sum, item) => sum + item.totalCases);
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -183,20 +79,10 @@ class _DistrictCasesWidgetState extends State<DistrictCasesWidget> {
               child: const Icon(Icons.cases_outlined, color: ImboniColors.primary, size: 20),
             ),
             const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                if (_jurisdictionName != null)
-                  Text(
-                    _jurisdictionName!,
-                    style: theme.textTheme.bodySmall?.copyWith(color: ImboniColors.primary, fontWeight: FontWeight.w500),
-                  ),
-              ],
-            ),
+            Text(title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
           ],
         ),
-        if (!widget.isDashboardLoading || widget.cases.isNotEmpty)
+        if (!isDashboardLoading || totalCases > 0)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
@@ -204,7 +90,7 @@ class _DistrictCasesWidgetState extends State<DistrictCasesWidget> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
-              '${widget.cases.length} Total',
+              '$totalCases Total',
               style: const TextStyle(color: ImboniColors.info, fontSize: 12, fontWeight: FontWeight.bold),
             ),
           ),
@@ -212,20 +98,6 @@ class _DistrictCasesWidgetState extends State<DistrictCasesWidget> {
     );
   }
 
-  Widget _buildErrorState(ThemeData theme) {
-    return Center(
-      child: Column(
-        children: [
-          Icon(Icons.error_outline, color: theme.colorScheme.error, size: 32),
-          const SizedBox(height: 8),
-          Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
-          TextButton(onPressed: _loadJurisdiction, child: const Text('Retry')),
-        ],
-      ),
-    );
-  }
-
-  // Shown for Village/Lowest level leaders who have no sub-jurisdictions
   Widget _buildLeafNodeState(ThemeData theme) {
     return Center(
       child: Padding(
@@ -250,27 +122,26 @@ class _DistrictCasesWidgetState extends State<DistrictCasesWidget> {
     );
   }
 
-  Widget _buildJurisdictionList(ThemeData theme) {
-    final caseData = _getCasesBySubUnit();
+  Widget _buildJurisdictionList(BuildContext context, String targetLevel) {
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: _subUnits.length,
+      itemCount: subUnitStats.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
-        final unit = _subUnits[index];
-        final stats = caseData[unit] ?? {'open': 0, 'resolved': 0, 'total': 0};
-        // For sub-unit count, ideally we'd show the next level down count (e.g. Sectors in District)
-        // But for generic, we just use the count we extracted
-        final subCount = _subUnitCounts[unit] ?? 0;
-        
-        return _buildUnitCard(context, unit, stats['open']!, stats['resolved']!, stats['total']!, subCount);
+        final stat = subUnitStats[index];
+        return _buildUnitCard(context, stat, targetLevel);
       },
     );
   }
 
-  Widget _buildUnitCard(BuildContext context, String name, int open, int resolved, int total, int subCount) {
+  Widget _buildUnitCard(BuildContext context, SubUnitPerformance stat, String targetLevel) {
     final theme = Theme.of(context);
+    final total = stat.totalCases;
+    final open = stat.openCases;
+    final resolved = stat.resolvedCases;
+    final escalated = stat.escalatedCases;
+
     Color statusColor = total == 0 ? theme.disabledColor : (open == 0 ? Colors.green : (open < 3 ? Colors.orange : Colors.red));
 
     return Container(
@@ -294,23 +165,19 @@ class _DistrictCasesWidgetState extends State<DistrictCasesWidget> {
               children: [
                 Row(
                   children: [
-                    Text(name, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
-                    if (subCount > 0) ...[
-                      const SizedBox(width: 8),
-                      Text(
-                         // Display specific sub-unit name (e.g., 17 Sectors)
-                        '($subCount ${_formatSubUnitName(_targetLevel, subCount)})',
-                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant.withAlpha(150), fontSize: 10),
-                      ),
-                    ],
+                    Text(stat.unitName, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
                   ],
                 ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    _buildMiniStat('Open', open, Colors.orange),
+                    _buildMiniStat(context, 'Open', open, Colors.orange),
                     const SizedBox(width: 12),
-                    _buildMiniStat('Resolved', resolved, Colors.green),
+                    _buildMiniStat(context, 'Resolved', resolved, Colors.green),
+                    if (escalated > 0) ...[
+                      const SizedBox(width: 12),
+                      _buildMiniStat(context, 'Escalated', escalated, ImboniColors.error),
+                    ]
                   ],
                 ),
               ],
@@ -327,7 +194,7 @@ class _DistrictCasesWidgetState extends State<DistrictCasesWidget> {
     );
   }
 
-  Widget _buildMiniStat(String label, int count, Color color) {
+  Widget _buildMiniStat(BuildContext context, String label, int count, Color color) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -336,24 +203,5 @@ class _DistrictCasesWidgetState extends State<DistrictCasesWidget> {
         Text('$count $label', style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.onSurfaceVariant)),
       ],
     );
-  }
-
-  String _formatLevel(String level) {
-    if (level.isEmpty) return 'Unit';
-    return level[0].toUpperCase() + level.substring(1).toLowerCase();
-  }
-
-  String _formatSubUnitName(String parentLevel, int count) {
-    String singular;
-    // parentLevel is like "District" (from _formatLevel)
-    switch (parentLevel.toUpperCase()) {
-      case 'PROVINCE': singular = 'District'; break;
-      case 'DISTRICT': singular = 'Sector'; break;
-      case 'SECTOR': singular = 'Cell'; break;
-      case 'CELL': singular = 'Village'; break;
-      case 'VILLAGE': singular = 'Household'; break;
-      default: singular = 'Sub-unit';
-    }
-    return count == 1 ? singular : '${singular}s';
   }
 }

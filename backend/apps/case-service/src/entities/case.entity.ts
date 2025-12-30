@@ -15,7 +15,7 @@ export type CaseCategory =
 
 export type CaseUrgency = 'NORMAL' | 'HIGH' | 'EMERGENCY';
 
-export type CaseStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'ESCALATED' | 'CLOSED';
+export type CaseStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'PENDING_CONFIRMATION' | 'ESCALATED' | 'CLOSED' | 'COMMUNITY';
 
 export type AdministrativeLevel =
     | 'VILLAGE'

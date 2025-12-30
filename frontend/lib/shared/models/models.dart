@@ -325,6 +325,9 @@ class SubUnitPerformance {
   final String unitId;
   final String unitName;
   final int totalCases;
+  final int openCases;
+  final int resolvedCases;
+  final int escalatedCases;
   final double resolutionRate;
   final double avgResponseTimeHours;
   final double escalationRate;
@@ -334,6 +337,9 @@ class SubUnitPerformance {
     required this.unitId,
     required this.unitName,
     required this.totalCases,
+    this.openCases = 0,
+    this.resolvedCases = 0,
+    this.escalatedCases = 0,
     required this.resolutionRate,
     required this.avgResponseTimeHours,
     required this.escalationRate,
@@ -345,6 +351,9 @@ class SubUnitPerformance {
       unitId: json['unitId'] ?? '',
       unitName: json['unitName'] ?? 'Unknown',
       totalCases: json['totalCases'] ?? 0,
+      openCases: json['openCases'] ?? 0,
+      resolvedCases: json['resolvedCases'] ?? 0,
+      escalatedCases: json['escalatedCases'] ?? 0,
       resolutionRate: (json['resolutionRate'] ?? 0).toDouble(),
       avgResponseTimeHours: (json['avgResponseTimeHours'] ?? 0).toDouble(),
       escalationRate: (json['escalationRate'] ?? 0).toDouble(),

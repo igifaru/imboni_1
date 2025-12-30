@@ -868,7 +868,8 @@ export class CaseService {
         subUnitsForBreakdown.forEach(u => rollupMap.set(u.id, []));
 
         for (const c of cases) {
-            if (c.status === 'RESOLVED') {
+            const status = c.status as any;
+            if (status === 'RESOLVED' || status === 'CLOSED' || status === 'PENDING_CONFIRMATION') {
                 resolved++;
                 if (c.resolvedAt) {
                     const diffMins = (new Date(c.resolvedAt).getTime() - new Date(c.createdAt).getTime()) / 60000;
@@ -877,7 +878,7 @@ export class CaseService {
                     const idx = getTrendIndex(new Date(c.resolvedAt));
                     if (idx !== -1) weeklyTrends[idx].resolvedCases++;
                 }
-            } else if (c.status === 'ESCALATED') {
+            } else if (status === 'ESCALATED') {
                 escalated++;
             }
 
@@ -913,21 +914,35 @@ export class CaseService {
         const subUnitBreakdown = subUnitsForBreakdown.map(unit => {
             const unitCases = rollupMap.get(unit.id) || [];
 
+            // DEBUG LOGGING
+            if (unitCases.length > 0) {
+                logger.info(`[Metrics] Unit ${unit.name} has ${unitCases.length} cases.`, { statuses: unitCases.map(c => c.status) });
+            }
+
             let uResolved = 0;
             let uEscalated = 0;
+            let uOpen = 0;
             let uResponseTime = 0;
             let uTimeCount = 0;
 
             unitCases.forEach(c => {
-                if (c.status === 'RESOLVED') {
+                const status = c.status as any; // Cast to any to avoid stale type lint errors
+                if (status === 'RESOLVED' || status === 'CLOSED' || status === 'PENDING_CONFIRMATION') {
                     uResolved++;
                     if (c.resolvedAt) {
                         const diff = (new Date(c.resolvedAt).getTime() - new Date(c.createdAt).getTime()) / 60000;
                         uResponseTime += diff;
                         uTimeCount++;
                     }
+                } else if (status === 'ESCALATED') {
+                    uEscalated++;
+                } else if (status === 'OPEN' || status === 'IN_PROGRESS' || status === 'COMMUNITY') {
+                    uOpen++;
+                } else {
+                    // Fallback for any unhandled active statuses
+                    logger.warn(`[Metrics] Unhandled status for case ${c.id}: ${status}`);
+                    uOpen++;
                 }
-                if (c.status === 'ESCALATED') uEscalated++;
             });
 
             const uTotal = unitCases.length;
@@ -935,6 +950,9 @@ export class CaseService {
                 unitId: unit.id,
                 unitName: unit.name,
                 totalCases: uTotal,
+                openCases: uOpen,
+                resolvedCases: uResolved,
+                escalatedCases: uEscalated,
                 resolutionRate: uTotal > 0 ? (uResolved / uTotal) * 100 : 0,
                 avgResponseTimeHours: uTimeCount > 0 ? (uResponseTime / uTimeCount / 60) : 0,
                 escalationRate: uTotal > 0 ? (uEscalated / uTotal) * 100 : 0,
@@ -943,11 +961,11 @@ export class CaseService {
         });
 
         return {
-            totalCases: total,
+            totalCases: cases.length,
             resolvedCases: resolved,
-            pendingCases: total - resolved,
+            pendingCases: cases.length - resolved,
             escalatedCases: escalated,
-            resolutionRate: total > 0 ? (resolved / total) * 100 : 0,
+            resolutionRate: cases.length > 0 ? (resolved / cases.length) * 100 : 0,
             avgResponseTimeHours: casesWithResponseTime > 0 ? (totalResponseTimeMinutes / casesWithResponseTime) / 60 : 0,
             escalationRate: total > 0 ? (escalated / total) * 100 : 0,
             overdueCases: overdue,

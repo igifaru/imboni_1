@@ -62,7 +62,7 @@ class _LeaderDashboardScreenState extends State<LeaderDashboardScreen> {
     final showRegister = _currentLevel != 'VILLAGE';
 
     final screens = [
-      const _DashboardHome(),
+      _DashboardHome(currentLevel: _currentLevel),
       const AssignedCasesScreen(),
       const EscalationAlertsScreen(),
       const PerformanceScreen(),
@@ -168,7 +168,9 @@ class _LeaderDashboardScreenState extends State<LeaderDashboardScreen> {
 }
 
 class _DashboardHome extends StatefulWidget {
-  const _DashboardHome();
+  final String? currentLevel;
+
+  const _DashboardHome({this.currentLevel});
 
   @override
   State<_DashboardHome> createState() => _DashboardHomeState();
@@ -177,6 +179,7 @@ class _DashboardHome extends StatefulWidget {
 class _DashboardHomeState extends State<_DashboardHome> {
   List<CaseModel> _assignedCases = [];
   List<CaseModel> _escalationAlerts = [];
+  PerformanceMetrics? _metrics;
   bool _isLoading = true;
   String _searchQuery = '';
 
@@ -191,10 +194,17 @@ class _DashboardHomeState extends State<_DashboardHome> {
     final map = <String, int>{};
     final locationService = LocationService();
     
-    for (final c in _assignedCases) {
-      final district = locationService.extractDistrict(c.currentLevel);
-      if (district != null) {
-        map[district] = (map[district] ?? 0) + 1;
+    // Use metrics data if available, otherwise fallback to assigned cases (less accurate)
+    if (_metrics != null && _metrics!.subUnitBreakdown.isNotEmpty) {
+      for (final sub in _metrics!.subUnitBreakdown) {
+         map[sub.unitName] = sub.totalCases;
+      }
+    } else {
+      for (final c in _assignedCases) {
+        final district = locationService.extractDistrict(c.currentLevel);
+        if (district != null) {
+          map[district] = (map[district] ?? 0) + 1;
+        }
       }
     }
     return map;
@@ -208,6 +218,7 @@ class _DashboardHomeState extends State<_DashboardHome> {
       _loadLocationData(),
       _loadAssignedCases(),
       _loadEscalationAlerts(),
+      _loadPerformanceMetrics(),
     ]);
 
     if (mounted) setState(() => _isLoading = false);
@@ -219,6 +230,17 @@ class _DashboardHomeState extends State<_DashboardHome> {
     } catch (e) {
       debugPrint('Location Service Error: $e');
       // Non-critical, just map won't work
+    }
+  }
+
+  Future<void> _loadPerformanceMetrics() async {
+    try {
+      final response = await caseService.getPerformanceMetrics();
+      if (mounted && response.isSuccess && response.data != null) {
+        setState(() => _metrics = response.data);
+      }
+    } catch (e) {
+      debugPrint('Performance Metrics Error: $e');
     }
   }
 
@@ -284,7 +306,11 @@ class _DashboardHomeState extends State<_DashboardHome> {
                       // Right: Districts in Province with case counts
                       Expanded(
                         flex: 3,
-                        child: DistrictCasesWidget(cases: _assignedCases, isDashboardLoading: _isLoading),
+                        child: DistrictCasesWidget(
+                          subUnitStats: _metrics?.subUnitBreakdown ?? [],
+                          isDashboardLoading: _isLoading,
+                          currentLevel: widget.currentLevel ?? '',
+                        ),
                       ),
                     ])
                   else ...[
@@ -293,7 +319,11 @@ class _DashboardHomeState extends State<_DashboardHome> {
                       onDistrictSelected: (d) => debugPrint('Selected District: $d'),
                     ),
                     const SizedBox(height: 24),
-                    DistrictCasesWidget(cases: _assignedCases, isDashboardLoading: _isLoading),
+                    DistrictCasesWidget(
+                      subUnitStats: _metrics?.subUnitBreakdown ?? [],
+                      isDashboardLoading: _isLoading,
+                      currentLevel: widget.currentLevel ?? '',
+                    ),
                   ],
                   const SizedBox(height: 32),
                   // Case search and table below
@@ -346,13 +376,18 @@ class _DashboardHomeState extends State<_DashboardHome> {
   }
 
   Widget _buildStatsRow(ThemeData theme, bool isDark) {
-    final urgentCount = _assignedCases.where((c) => c.urgency == 'EMERGENCY' || c.urgency == 'HIGH').length;
+    // Use metrics if available for "God View", otherwise local assigned counts
+    final urgentCount = _assignedCases.where((c) => c.urgency == 'EMERGENCY' || c.urgency == 'HIGH').length; // Metrics doesn't have urgent count yet, keep local or add to metrics later
+    
+    final activeCount = _metrics != null ? (_metrics!.pendingCases) : _assignedCases.length;
+    final escalatedCount = _metrics != null ? _metrics!.escalatedCases : _escalationAlerts.length;
+
     return Row(children: [
-      Expanded(child: StatCard(icon: Icons.circle, iconColor: ImboniColors.urgencyEmergency, label: 'Urgent (+24h):', value: '$urgentCount')),
+      Expanded(child: StatCard(icon: Icons.warning_amber_rounded, iconColor: ImboniColors.urgencyEmergency, label: 'Urgent (+24h):', value: '$urgentCount')),
       const SizedBox(width: 24),
-      Expanded(child: StatCard(icon: Icons.circle, iconColor: ImboniColors.info, label: 'Active:', value: '${_assignedCases.length}')),
+      Expanded(child: StatCard(icon: Icons.cases_outlined, iconColor: ImboniColors.info, label: 'Active Cases:', value: '$activeCount')),
       const SizedBox(width: 24),
-      Expanded(child: StatCard(icon: Icons.circle, iconColor: ImboniColors.warning, label: 'Escalated:', value: '${_escalationAlerts.length}')),
+      Expanded(child: StatCard(icon: Icons.trending_up, iconColor: ImboniColors.warning, label: 'Escalated:', value: '$escalatedCount')),
     ]);
   }
 
