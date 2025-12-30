@@ -719,7 +719,7 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
                 const SizedBox(height: 24),
                 TextField(
                   decoration: InputDecoration(
-                    labelText: 'Reason for dispute',
+                    labelText: AppLocalizations.of(context).reasonForDispute,
                     alignLabelWithHint: true,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     focusedBorder: const OutlineInputBorder(

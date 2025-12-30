@@ -166,6 +166,7 @@ class AppLocalizations {
   String get noAttachments => get('no_attachments');
   String get maxFileSize => get('max_file_size');
   String get confirmResolutionContent => get('confirm_resolution_content');
+  String get reasonForDispute => get('reason_for_dispute');
   String get fileTooLarge => get('file_too_large');
   String get maxAttachmentsReached => get('max_attachments_reached');
   String get voiceNote => get('voice_note');
@@ -501,6 +502,7 @@ const Map<String, Map<String, String>> _translations = {
     'status_update': 'Ivugurura',
     'resolution': 'Umwanzuro',
     'confirm_resolution_content': 'Urahamya ko iki kibazo cyakemutse? Ibi ntibizasubizwa inyuma.',
+    'reason_for_dispute': 'Impamvu yo kuregera',
     'urgency_normal': 'Bisanzwe',
     'urgency_high': 'Byihutirwa',
     'urgency_emergency': 'Byihutirwa Cyane',
@@ -750,6 +752,7 @@ const Map<String, Map<String, String>> _translations = {
     'status_update': 'Status Update',
     'resolution': 'Resolution',
     'confirm_resolution_content': 'Are you sure this case is resolved? This cannot be undone.',
+    'reason_for_dispute': 'Reason for dispute',
     'urgency_normal': 'Normal',
     'urgency_high': 'High',
     'urgency_emergency': 'Emergency',
@@ -1006,6 +1009,7 @@ const Map<String, Map<String, String>> _translations = {
     'status_update': 'Mise à jour du statut',
     'resolution': 'Résolution',
     'confirm_resolution_content': 'Êtes-vous sûr que ce cas est résolu ? Cela ne peut pas être annulé.',
+    'reason_for_dispute': 'Motif de la contestation',
     'urgency_normal': 'Normal',
     'urgency_high': 'Élevé',
     'urgency_emergency': 'Urgence',
