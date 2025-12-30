@@ -100,34 +100,32 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
         Text('Imboni', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
       ]),
       actions: [
-        if (_notificationCount > 0)
-          IconButton(
-            icon: Badge(
-              label: Text('$_notificationCount'),
-              child: Icon(Icons.notifications_outlined, color: theme.colorScheme.onSurface),
-            ),
-            onPressed: () {},
-          )
-        else
-          IconButton(
-            icon: Icon(Icons.notifications_outlined, color: theme.colorScheme.onSurface),
-            onPressed: () {},
+        IconButton(
+          icon: Badge(
+            isLabelVisible: _notificationCount > 0,
+            label: Text('$_notificationCount'),
+            child: Icon(Icons.notifications_outlined, color: theme.colorScheme.onSurface),
           ),
-        const SizedBox(width: 4),
+          onPressed: () => _navigateTo(const MyCasesScreen()),
+          tooltip: AppLocalizations.of(context).notificationsLabel,
+        ),
+        const SizedBox(width: 8),
         GestureDetector(
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen())),
           child: Container(
-            margin: const EdgeInsets.only(right: 12),
-            width: 40, height: 40,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [ImboniColors.primary, ImboniColors.secondary]),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child: Text(
-                user?.phone?.substring(0, 2).toUpperCase() ?? 'U',
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-              ),
+            margin: const EdgeInsets.only(right: 16),
+            child: CircleAvatar(
+              radius: 20,
+              backgroundColor: user?.profilePicture == null ? ImboniColors.primary : Colors.transparent,
+              backgroundImage: user?.profilePicture != null 
+                  ? NetworkImage(user!.profilePicture!)
+                  : null,
+              child: user?.profilePicture == null 
+                  ? Text(
+                      user?.initials ?? 'U',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                    )
+                  : null,
             ),
           ),
         ),
