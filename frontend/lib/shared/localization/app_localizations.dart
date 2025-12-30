@@ -152,7 +152,8 @@ class AppLocalizations {
   String get total => get('total');
   // statusOpen and statusResolved defined
   // statusOpen and statusResolved defined above
-  // open and resolved getters defined above
+  String get open => get('open'); // Short version for cards
+  String get resolved => get('resolved'); // Short version for cards
 
   // Attachments / Evidence
   String get attachEvidence => get('attach_evidence');
@@ -195,6 +196,7 @@ class AppLocalizations {
   // caseEscalated, caseResolved already defined above
   // String get caseResolved => get('case_resolved');
   // String get caseEscalated => get('case_escalated');
+  String get caseViewed => get('case_viewed');
   String get caseAssigned => get('case_assigned');
   String get caseAccepted => get('case_accepted');
   String get takeCase => get('take_case');
@@ -480,8 +482,8 @@ const Map<String, Map<String, String>> _translations = {
     'no_evidence_provided': 'Nta bimenyetso byatanzwe',
     'timeline': 'Aho kigeze',
     'case_created': 'Cyatangajwe',
-    'case_escalated': 'Cyoherejwe Hejuru',
-    'case_resolved': 'Cyakemuwe',
+    // case_escalated defined above
+    // case_resolved defined above
     'case_viewed': 'Cyarebwe',
     'case_assigned': 'Cyatanzwe',
     'case_accepted': 'Cyemejwe',
