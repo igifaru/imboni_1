@@ -600,6 +600,104 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
     }
   }
 
+  Future<void> _confirmResolution() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(AppLocalizations.of(context).resolved),
+        content: const Text('Are you sure this case is resolved? This cannot be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(AppLocalizations.of(context).cancel)),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: ImboniColors.success),
+            child: Text(AppLocalizations.of(context).confirm),
+          ),
+        ],
+      ),
+    );
+    
+    if (confirm != true) return;
+    
+    setState(() => _isLoading = true);
+    try {
+      final response = await CaseService.instance.confirmResolution(widget.caseModel.id);
+      if (mounted) {
+        setState(() => _isLoading = false);
+        if (response.isSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(AppLocalizations.of(context).caseResolved), backgroundColor: ImboniColors.success),
+          );
+          Navigator.pop(context, true); // Return true to refresh parent
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(response.error ?? 'Failed'), backgroundColor: ImboniColors.error),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: ImboniColors.error),
+        );
+      }
+    }
+  }
+
+  Future<void> _disputeResolution() async {
+    String? reason;
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(AppLocalizations.of(context).dispute),
+        content: TextField(
+          decoration: const InputDecoration(
+            labelText: 'Reason for dispute',
+            border: OutlineInputBorder(),
+          ),
+          maxLines: 3,
+          onChanged: (v) => reason = v,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.of(context).cancel)),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: ElevatedButton.styleFrom(backgroundColor: ImboniColors.warning),
+            child: Text(AppLocalizations.of(context).submit),
+          ),
+        ],
+      ),
+    );
+
+    if (reason == null || reason!.trim().isEmpty) return;
+
+    setState(() => _isLoading = true);
+    try {
+      final response = await CaseService.instance.disputeResolution(widget.caseModel.id, reason!);
+      if (mounted) {
+        setState(() => _isLoading = false);
+        if (response.isSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Case escalated to next level'), backgroundColor: ImboniColors.warning),
+          );
+          Navigator.pop(context, true); // Refresh parent
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(response.error ?? 'Failed'), backgroundColor: ImboniColors.error),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: ImboniColors.error),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -657,6 +755,12 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
                     // Header Card
                     _buildHeaderCard(theme, l10n, isDark, cardColor, textColor, statusColor, categoryColor, urgencyColor, caseModel),
                     const SizedBox(height: 20),
+
+                    // Confirmation Action Card
+                    if (caseModel.status == 'PENDING_CONFIRMATION') ...[
+                      _buildResolutionActionCard(theme, l10n, isDark, cardColor, textColor),
+                      const SizedBox(height: 20),
+                    ],
 
                     // Two Column Layout for Wide Screens
                     if (isWideScreen)
@@ -1071,6 +1175,72 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
   }
 
   // Horizontal Timeline Section
+  Widget _buildResolutionActionCard(ThemeData theme, AppLocalizations l10n, bool isDark, Color cardColor, Color textColor) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: ImboniColors.primary.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: ImboniColors.primary.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.check_circle_outline, color: ImboniColors.primary, size: 28),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Resolution Confirmation Required',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: textColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'The leader has marked this case as resolved. Please confirm if you are satisfied with the resolution, or dispute it if the issue persists.',
+            style: theme.textTheme.bodyMedium?.copyWith(color: textColor.withOpacity(0.8)),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _disputeResolution,
+                  icon: const Icon(Icons.thumb_down_outlined, size: 18),
+                  label: Text(l10n.dispute),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: ImboniColors.warning,
+                    side: const BorderSide(color: ImboniColors.warning),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _confirmResolution,
+                  icon: const Icon(Icons.thumb_up_outlined, size: 18),
+                  label: Text(l10n.confirm),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ImboniColors.success,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildTimelineSection(ThemeData theme, AppLocalizations l10n, bool isDark, Color cardColor, Color textColor, Color subTextColor, CaseModel caseModel) {
     // Build timeline from fetched actions or create default entries
     final List<_TimelineData> timelineItems = [];

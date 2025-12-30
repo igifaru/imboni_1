@@ -35,7 +35,11 @@ class AppLocalizations {
   String get confirm => get('confirm');
   String get dispute => get('dispute');
   String get save => get('save');
+  String get submit => get('submit');
   String get notifications => get('notifications');
+  String get resolved => get('resolved');
+  String get caseResolved => get('case_resolved');
+  String get caseEscalated => get('case_escalated');
   String get selectCategory => get('select_category');
   String get describeIssue => get('describe_issue');
   String get submitAnonymously => get('submit_anonymously');
@@ -328,7 +332,11 @@ const Map<String, Map<String, String>> _translations = {
     'confirm': 'Kwemeza',
     'dispute': 'Kuregera',
     'save': 'Kubika',
+    'submit': 'Ohereza',
+    'resolved': 'Byakemutse',
     'notifications': 'Ubutumwa',
+    'case_resolved': 'Ikibazo cyafunzwe. Murakoze!',
+    'case_escalated': 'Ikibazo cyoherejwe ku rwego rwisumbuye',
     'select_category': 'Hitamo icyiciro',
     'describe_issue': 'Sobanura ikibazo',
     'submit_anonymously': 'Tanga utavuze izina ryawe',
@@ -580,7 +588,11 @@ const Map<String, Map<String, String>> _translations = {
     'confirm': 'Confirm',
     'dispute': 'Dispute',
     'save': 'Save',
+    'submit': 'Submit',
+    'resolved': 'Resolved',
     'notifications': 'Notifications',
+    'case_resolved': 'Case has been resolved. Thank you!',
+    'case_escalated': 'Case escalated to next level',
     'select_category': 'Select Category',
     'describe_issue': 'Describe Issue',
     'submit_anonymously': 'Submit Anonymously',
@@ -1025,6 +1037,11 @@ const Map<String, Map<String, String>> _translations = {
     'registered_on': 'Inscrit le',
     'residence_location': 'Lieu de Résidence',
     'edit_profile': 'Modifier le Profil',
+    'save': 'Enregistrer',
+    'submit': 'Soumettre',
+    'resolved': 'Résolu',
+    'case_resolved': 'Le dossier a été résolu. Merci!',
+    'case_escalated': 'Dossier transmis au niveau supérieur',
     'save_changes': 'Enregistrer les Modifications',
     'terms_and_conditions': 'Termes et Conditions',
     'logout_confirm': 'Voulez-vous vraiment vous déconnecter?',
