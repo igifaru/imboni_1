@@ -62,8 +62,10 @@ enum CaseStatus {
   OPEN
   IN_PROGRESS
   RESOLVED
+  PENDING_CONFIRMATION  // Leader marked resolved, awaiting citizen confirmation
   ESCALATED
   CLOSED
+  COMMUNITY             // National level, open for all citizens to contribute
 }
 
 enum ActionType {
