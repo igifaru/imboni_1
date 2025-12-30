@@ -1039,9 +1039,9 @@ const Map<String, Map<String, String>> _translations = {
     'registered_on': 'Inscrit le',
     'residence_location': 'Lieu de Résidence',
     'edit_profile': 'Modifier le Profil',
-    'save': 'Enregistrer',
+    // save defined above
     'submit': 'Soumettre',
-    'resolved': 'Résolu',
+    // resolved defined above
     'case_resolved': 'Le dossier a été résolu. Merci!',
     'case_escalated': 'Dossier transmis au niveau supérieur',
     'save_changes': 'Enregistrer les Modifications',
