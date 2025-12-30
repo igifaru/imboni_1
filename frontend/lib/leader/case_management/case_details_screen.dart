@@ -4,6 +4,7 @@ import 'package:imboni/shared/services/case_service.dart';
 import '../../shared/theme/colors.dart';
 import '../../shared/localization/app_localizations.dart';
 import '../../shared/widgets/loading_overlay.dart';
+import '../../shared/widgets/countdown_timer.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:imboni/shared/services/api_client.dart';
 import 'resolution_dialog.dart';
@@ -308,7 +309,7 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Row 1: Status + Category + Urgency badges
+          // Row 1: Status + Category + Urgency + Countdown badges
           Wrap(
             spacing: 10,
             runSpacing: 8,
@@ -316,6 +317,12 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
               _buildBadge(_getStatusLabel(l10n, _case.status), statusColor, Icons.circle, isDark),
               _buildBadge(_getCategoryLabel(l10n, _case.category), categoryColor, _getCategoryIcon(_case.category), isDark),
               _buildBadge(_getUrgencyLabel(l10n, _case.urgency), urgencyColor, Icons.flag, isDark),
+              // Countdown Timer
+              if (_case.deadline != null)
+                CountdownTimer(
+                  deadline: _case.deadline!,
+                  showIcon: true,
+                ),
             ],
           ),
           const SizedBox(height: 16),

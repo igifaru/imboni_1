@@ -22,6 +22,103 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
     _status = widget.caseModel.status;
   }
 
+  Future<void> _handleEscalate() async {
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Escalate Case'),
+        content: TextField(
+          decoration: const InputDecoration(
+            labelText: 'Reason for escalation',
+            hintText: 'Enter the reason...',
+          ),
+          onSubmitted: (value) => Navigator.pop(context, value),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context, 'Escalation requested'), child: const Text('Submit')),
+        ],
+      ),
+    );
+    
+    if (reason == null || reason.isEmpty) return;
+    
+    setState(() => _isLoading = true);
+    try {
+      final response = await CaseService.instance.escalateCase(widget.caseModel.id, reason);
+      if (mounted) {
+        setState(() => _isLoading = false);
+        if (response.isSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Case escalated successfully'), backgroundColor: Colors.green),
+          );
+          Navigator.pop(context, true);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(response.error ?? 'Failed to escalate'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleResolve() async {
+    final notes = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Mark as Resolved'),
+        content: TextField(
+          decoration: const InputDecoration(
+            labelText: 'Resolution notes',
+            hintText: 'Describe how the issue was resolved...',
+          ),
+          maxLines: 3,
+          onSubmitted: (value) => Navigator.pop(context, value),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context, 'Case resolved'), child: const Text('Submit')),
+        ],
+      ),
+    );
+    
+    if (notes == null || notes.isEmpty) return;
+    
+    setState(() => _isLoading = true);
+    try {
+      final response = await CaseService.instance.resolveCase(widget.caseModel.id, notes);
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          if (response.isSuccess) _status = 'PENDING_CONFIRMATION';
+        });
+        if (response.isSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Case marked as resolved, awaiting citizen confirmation'), backgroundColor: Colors.green),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(response.error ?? 'Failed to resolve'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -240,11 +337,11 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            _buildInfoRow(theme, 'Province', 'Kigali City'), // Mock data, replace with real if available
+            _buildInfoRow(theme, 'Level', widget.caseModel.currentLevel),
              const SizedBox(height: 8),
-            _buildInfoRow(theme, 'District', 'Gasabo'),
+            _buildInfoRow(theme, 'Location', widget.caseModel.locationName ?? 'Unknown'),
              const SizedBox(height: 8),
-            _buildInfoRow(theme, 'Sector', widget.caseModel.currentLevel),
+            _buildInfoRow(theme, 'Status', widget.caseModel.status),
           ],
         ),
       ),
@@ -367,10 +464,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           OutlinedButton.icon(
-            onPressed: () {
-               // Implement escalation logic
-               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Escalation feature coming soon')));
-            },
+            onPressed: _handleEscalate,
             icon: const Icon(Icons.arrow_upward),
             label: const Text('Escalate'),
             style: OutlinedButton.styleFrom(
@@ -379,10 +473,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
           ),
           const SizedBox(width: 16),
           ElevatedButton.icon(
-            onPressed: () {
-               // Implement resolution logic
-               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Resolution feature coming soon')));
-            },
+            onPressed: _handleResolve,
             icon: const Icon(Icons.check_circle_outline),
             label: const Text('Mark Resolved'),
             style: ElevatedButton.styleFrom(

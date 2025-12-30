@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:imboni/shared/models/models.dart';
 import 'package:imboni/shared/theme/colors.dart';
 import 'package:imboni/shared/localization/app_localizations.dart';
+import 'package:imboni/shared/widgets/countdown_timer.dart';
 import 'package:intl/intl.dart';
 
 class ProfessionalCaseCard extends StatelessWidget {
@@ -53,7 +54,7 @@ class ProfessionalCaseCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Header: Title + Status
+                      // Header: Title + Status + Countdown
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -68,6 +69,11 @@ class ProfessionalCaseCard extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 8),
+                          // Countdown Timer (if deadline exists)
+                          if (caseData.deadline != null) ...[
+                            CountdownChip(deadline: caseData.deadline!),
+                            const SizedBox(width: 6),
+                          ],
                           _buildStatusChip(caseData.status, statusColor),
                         ],
                       ),
@@ -177,7 +183,6 @@ class ProfessionalCaseCard extends StatelessWidget {
 
   Widget _buildStatusChip(String status, Color color) {
     String label = status.replaceAll('_', ' ');
-    // Simple mock localization for status if l10n not passed, but ideal is to pass l10n. For now keeping label format.
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
