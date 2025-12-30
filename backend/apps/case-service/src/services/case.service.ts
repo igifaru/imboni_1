@@ -705,6 +705,30 @@ export class CaseService {
         });
 
         if (!leadership) {
+            // Check if user is ADMIN - they get a virtual Default Assignment (National View)
+            const user = await prisma.user.findUnique({ where: { id: leaderId } });
+
+            if (user?.role === 'ADMIN') {
+                logger.info('User is ADMIN with no assignment. Generating National View.', { leaderId });
+                // Fetch all Provinces
+                const provinces = await prisma.administrativeUnit.findMany({
+                    where: { level: 'PROVINCE' }
+                });
+
+                // Mock a "National" unit
+                const virtualUnit = {
+                    id: 'national_virtual',
+                    name: 'Rwanda',
+                    level: 'NATIONAL',
+                    code: '', // Valid for prefix matching (everything starts with empty string? No, we need logic check)
+                    children: provinces
+                };
+
+                // Continue with this virtual unit
+                // We need to bypass the "const myUnit = leadership.administrativeUnit" line below
+                return this.calculateMetricsForUnit(virtualUnit as any, filters, provinces);
+            }
+
             logger.warn('No active leader assignment for user', { leaderId });
             return {
                 totalCases: 0,
@@ -723,18 +747,34 @@ export class CaseService {
 
         const myUnit = leadership.administrativeUnit;
         const dbSubUnits = myUnit.children;
+        return this.calculateMetricsForUnit(myUnit, filters, dbSubUnits);
+    }
+
+    // Refactored core logic into helper to support Virtual Units
+    async calculateMetricsForUnit(myUnit: any, filters: any, dbSubUnits: any[]) {
+        // Initialize trends locally
+        const weeklyTrends = Array(7).fill(0).map((_, i) => {
+            const d = new Date();
+            d.setDate(d.getDate() - (6 - i));
+            return {
+                day: d.toLocaleDateString('en-US', { weekday: 'short' }),
+                date: d.toISOString().split('T')[0],
+                newCases: 0,
+                resolvedCases: 0,
+                activeCases: 0
+            };
+        });
 
         // Use pre-loaded JSON
-        const unitPath = await getUnitFullPath(myUnit.id);
-        const jsonChildrenNames = getChildrenFromJson(unitPath, ADMIN_JSON);
+        const unitPath = myUnit.level === 'NATIONAL' ? [] : await getUnitFullPath(myUnit.id);
+        const jsonChildrenNames = myUnit.level === 'NATIONAL'
+            ? ['Northern Province', 'Southern Province', 'Eastern Province', 'Western Province', 'Kigali City']
+            : getChildrenFromJson(unitPath, ADMIN_JSON);
 
         logger.info('DEBUG Hierarchy Info', {
             unitName: myUnit.name,
-            unitLevel: myUnit.level,
-            dbSubUnitsCount: dbSubUnits.length,
-            unitPath: unitPath.map(u => u.name),
-            jsonChildrenCount: jsonChildrenNames.length,
-            jsonChildren: jsonChildrenNames.slice(0, 5)
+            unitCode: myUnit.code,
+            unitLevel: myUnit.level
         });
 
         // Merge: Use DB children where they exist, and JSON children as fallbacks
@@ -890,15 +930,18 @@ export class CaseService {
             if (idx !== -1) weeklyTrends[idx].newCases++;
 
             const caseCode = c.administrativeUnit.code;
-            const myCodeParts = myUnit.code.split(':').length;
-            const parts = caseCode.split(':');
 
-            if (parts.length > myCodeParts) {
-                const childCode = parts.slice(0, myCodeParts + 1).join(':');
-                const directChild = dbSubUnits.find(u => u.code === childCode);
-                if (directChild) {
-                    rollupMap.get(directChild.id)?.push(c);
-                } else {
+            // Fixed: Use robust check against actual sub-unit codes
+            // This works even if the parent code is not a strict prefix of the child code (e.g. National -> Province)
+            const directChild = dbSubUnits.find(u => caseCode === u.code || caseCode.startsWith(u.code + ':'));
+
+            if (directChild) {
+                rollupMap.get(directChild.id)?.push(c);
+            } else {
+                // Fallback for JSON or virtual units - try to match by name token
+                const myCodeParts = myUnit.code ? myUnit.code.split(':').length : 0;
+                const parts = caseCode.split(':');
+                if (parts.length > myCodeParts) {
                     const childNameToken = parts[myCodeParts].replace(/_/g, ' ');
                     if (rollupMap.has(childNameToken)) {
                         rollupMap.get(childNameToken)?.push(c);
@@ -1035,7 +1078,13 @@ export class CaseService {
                 url: e.url,
                 fileName: e.fileName,
                 mimeType: e.mimeType,
-            }))
+            })),
+            administrativeUnit: (entity as any).administrativeUnit ? {
+                id: (entity as any).administrativeUnit.id,
+                name: (entity as any).administrativeUnit.name,
+                code: (entity as any).administrativeUnit.code,
+                level: (entity as any).administrativeUnit.level,
+            } : undefined
         };
     }
 }

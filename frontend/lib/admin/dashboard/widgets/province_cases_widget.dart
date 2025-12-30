@@ -42,20 +42,43 @@ class ProvinceCasesWidget extends StatelessWidget {
     return result;
   }
 
+  // Mapping from Backend Administrative Unit Codes to Frontend Province Keys
+  static const Map<String, String> _backendCodeToProvinceKey = {
+    'NORTHERN PROVINCE': 'Amajyaruguru',
+    'SOUTHERN PROVINCE': 'Amajyepfo',
+    'EASTERN PROVINCE': 'Iburasirazuba',
+    'WESTERN PROVINCE': 'Iburengerazuba',
+    'KIGALI CITY': 'Kigali',
+  };
+
   String? _extractProvince(CaseModel c) {
-    // Try to extract province from case data
-    final level = c.currentLevel.toUpperCase();
-    
-    // Check if currentLevel contains English province names and map to code
-    for (final entry in provinceEnglishToCode.entries) {
-      if (level.contains(entry.key.toUpperCase())) {
-        return entry.value; // Returns Kinyarwanda code
+    // 1. Try to use strict code matching if available (Best Accuracy)
+    if (c.administrativeUnitCode != null && c.administrativeUnitCode!.isNotEmpty) {
+      final code = c.administrativeUnitCode!;
+      
+      // Direct Map Check (e.g. valid for Province level cases)
+      if (_backendCodeToProvinceKey.containsKey(code)) {
+        return _backendCodeToProvinceKey[code];
+      }
+
+      // Prefix Check (e.g. "NORTHERN PROVINCE:BURERA")
+      for (final entry in _backendCodeToProvinceKey.entries) {
+        if (code.startsWith('${entry.key}:')) {
+          return entry.value;
+        }
       }
     }
-    
-    // Default distribution based on case reference hash for demo
-    final hash = c.caseReference.hashCode % 5;
-    return rwandaProvinces[hash.abs()].code;
+
+    // 2. Try to extract province from currentLevel string (Fallback)
+    final level = c.currentLevel.toUpperCase();
+    for (final entry in provinceEnglishToCode.entries) {
+      if (level.contains(entry.key.toUpperCase())) {
+        return entry.value; 
+      }
+    }
+
+    // 3. Last Resort: Unknown/Unassigned
+    return null;
   }
 
   @override
