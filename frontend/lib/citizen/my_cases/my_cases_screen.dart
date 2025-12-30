@@ -1846,6 +1846,7 @@ class _TimelineData {
   final DateTime date;
   final Color color;
   final IconData icon;
+  final String? notes;
   final bool isCurrent;
 
   _TimelineData({
