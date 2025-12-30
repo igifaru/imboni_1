@@ -30,7 +30,7 @@ class _TrackCaseScreenState extends State<TrackCaseScreen> {
 
     return LoadingOverlay(
       isLoading: _isLoading,
-      message: 'Gushakisha...',
+      message: l10n.search,
       child: Scaffold(
         appBar: AppBar(title: Text(l10n.trackCase)),
         body: SingleChildScrollView(
@@ -52,8 +52,8 @@ class _TrackCaseScreenState extends State<TrackCaseScreen> {
                   ),
                   const SizedBox(width: 16),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('Kurikirana ikibazo', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                    Text('Andika nimero yawe yo gukurikirana', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                    Text(l10n.trackCaseTitle, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                    Text(l10n.trackCaseHint, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
                   ])),
                 ]),
                 const SizedBox(height: 20),
@@ -79,7 +79,7 @@ class _TrackCaseScreenState extends State<TrackCaseScreen> {
                   ElevatedButton(
                     onPressed: _referenceController.text.isNotEmpty ? _searchCase : null,
                     style: ElevatedButton.styleFrom(minimumSize: const Size(100, 48)),
-                    child: const Text('Shakisha'),
+                    child: Text(l10n.search),
                   ),
                 ]),
               ]),
@@ -94,27 +94,31 @@ class _TrackCaseScreenState extends State<TrackCaseScreen> {
     );
   }
 
-  Widget _buildErrorCard(ThemeData theme) => Container(
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(color: ImboniColors.error.withAlpha(25), borderRadius: BorderRadius.circular(12), border: Border.all(color: ImboniColors.error.withAlpha(75))),
-    child: Row(children: [
-      Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: ImboniColors.error.withAlpha(50), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.error_outline, color: ImboniColors.error)),
-      const SizedBox(width: 16),
-      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Ntibishoboye kuboneka', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: ImboniColors.error)),
-        const SizedBox(height: 4),
-        Text(_error!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-      ])),
-    ]),
-  );
+  Widget _buildErrorCard(ThemeData theme) {
+    final l10n = AppLocalizations.of(context);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: ImboniColors.error.withAlpha(25), borderRadius: BorderRadius.circular(12), border: Border.all(color: ImboniColors.error.withAlpha(75))),
+      child: Row(children: [
+        Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: ImboniColors.error.withAlpha(50), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.error_outline, color: ImboniColors.error)),
+        const SizedBox(width: 16),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(l10n.caseNotFound, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: ImboniColors.error)),
+          const SizedBox(height: 4),
+          Text(_error!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+        ])),
+      ]),
+    );
+  }
 
   Widget _buildCaseResult(ThemeData theme) {
+    final l10n = AppLocalizations.of(context);
     final c = _foundCase!;
     final statusColor = ImboniColors.getStatusColor(c.status);
     final categoryColor = ImboniColors.getCategoryColor(c.category);
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text('Ikibazo cyabonetse', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+      Text(l10n.caseFound, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
       const SizedBox(height: 12),
       
       // Main case card
@@ -185,7 +189,7 @@ class _TrackCaseScreenState extends State<TrackCaseScreen> {
                   Icon(Icons.location_on_outlined, size: 18, color: ImboniColors.primary),
                   const SizedBox(width: 8),
                   Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('Urwego ruri kugikoraho', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                    Text(l10n.currentLevel, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
                     Text(c.currentLevel, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
                   ]),
                 ]),
@@ -193,7 +197,7 @@ class _TrackCaseScreenState extends State<TrackCaseScreen> {
               const SizedBox(height: 16),
               
               // Description
-              Text('Ibisobanuro:', style: theme.textTheme.labelLarge),
+              Text('${l10n.description}:', style: theme.textTheme.labelLarge),
               const SizedBox(height: 8),
               Text(c.description, style: theme.textTheme.bodyMedium),
               const SizedBox(height: 20),
@@ -202,9 +206,9 @@ class _TrackCaseScreenState extends State<TrackCaseScreen> {
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CaseDetailsScreen(caseModel: c))),
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CitizenCaseDetailsScreen(caseModel: c))),
                   icon: const Icon(Icons.visibility_outlined),
-                  label: const Text('Reba byose'),
+                  label: Text(l10n.viewDetails),
                 ),
               ),
             ]),

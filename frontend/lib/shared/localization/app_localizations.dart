@@ -169,6 +169,97 @@ class AppLocalizations {
   String get microphonePermissionRequired => get('microphone_permission_required');
   String get evidence => get('evidence');
   String get addEvidence => get('add_evidence');
+
+  // Case Details Screen
+  String get caseDetails => get('case_details');
+  String get importantInfo => get('important_info');
+  String get location => get('location');
+  String get level => get('level');
+  String get date => get('date');
+  String get time => get('time');
+  String get deadline => get('deadline');
+  String get description => get('description');
+  String get reporter => get('reporter');
+  String get submittedAnonymouslyLabel => get('submitted_anonymously_label');
+  String get citizen => get('citizen');
+  String get noEvidenceProvided => get('no_evidence_provided');
+  String get timeline => get('timeline');
+  String get caseCreated => get('case_created');
+  String get caseEscalated => get('case_escalated');
+  String get caseResolved => get('case_resolved');
+  String get caseViewed => get('case_viewed');
+  String get caseAssigned => get('case_assigned');
+  String get caseAccepted => get('case_accepted');
+  String get takeCase => get('take_case');
+  String get resolveCase => get('resolve_case');
+  String get escalate => get('escalate');
+  String get escalateReason => get('escalate_reason');
+  String get escalateHint => get('escalate_hint');
+  String get actionSuccess => get('action_success');
+  String get caseResolvedSuccess => get('case_resolved_success');
+  String get caseEscalatedSuccess => get('case_escalated_success');
+  String get urgencyNormal => get('urgency_normal');
+  String get urgencyHigh => get('urgency_high');
+  String get urgencyEmergency => get('urgency_emergency');
+
+  // My Cases Screen
+  String get myCasesTitle => get('my_cases_title');
+  String get allCases => get('all_cases');
+  String get openCases => get('open_cases');
+  String get inProgressCases => get('in_progress_cases');
+  String get resolvedCases => get('resolved_cases');
+  String get noCasesFound => get('no_cases_found');
+  String get errorOccurred => get('error_occurred');
+  String get tryAgain => get('try_again');
+  String get viewDetails => get('view_details');
+  String get submittedOn => get('submitted_on');
+  String get currentlyAt => get('currently_at');
+
+  // Citizen Home Screen
+  String get welcomeMessage => get('welcome_message');
+  String get welcomeSubtitle => get('welcome_subtitle');
+  String get yourCases => get('your_cases');
+  String get submitCaseSubtitle => get('submit_case_subtitle');
+  String get trackCaseSubtitle => get('track_case_subtitle');
+  String get emergencySubtitle => get('emergency_subtitle');
+  String get myCasesSubtitle => get('my_cases_subtitle');
+  String get recentCases => get('recent_cases');
+  String get viewAllCases => get('view_all_cases');
+  String get noCasesYet => get('no_cases_yet');
+  String get useSumbitCaseHint => get('use_submit_case_hint');
+
+  // Track Case Screen
+  String get trackCaseTitle => get('track_case_title');
+  String get trackCaseHint => get('track_case_hint');
+  String get enterReference => get('enter_reference');
+  String get search => get('search');
+  String get caseFound => get('case_found');
+  String get caseNotFound => get('case_not_found');
+  String get checkReferenceHint => get('check_reference_hint');
+  String get currentLevel => get('current_level');
+
+  // Profile Screen (additional keys not defined elsewhere)
+  String get profile => get('profile');
+  String get accountInfo => get('account_info');
+  String get about => get('about');
+  String get phone => get('phone');
+  String get logout => get('logout');
+  String get registeredOn => get('registered_on');
+  String get residenceLocation => get('residence_location');
+  String get email => get('email');
+  String get editProfile => get('edit_profile');
+  String get saveChanges => get('save_changes');
+  String get termsAndConditions => get('terms_and_conditions');
+  String get help => get('help');
+  String get logoutConfirm => get('logout_confirm');
+  String get yes => get('yes');
+  String get no => get('no');
+  String get profileSaved => get('profile_saved');
+  String get saveFailed => get('save_failed');
+  String get notProvided => get('not_provided');
+  String get aboutApp => get('about_app');
+  String get notificationsLabel => get('notifications_label');
+  String get themeLabel => get('theme_label');
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
@@ -311,6 +402,90 @@ const Map<String, Map<String, String>> _translations = {
     'microphone_permission_required': 'Usabwa kwemererwa gukoresha microphone',
     'evidence': 'Ibimenyetso',
     'add_evidence': 'Ongeraho Ibimenyetso',
+    // Case Details Screen RW
+    'case_details': 'Ibisobanuro by\'Ikibazo',
+    'important_info': 'Amakuru y\'Ingenzi',
+    'location': 'Aho biri',
+    'level': 'Urwego',
+    'date': 'Itariki',
+    'time': 'Igihe',
+    'deadline': 'Itariki ntarengwa',
+    'description': 'Ibisobanuro',
+    'reporter': 'Uwabitangaje',
+    'submitted_anonymously_label': 'Yatanze mu ibanga',
+    'citizen': 'Umuturage',
+    'no_evidence_provided': 'Nta bimenyetso byatanzwe',
+    'timeline': 'Aho kigeze',
+    'case_created': 'Cyatangajwe',
+    'case_escalated': 'Cyoherejwe Hejuru',
+    'case_resolved': 'Cyakemuwe',
+    'case_viewed': 'Cyarebwe',
+    'case_assigned': 'Cyatanzwe',
+    'case_accepted': 'Cyemejwe',
+    'take_case': 'Fata Iyi Dosiye',
+    'resolve_case': 'Kemura Burundu',
+    'escalate': 'Ohereza hejuru',
+    'escalate_reason': 'Tanga impamvu iki kibazo kigomba koherezwa kurwego rwisumbuye:',
+    'escalate_hint': 'Urugero: Nta bubasha dufite...',
+    'action_success': 'Igikorwa cyagenze neza',
+    'case_resolved_success': 'Ikibazo cyakemuwe!',
+    'case_escalated_success': 'Ikibazo cyoherejwe hejuru!',
+    'urgency_normal': 'Bisanzwe',
+    'urgency_high': 'Byihutirwa',
+    'urgency_emergency': 'Byihutirwa Cyane',
+    // My Cases Screen RW
+    'my_cases_title': 'Ibibazo byanjye',
+    'all_cases': 'Byose',
+    'open_cases': 'Bifunguwe',
+    'in_progress_cases': 'Bikorwaho',
+    'resolved_cases': 'Byakemutse',
+    'no_cases_found': 'Nta kibazo kiraboneka',
+    'error_occurred': 'Habaye ikosa',
+    'try_again': 'Gerageza nanone',
+    'view_details': 'Reba byose',
+    'submitted_on': 'Cyatanzwe ku itariki',
+    'currently_at': 'Kiri ku rwego rwa',
+    // Citizen Home Screen RW
+    'welcome_message': 'Murakaza neza kuri Imboni.',
+    'welcome_subtitle': 'Tanga ikibazo cyawe, tugufashemo.',
+    'your_cases': 'Ibibazo byawe',
+    'submit_case_subtitle': 'Tanga ikibazo gishya',
+    'track_case_subtitle': 'Kurikirana ikibazo',
+    'emergency_subtitle': 'Ubutabazi bwihuse',
+    'my_cases_subtitle': 'Reba ibibazo byawe',
+    'recent_cases': 'Ibibazo byawe vuba',
+    'view_all_cases': 'Reba byose',
+    'no_cases_yet': 'Nta kibazo ufite',
+    'use_submit_case_hint': 'Koresha "Tanga Ikibazo" hejuru kugirango utange ikibazo cyawe',
+    // Track Case Screen RW
+    'track_case_title': 'Kurikirana ikibazo',
+    'track_case_hint': 'Andika nimero yawe yo gukurikirana',
+    'enter_reference': 'Andika nimero',
+    'search': 'Shakisha',
+    'case_found': 'Ikibazo cyabonetse',
+    'case_not_found': 'Ntibishoboye kuboneka',
+    'check_reference_hint': 'Reba neza nimero wanditse',
+    'current_level': 'Urwego ruri kugikoraho',
+    // Profile Screen RW
+    'profile': 'Umwirondoro',
+    'account_info': 'Amakuru y\'Ikonti',
+    'about': 'Ibyerekeye',
+    'phone': 'Telefoni',
+    'logout': 'Sohoka',
+    'registered_on': 'Yiyandikishije',
+    'residence_location': 'Aho abarizwa',
+    'edit_profile': 'Hindura Umwirondoro',
+    'save_changes': 'Bika Ibyahinduwe',
+    'terms_and_conditions': 'Amategeko n\'Amabwiriza',
+    'logout_confirm': 'Uzi neza ko ushaka gusohoka?',
+    'yes': 'Yego',
+    'no': 'Oya',
+    'profile_saved': 'Umwirondoro wabitswe!',
+    'save_failed': 'Byanze',
+    'not_provided': 'Ntiyanditswe',
+    'about_app': 'Ibyerekeye Porogaramu',
+    'notifications_label': 'Menyesha',
+    'theme_label': 'Insanganyamatsiko',
   },
   'en': {
     'app_name': 'Imboni',
@@ -441,6 +616,90 @@ const Map<String, Map<String, String>> _translations = {
     'microphone_permission_required': 'Microphone permission required',
     'evidence': 'Evidence',
     'add_evidence': 'Add Evidence',
+    // Case Details Screen EN
+    'case_details': 'Case Details',
+    'important_info': 'Important Information',
+    'location': 'Location',
+    'level': 'Level',
+    'date': 'Date',
+    'time': 'Time',
+    'deadline': 'Deadline',
+    'description': 'Description',
+    'reporter': 'Reporter',
+    'submitted_anonymously_label': 'Submitted anonymously',
+    'citizen': 'Citizen',
+    'no_evidence_provided': 'No evidence provided',
+    'timeline': 'Timeline',
+    'case_created': 'Created',
+    'case_escalated': 'Escalated',
+    'case_resolved': 'Resolved',
+    'case_viewed': 'Viewed',
+    'case_assigned': 'Assigned',
+    'case_accepted': 'Accepted',
+    'take_case': 'Take This Case',
+    'resolve_case': 'Mark Resolved',
+    'escalate': 'Escalate',
+    'escalate_reason': 'Provide a reason for escalation:',
+    'escalate_hint': 'Example: We do not have authority...',
+    'action_success': 'Action completed successfully',
+    'case_resolved_success': 'Case has been resolved!',
+    'case_escalated_success': 'Case has been escalated!',
+    'urgency_normal': 'Normal',
+    'urgency_high': 'High',
+    'urgency_emergency': 'Emergency',
+    // My Cases Screen EN
+    'my_cases_title': 'My Cases',
+    'all_cases': 'All',
+    'open_cases': 'Open',
+    'in_progress_cases': 'In Progress',
+    'resolved_cases': 'Resolved',
+    'no_cases_found': 'No cases found',
+    'error_occurred': 'An error occurred',
+    'try_again': 'Try again',
+    'view_details': 'View details',
+    'submitted_on': 'Submitted on',
+    'currently_at': 'Currently at',
+    // Citizen Home Screen EN
+    'welcome_message': 'Welcome to Imboni.',
+    'welcome_subtitle': 'Submit your case, we will help you.',
+    'your_cases': 'Your Cases',
+    'submit_case_subtitle': 'Submit a new case',
+    'track_case_subtitle': 'Track your case',
+    'emergency_subtitle': 'Rapid assistance',
+    'my_cases_subtitle': 'View your cases',
+    'recent_cases': 'Recent Cases',
+    'view_all_cases': 'View all',
+    'no_cases_yet': 'No cases yet',
+    'use_submit_case_hint': 'Use "Submit Case" above to submit your case',
+    // Track Case Screen EN
+    'track_case_title': 'Track Case',
+    'track_case_hint': 'Enter your tracking number',
+    'enter_reference': 'Enter reference',
+    'search': 'Search',
+    'case_found': 'Case found',
+    'case_not_found': 'Could not be found',
+    'check_reference_hint': 'Check the reference you entered',
+    'current_level': 'Current level handling',
+    // Profile Screen EN
+    'profile': 'Profile',
+    'account_info': 'Account Information',
+    'about': 'About',
+    'phone': 'Phone',
+    'logout': 'Logout',
+    'registered_on': 'Registered on',
+    'residence_location': 'Residence Location',
+    'edit_profile': 'Edit Profile',
+    'save_changes': 'Save Changes',
+    'terms_and_conditions': 'Terms and Conditions',
+    'logout_confirm': 'Are you sure you want to logout?',
+    'yes': 'Yes',
+    'no': 'No',
+    'profile_saved': 'Profile saved!',
+    'save_failed': 'Save failed',
+    'not_provided': 'Not provided',
+    'about_app': 'About App',
+    'notifications_label': 'Notifications',
+    'theme_label': 'Theme',
   },
   'fr': {
     'app_name': 'Imboni',
@@ -571,5 +830,89 @@ const Map<String, Map<String, String>> _translations = {
     'microphone_permission_required': 'Permission microphone requise',
     'evidence': 'Preuves',
     'add_evidence': 'Ajouter des preuves',
+    // Case Details Screen FR
+    'case_details': 'Détails du Cas',
+    'important_info': 'Informations Importantes',
+    'location': 'Lieu',
+    'level': 'Niveau',
+    'date': 'Date',
+    'time': 'Heure',
+    'deadline': 'Date limite',
+    'description': 'Description',
+    'reporter': 'Rapporteur',
+    'submitted_anonymously_label': 'Soumis anonymement',
+    'citizen': 'Citoyen',
+    'no_evidence_provided': 'Aucune preuve fournie',
+    'timeline': 'Chronologie',
+    'case_created': 'Créé',
+    'case_escalated': 'Escaladé',
+    'case_resolved': 'Résolu',
+    'case_viewed': 'Consulté',
+    'case_assigned': 'Assigné',
+    'case_accepted': 'Accepté',
+    'take_case': 'Prendre ce Cas',
+    'resolve_case': 'Marquer Résolu',
+    'escalate': 'Escalader',
+    'escalate_reason': 'Indiquez la raison de l\'escalade:',
+    'escalate_hint': 'Exemple: Nous n\'avons pas l\'autorité...',
+    'action_success': 'Action effectuée avec succès',
+    'case_resolved_success': 'Le cas a été résolu!',
+    'case_escalated_success': 'Le cas a été escaladé!',
+    'urgency_normal': 'Normal',
+    'urgency_high': 'Élevé',
+    'urgency_emergency': 'Urgence',
+    // My Cases Screen FR
+    'my_cases_title': 'Mes Dossiers',
+    'all_cases': 'Tous',
+    'open_cases': 'Ouverts',
+    'in_progress_cases': 'En cours',
+    'resolved_cases': 'Résolus',
+    'no_cases_found': 'Aucun dossier trouvé',
+    'error_occurred': 'Une erreur est survenue',
+    'try_again': 'Réessayer',
+    'view_details': 'Voir détails',
+    'submitted_on': 'Soumis le',
+    'currently_at': 'Actuellement à',
+    // Citizen Home Screen FR
+    'welcome_message': 'Bienvenue sur Imboni.',
+    'welcome_subtitle': 'Soumettez votre cas, nous vous aiderons.',
+    'your_cases': 'Vos Dossiers',
+    'submit_case_subtitle': 'Soumettre un nouveau cas',
+    'track_case_subtitle': 'Suivre votre cas',
+    'emergency_subtitle': 'Assistance rapide',
+    'my_cases_subtitle': 'Voir vos dossiers',
+    'recent_cases': 'Dossiers Récents',
+    'view_all_cases': 'Voir tout',
+    'no_cases_yet': 'Pas encore de dossiers',
+    'use_submit_case_hint': 'Utilisez "Soumettre un cas" ci-dessus pour soumettre votre dossier',
+    // Track Case Screen FR
+    'track_case_title': 'Suivre le Cas',
+    'track_case_hint': 'Entrez votre numéro de suivi',
+    'enter_reference': 'Entrer la référence',
+    'search': 'Rechercher',
+    'case_found': 'Cas trouvé',
+    'case_not_found': 'Introuvable',
+    'check_reference_hint': 'Vérifiez la référence entrée',
+    'current_level': 'Niveau actuel',
+    // Profile Screen FR
+    'profile': 'Profil',
+    'account_info': 'Informations du Compte',
+    'about': 'À propos',
+    'phone': 'Téléphone',
+    'logout': 'Déconnexion',
+    'registered_on': 'Inscrit le',
+    'residence_location': 'Lieu de Résidence',
+    'edit_profile': 'Modifier le Profil',
+    'save_changes': 'Enregistrer les Modifications',
+    'terms_and_conditions': 'Termes et Conditions',
+    'logout_confirm': 'Voulez-vous vraiment vous déconnecter?',
+    'yes': 'Oui',
+    'no': 'Non',
+    'profile_saved': 'Profil enregistré!',
+    'save_failed': 'Échec de l\'enregistrement',
+    'not_provided': 'Non fourni',
+    'about_app': 'À propos de l\'Application',
+    'notifications_label': 'Notifications',
+    'theme_label': 'Thème',
   },
 };

@@ -155,7 +155,7 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(
-              'Murakaza neza kuri Imboni.',
+              l10n.welcomeMessage,
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: isDark ? Colors.white : ImboniColors.textPrimary,
@@ -163,7 +163,7 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Tanga ikibazo cyawe, tugufashemo.',
+              l10n.welcomeSubtitle,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: isDark ? Colors.white70 : ImboniColors.textSecondary,
               ),
@@ -179,9 +179,9 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
             boxShadow: isDark ? null : [BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 10, offset: const Offset(0, 4))],
           ),
           child: Row(children: [
-            _buildStatItem(Icons.folder_outlined, '$totalCount', 'Ibibazo byawe', isDark),
+            _buildStatItem(Icons.folder_outlined, '$totalCount', l10n.yourCases, isDark),
             Container(width: 1, height: 40, color: isDark ? Colors.white24 : theme.dividerColor, margin: const EdgeInsets.symmetric(horizontal: 16)),
-            _buildStatItem(Icons.check_circle_outline, '$resolvedCount', 'Byakemutse', isDark),
+            _buildStatItem(Icons.check_circle_outline, '$resolvedCount', l10n.resolvedCases, isDark),
           ]),
         ),
       ]),
@@ -203,36 +203,37 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
   Widget _buildMobileQuickActions(BuildContext context, AppLocalizations l10n, ThemeData theme) {
     return Column(children: [
       Row(children: [
-        Expanded(child: _QuickActionCard(icon: Icons.add_circle_outline, label: l10n.submitCase, subtitle: 'Tanga Ikibazo gishya', color: ImboniColors.primary, theme: theme, onTap: () => _navigateTo(const SubmitCaseScreen()))),
+        Expanded(child: _QuickActionCard(icon: Icons.add_circle_outline, label: l10n.submitCase, subtitle: l10n.submitCaseSubtitle, color: ImboniColors.primary, theme: theme, onTap: () => _navigateTo(const SubmitCaseScreen()))),
         const SizedBox(width: 12),
-        Expanded(child: _QuickActionCard(icon: Icons.search, label: l10n.trackCase, subtitle: 'Kurikirana Ikibazo', color: ImboniColors.secondary, theme: theme, onTap: () => _navigateTo(const TrackCaseScreen()))),
+        Expanded(child: _QuickActionCard(icon: Icons.search, label: l10n.trackCase, subtitle: l10n.trackCaseSubtitle, color: ImboniColors.secondary, theme: theme, onTap: () => _navigateTo(const TrackCaseScreen()))),
       ]),
       const SizedBox(height: 12),
       Row(children: [
-        Expanded(child: _QuickActionCard(icon: Icons.warning_amber_rounded, label: l10n.emergency, subtitle: 'Ubutabazi bwihuse', color: ImboniColors.urgencyEmergency, theme: theme, onTap: () => _navigateTo(const SubmitCaseScreen(isEmergency: true)))),
+        Expanded(child: _QuickActionCard(icon: Icons.warning_amber_rounded, label: l10n.emergency, subtitle: l10n.emergencySubtitle, color: ImboniColors.urgencyEmergency, theme: theme, onTap: () => _navigateTo(const SubmitCaseScreen(isEmergency: true)))),
         const SizedBox(width: 12),
-        Expanded(child: _QuickActionCard(icon: Icons.folder_copy_outlined, label: 'Ibibazo byanjye', subtitle: 'Reba Ibibazo byawe', color: ImboniColors.info, theme: theme, onTap: () => _navigateTo(const MyCasesScreen()))),
+        Expanded(child: _QuickActionCard(icon: Icons.folder_copy_outlined, label: l10n.myCasesTitle, subtitle: l10n.myCasesSubtitle, color: ImboniColors.info, theme: theme, onTap: () => _navigateTo(const MyCasesScreen()))),
       ]),
     ]);
   }
 
   Widget _buildWideQuickActions(BuildContext context, AppLocalizations l10n, ThemeData theme) {
     return Row(children: [
-      Expanded(child: _QuickActionCard(icon: Icons.add_circle_outline, label: l10n.submitCase, subtitle: 'Tanga Ikibazo gishya', color: ImboniColors.primary, theme: theme, onTap: () => _navigateTo(const SubmitCaseScreen()))),
+      Expanded(child: _QuickActionCard(icon: Icons.add_circle_outline, label: l10n.submitCase, subtitle: l10n.submitCaseSubtitle, color: ImboniColors.primary, theme: theme, onTap: () => _navigateTo(const SubmitCaseScreen()))),
       const SizedBox(width: 16),
-      Expanded(child: _QuickActionCard(icon: Icons.search, label: l10n.trackCase, subtitle: 'Kurikirana Ikibazo', color: ImboniColors.secondary, theme: theme, onTap: () => _navigateTo(const TrackCaseScreen()))),
+      Expanded(child: _QuickActionCard(icon: Icons.search, label: l10n.trackCase, subtitle: l10n.trackCaseSubtitle, color: ImboniColors.secondary, theme: theme, onTap: () => _navigateTo(const TrackCaseScreen()))),
       const SizedBox(width: 16),
-      Expanded(child: _QuickActionCard(icon: Icons.warning_amber_rounded, label: l10n.emergency, subtitle: 'Ubutabazi bwihuse', color: ImboniColors.urgencyEmergency, theme: theme, onTap: () => _navigateTo(const SubmitCaseScreen(isEmergency: true)))),
+      Expanded(child: _QuickActionCard(icon: Icons.warning_amber_rounded, label: l10n.emergency, subtitle: l10n.emergencySubtitle, color: ImboniColors.urgencyEmergency, theme: theme, onTap: () => _navigateTo(const SubmitCaseScreen(isEmergency: true)))),
       const SizedBox(width: 16),
-      Expanded(child: _QuickActionCard(icon: Icons.folder_copy_outlined, label: 'Ibibazo byanjye', subtitle: 'Reba Ibibazo byawe', color: ImboniColors.info, theme: theme, onTap: () => _navigateTo(const MyCasesScreen()))),
+      Expanded(child: _QuickActionCard(icon: Icons.folder_copy_outlined, label: l10n.myCasesTitle, subtitle: l10n.myCasesSubtitle, color: ImboniColors.info, theme: theme, onTap: () => _navigateTo(const MyCasesScreen()))),
     ]);
   }
 
   Widget _buildRecentCasesSection(ThemeData theme, bool isDark) {
+    final l10n = AppLocalizations.of(context);
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        Text('Ibibazo byawe vuba', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-        if (_recentCases.isNotEmpty) TextButton(onPressed: () => _navigateTo(const MyCasesScreen()), child: const Text('Reba byose →')),
+        Text(l10n.recentCases, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+        if (_recentCases.isNotEmpty) TextButton(onPressed: () => _navigateTo(const MyCasesScreen()), child: Text('${l10n.viewAllCases} →')),
       ]),
       const SizedBox(height: 16),
       if (_isLoading)
@@ -242,7 +243,7 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
           child: const Center(child: CircularProgressIndicator()),
         )
       else if (_recentCases.isEmpty)
-        _buildEmptyState(theme, isDark)
+        _buildEmptyState(theme, isDark, l10n)
       else
         ..._recentCases.map((c) => Padding(
           padding: const EdgeInsets.only(bottom: 12),
@@ -251,7 +252,7 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
     ]);
   }
 
-  Widget _buildEmptyState(ThemeData theme, bool isDark) {
+  Widget _buildEmptyState(ThemeData theme, bool isDark, AppLocalizations l10n) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 32),
@@ -267,9 +268,9 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
           child: Icon(Icons.folder_open_outlined, size: 48, color: ImboniColors.primary.withAlpha(isDark ? 200 : 150)),
         ),
         const SizedBox(height: 20),
-        Text('Nta kibazo ufite', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+        Text(l10n.noCasesYet, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
-        Text('Koresha "Submit Case" hejuru kugirango utange ikibazo cyawe', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant), textAlign: TextAlign.center),
+        Text(l10n.useSumbitCaseHint, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant), textAlign: TextAlign.center),
       ]),
     );
   }

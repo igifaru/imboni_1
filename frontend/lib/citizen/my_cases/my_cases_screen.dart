@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../shared/theme/colors.dart';
-import '../../shared/widgets/case_card.dart';
-import '../../shared/widgets/loading_overlay.dart';
 import '../../shared/services/case_service.dart';
 import '../../shared/models/models.dart';
+import '../../shared/localization/app_localizations.dart';
 
 /// My Cases Screen - List of user's submitted cases
 class MyCasesScreen extends StatefulWidget {
@@ -51,18 +51,32 @@ class _MyCasesScreenState extends State<MyCasesScreen> with SingleTickerProvider
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
+      backgroundColor: isDark ? theme.colorScheme.surface : const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Ibibazo byanjye'),
+        backgroundColor: isDark ? theme.colorScheme.surfaceContainer : Colors.white,
+        elevation: 0,
+        title: Text(
+          l10n.myCasesTitle,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: isDark ? Colors.white : Colors.black87,
+          ),
+        ),
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
+          indicatorColor: ImboniColors.primary,
+          labelColor: ImboniColors.primary,
+          unselectedLabelColor: isDark ? Colors.white54 : Colors.grey[600],
           tabs: [
-            _buildTab('Byose', _allCases.length, null),
-            _buildTab('Bifunguwe', _openCases.length, ImboniColors.statusOpen),
-            _buildTab('Bikorwaho', _inProgressCases.length, ImboniColors.statusInProgress),
-            _buildTab('Byakemutse', _resolvedCases.length, ImboniColors.statusResolved),
+            _buildTab(l10n.allCases, _allCases.length, ImboniColors.primary),
+            _buildTab(l10n.openCases, _openCases.length, ImboniColors.statusOpen),
+            _buildTab(l10n.inProgressCases, _inProgressCases.length, ImboniColors.statusInProgress),
+            _buildTab(l10n.resolvedCases, _resolvedCases.length, ImboniColors.statusResolved),
           ],
         ),
       ),
@@ -71,244 +85,1112 @@ class _MyCasesScreenState extends State<MyCasesScreen> with SingleTickerProvider
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : _error != null
-                ? _buildErrorState(theme)
+                ? _buildErrorState(theme, l10n)
                 : TabBarView(
                     controller: _tabController,
                     children: [
-                      _buildCasesList(_allCases, theme),
-                      _buildCasesList(_openCases, theme),
-                      _buildCasesList(_inProgressCases, theme),
-                      _buildCasesList(_resolvedCases, theme),
+                      _buildCasesList(_allCases, theme, l10n, isDark),
+                      _buildCasesList(_openCases, theme, l10n, isDark),
+                      _buildCasesList(_inProgressCases, theme, l10n, isDark),
+                      _buildCasesList(_resolvedCases, theme, l10n, isDark),
                     ],
                   ),
       ),
     );
   }
 
-  Widget _buildTab(String label, int count, Color? color) {
+  Widget _buildTab(String label, int count, Color color) {
     return Tab(
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         Text(label),
         const SizedBox(width: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-          decoration: BoxDecoration(color: (color ?? ImboniColors.primary).withAlpha(50), borderRadius: BorderRadius.circular(12)),
-          child: Text('$count', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color ?? ImboniColors.primary)),
+          decoration: BoxDecoration(
+            color: color.withAlpha(50),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            '$count',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color),
+          ),
         ),
       ]),
     );
   }
 
-  Widget _buildCasesList(List<CaseModel> cases, ThemeData theme) {
+  Widget _buildCasesList(List<CaseModel> cases, ThemeData theme, AppLocalizations l10n, bool isDark) {
     if (cases.isEmpty) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Icon(Icons.folder_open_outlined, size: 64, color: theme.colorScheme.onSurfaceVariant.withAlpha(128)),
-            const SizedBox(height: 16),
-            Text('Nta kibazo kiraboneka', style: theme.textTheme.titleMedium),
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white10 : Colors.grey.withAlpha(25),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.folder_open_outlined,
+                size: 48,
+                color: isDark ? Colors.white38 : Colors.grey[400],
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              l10n.noCasesFound,
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: isDark ? Colors.white70 : Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ]),
         ),
       );
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       itemCount: cases.length,
       itemBuilder: (context, index) {
         final c = cases[index];
-        return CaseCard(
-          caseReference: c.caseReference,
-          title: c.title,
-          category: c.category,
-          status: c.status,
-          urgency: c.urgency,
-          currentLevel: c.currentLevel,
-          createdAt: c.createdAt,
-          onTap: () => _openCaseDetails(c),
-        );
+        return _buildProfessionalCaseCard(c, theme, l10n, isDark);
       },
     );
   }
 
-  Widget _buildErrorState(ThemeData theme) {
+  Widget _buildProfessionalCaseCard(CaseModel c, ThemeData theme, AppLocalizations l10n, bool isDark) {
+    final statusColor = ImboniColors.getStatusColor(c.status);
+    final categoryColor = ImboniColors.getCategoryColor(c.category);
+    final urgencyColor = ImboniColors.getUrgencyColor(c.urgency);
+    final cardColor = isDark ? theme.colorScheme.surfaceContainer : Colors.white;
+
+    return GestureDetector(
+      onTap: () => _openCaseDetails(c),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: isDark ? Colors.white10 : Colors.black.withAlpha(12)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(isDark ? 25 : 10),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Left colored strip + Header
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                border: Border(
+                  left: BorderSide(color: statusColor, width: 4),
+                ),
+              ),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Reference + Status Badge
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        c.caseReference,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? Colors.white54 : Colors.grey[600],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: statusColor,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          _getStatusLabel(l10n, c.status),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Title
+                  Text(
+                    c.title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Category + Urgency chips
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _buildChip(
+                        _getCategoryIcon(c.category),
+                        _getCategoryLabel(l10n, c.category),
+                        categoryColor,
+                        isDark,
+                      ),
+                      if (c.urgency.toUpperCase() != 'NORMAL')
+                        _buildChip(
+                          Icons.flag,
+                          _getUrgencyLabel(l10n, c.urgency),
+                          urgencyColor,
+                          isDark,
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // Footer: Location + Date
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white.withAlpha(8) : Colors.grey.withAlpha(15),
+                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.location_on_outlined, size: 16, color: isDark ? Colors.white54 : Colors.grey[600]),
+                      const SizedBox(width: 6),
+                      Text(
+                        _getLevelLabel(l10n, c.currentLevel),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? Colors.white54 : Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    _formatTimeAgo(c.createdAt),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark ? Colors.white54 : Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChip(IconData icon, String label, Color color, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withAlpha(isDark ? 50 : 25),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withAlpha(75)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(ThemeData theme, AppLocalizations l10n) {
+    final isDark = theme.brightness == Brightness.dark;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Icon(Icons.error_outline, size: 64, color: ImboniColors.error),
-          const SizedBox(height: 16),
-          Text('Habaye ikosa', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Text(_error ?? '', style: theme.textTheme.bodySmall, textAlign: TextAlign.center),
-          const SizedBox(height: 24),
-          OutlinedButton.icon(onPressed: _loadCases, icon: const Icon(Icons.refresh), label: const Text('Gerageza nanone')),
-        ]),
-      ),
-    );
-  }
-
-  void _openCaseDetails(CaseModel caseModel) {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => CaseDetailsScreen(caseModel: caseModel)));
-  }
-}
-
-/// Case Details Screen
-class CaseDetailsScreen extends StatelessWidget {
-  final CaseModel caseModel;
-
-  const CaseDetailsScreen({super.key, required this.caseModel});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final statusColor = ImboniColors.getStatusColor(caseModel.status);
-    final categoryColor = ImboniColors.getCategoryColor(caseModel.category);
-
-    return Scaffold(
-      appBar: AppBar(title: Text(caseModel.caseReference)),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          // Status banner
           Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [statusColor.withAlpha(25), statusColor.withAlpha(75)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: statusColor.withAlpha(100)),
+              color: ImboniColors.error.withAlpha(25),
+              shape: BoxShape.circle,
             ),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(color: statusColor, borderRadius: BorderRadius.circular(20)),
-                  child: Text(caseModel.status.replaceAll('_', ' '), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(color: categoryColor.withAlpha(50), borderRadius: BorderRadius.circular(12)),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(_getCategoryIcon(caseModel.category), size: 16, color: categoryColor),
-                    const SizedBox(width: 6),
-                    Text(caseModel.category, style: TextStyle(color: categoryColor, fontWeight: FontWeight.w600, fontSize: 12)),
-                  ]),
-                ),
-              ]),
-              const SizedBox(height: 16),
-              Text(caseModel.title, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-            ]),
+            child: const Icon(Icons.error_outline, size: 48, color: ImboniColors.error),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            l10n.errorOccurred,
+            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _error ?? '',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: isDark ? Colors.white54 : Colors.grey[600],
+            ),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
-
-          // Info cards
-          _buildInfoCard(theme, 'Urwego ruri kugikoraho', caseModel.currentLevel, Icons.location_on_outlined),
-          const SizedBox(height: 12),
-          _buildInfoCard(theme, 'Ubukana', caseModel.urgency, Icons.priority_high, color: ImboniColors.getUrgencyColor(caseModel.urgency)),
-          const SizedBox(height: 12),
-          _buildInfoCard(theme, 'Itariki yatanzweho', _formatDate(caseModel.createdAt), Icons.calendar_today_outlined),
-          const SizedBox(height: 24),
-
-          // Description
-          Text('Ibisobanuro', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(12)),
-            child: Text(caseModel.description, style: theme.textTheme.bodyMedium),
+          ElevatedButton.icon(
+            onPressed: _loadCases,
+            icon: const Icon(Icons.refresh),
+            label: Text(l10n.tryAgain),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: ImboniColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
           ),
-          const SizedBox(height: 32),
-
-          // Timeline placeholder - would show real case actions
-          Text('Aho kigeze', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 12),
-          _buildTimeline(theme),
         ]),
       ),
     );
   }
 
-  Widget _buildInfoCard(ThemeData theme, String label, String value, IconData icon, {Color? color}) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest.withAlpha(128), borderRadius: BorderRadius.circular(12), border: Border.all(color: theme.colorScheme.outline.withAlpha(50))),
-      child: Row(children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(color: (color ?? ImboniColors.primary).withAlpha(25), borderRadius: BorderRadius.circular(10)),
-          child: Icon(icon, color: color ?? ImboniColors.primary, size: 20),
-        ),
-        const SizedBox(width: 16),
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(label, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-          const SizedBox(height: 2),
-          Text(value, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
-        ]),
-      ]),
-    );
+  // Helper methods for labels
+  String _getStatusLabel(AppLocalizations l10n, String status) {
+    switch (status.toUpperCase()) {
+      case 'OPEN': return l10n.statusOpen;
+      case 'IN_PROGRESS': return l10n.statusInProgress;
+      case 'RESOLVED': return l10n.statusResolved;
+      case 'ESCALATED': return l10n.statusEscalated;
+      default: return status;
+    }
   }
 
-  Widget _buildTimeline(ThemeData theme) {
-    final events = [
-      ('Cyatanzwe', caseModel.createdAt, ImboniColors.primary, Icons.add_circle),
-      if (caseModel.status != 'OPEN') ('Cyatangiye gukorwaho', caseModel.createdAt.add(const Duration(hours: 2)), ImboniColors.statusInProgress, Icons.pending),
-    ];
-
-    return Column(
-      children: events.map((e) => _TimelineItem(title: e.$1, date: e.$2, color: e.$3, icon: e.$4, isFirst: events.indexOf(e) == 0, isLast: events.indexOf(e) == events.length - 1)).toList(),
-    );
+  String _getCategoryLabel(AppLocalizations l10n, String category) {
+    switch (category.toUpperCase()) {
+      case 'JUSTICE': return l10n.categoryJustice;
+      case 'HEALTH': return l10n.categoryHealth;
+      case 'LAND': return l10n.categoryLand;
+      case 'INFRASTRUCTURE': return l10n.categoryInfrastructure;
+      case 'SECURITY': return l10n.categorySecurity;
+      case 'SOCIAL': return l10n.categorySocial;
+      case 'EDUCATION': return l10n.categoryEducation;
+      default: return l10n.categoryOther;
+    }
   }
 
-  String _formatDate(DateTime date) => '${date.day}/${date.month}/${date.year} - ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+  String _getUrgencyLabel(AppLocalizations l10n, String urgency) {
+    switch (urgency.toUpperCase()) {
+      case 'HIGH': return l10n.urgencyHigh;
+      case 'EMERGENCY': return l10n.urgencyEmergency;
+      default: return l10n.urgencyNormal;
+    }
+  }
+
+  String _getLevelLabel(AppLocalizations l10n, String level) {
+    switch (level.toUpperCase()) {
+      case 'VILLAGE': return l10n.levelVillage;
+      case 'CELL': return l10n.levelCell;
+      case 'SECTOR': return l10n.levelSector;
+      case 'DISTRICT': return l10n.levelDistrict;
+      case 'PROVINCE': return l10n.levelProvince;
+      case 'NATIONAL': return l10n.levelNational;
+      default: return level;
+    }
+  }
 
   IconData _getCategoryIcon(String category) {
     switch (category.toUpperCase()) {
-      case 'JUSTICE': return Icons.gavel;
-      case 'HEALTH': return Icons.local_hospital;
-      case 'LAND': return Icons.landscape;
+      case 'JUSTICE': return Icons.balance;
+      case 'HEALTH': return Icons.health_and_safety;
+      case 'LAND': return Icons.terrain;
       case 'INFRASTRUCTURE': return Icons.construction;
       case 'SECURITY': return Icons.security;
       case 'SOCIAL': return Icons.people;
       case 'EDUCATION': return Icons.school;
-      default: return Icons.help_outline;
+      default: return Icons.category;
     }
+  }
+
+  String _formatTimeAgo(DateTime date) {
+    final now = DateTime.now();
+    final diff = now.difference(date);
+    if (diff.inDays > 0) return '${diff.inDays}d ago';
+    if (diff.inHours > 0) return '${diff.inHours}h ago';
+    if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
+    return 'now';
+  }
+
+  void _openCaseDetails(CaseModel caseModel) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => CitizenCaseDetailsScreen(caseModel: caseModel)));
   }
 }
 
-class _TimelineItem extends StatelessWidget {
-  final String title;
-  final DateTime date;
-  final Color color;
-  final IconData icon;
-  final bool isFirst;
-  final bool isLast;
+/// Professional Citizen Case Details Screen
+class CitizenCaseDetailsScreen extends StatefulWidget {
+  final CaseModel caseModel;
 
-  const _TimelineItem({required this.title, required this.date, required this.color, required this.icon, required this.isFirst, required this.isLast});
+  const CitizenCaseDetailsScreen({super.key, required this.caseModel});
+
+  @override
+  State<CitizenCaseDetailsScreen> createState() => _CitizenCaseDetailsScreenState();
+}
+
+class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
+  List<CaseAction> _actions = [];
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchActions();
+  }
+
+  Future<void> _fetchActions() async {
+    setState(() => _isLoading = true);
+    try {
+      final result = await CaseService.instance.getCaseActions(widget.caseModel.id);
+      if (result.isSuccess && result.data != null && mounted) {
+        setState(() => _actions = result.data!);
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return IntrinsicHeight(
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Column(children: [
-          Container(width: 40, height: 40, decoration: BoxDecoration(color: color.withAlpha(25), shape: BoxShape.circle, border: Border.all(color: color, width: 2)), child: Icon(icon, color: color, size: 18)),
-          if (!isLast) Expanded(child: Container(width: 2, color: color.withAlpha(75))),
-        ]),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(bottom: isLast ? 0 : 24),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(title, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              Text('${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-            ]),
+    final l10n = AppLocalizations.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWideScreen = screenWidth > 700;
+
+    final caseModel = widget.caseModel;
+    final statusColor = ImboniColors.getStatusColor(caseModel.status);
+    final categoryColor = ImboniColors.getCategoryColor(caseModel.category);
+    final urgencyColor = ImboniColors.getUrgencyColor(caseModel.urgency);
+
+    final bgColor = isDark ? theme.colorScheme.surface : const Color(0xFFF8FAFC);
+    final cardColor = isDark ? theme.colorScheme.surfaceContainer : Colors.white;
+    final textColor = isDark ? theme.colorScheme.onSurface : Colors.black87;
+    final subTextColor = isDark ? theme.colorScheme.onSurfaceVariant : Colors.grey[700]!;
+
+    return Scaffold(
+      backgroundColor: bgColor,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : Colors.black87),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          caseModel.caseReference,
+          style: TextStyle(
+            color: isDark ? Colors.white : Colors.black87,
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
           ),
         ),
-      ]),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.refresh, color: isDark ? Colors.white70 : Colors.black54),
+            onPressed: _fetchActions,
+          ),
+        ],
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1200),
+                child: ListView(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isWideScreen ? 32 : 16,
+                    vertical: 16,
+                  ),
+                  children: [
+                    // Header Card
+                    _buildHeaderCard(theme, l10n, isDark, cardColor, textColor, statusColor, categoryColor, urgencyColor, caseModel),
+                    const SizedBox(height: 20),
+
+                    // Two Column Layout for Wide Screens
+                    if (isWideScreen)
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            flex: 3,
+                            child: Column(
+                              children: [
+                                _buildInfoCard(theme, l10n, isDark, cardColor, textColor, subTextColor, caseModel),
+                                const SizedBox(height: 20),
+                                _buildDescriptionCard(theme, l10n, isDark, cardColor, textColor, subTextColor, caseModel),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 20),
+                          Expanded(
+                            flex: 2,
+                            child: _buildEvidenceCard(theme, l10n, isDark, cardColor, textColor, caseModel),
+                          ),
+                        ],
+                      )
+                    else
+                      // Mobile: Single column
+                      Column(
+                        children: [
+                          _buildInfoCard(theme, l10n, isDark, cardColor, textColor, subTextColor, caseModel),
+                          const SizedBox(height: 16),
+                          _buildDescriptionCard(theme, l10n, isDark, cardColor, textColor, subTextColor, caseModel),
+                          const SizedBox(height: 16),
+                          _buildEvidenceCard(theme, l10n, isDark, cardColor, textColor, caseModel),
+                        ],
+                      ),
+
+                    const SizedBox(height: 20),
+
+                    // Timeline - Horizontal Row Format
+                    _buildTimelineSection(theme, l10n, isDark, cardColor, textColor, subTextColor, caseModel),
+                    
+                    const SizedBox(height: 32),
+                  ],
+                ),
+              ),
+            ),
     );
   }
+
+  Widget _buildHeaderCard(ThemeData theme, AppLocalizations l10n, bool isDark, Color cardColor, Color textColor, Color statusColor, Color categoryColor, Color urgencyColor, CaseModel caseModel) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isDark ? Colors.white10 : Colors.black.withAlpha(12)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(isDark ? 50 : 15),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Badges Row
+          Wrap(
+            spacing: 10,
+            runSpacing: 8,
+            children: [
+              _buildBadge(_getStatusLabel(l10n, caseModel.status), statusColor, Icons.circle, isDark),
+              _buildBadge(_getCategoryLabel(l10n, caseModel.category), categoryColor, _getCategoryIcon(caseModel.category), isDark),
+              _buildBadge(_getUrgencyLabel(l10n, caseModel.urgency), urgencyColor, Icons.flag, isDark),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          // Title
+          Text(
+            caseModel.title,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: textColor,
+              height: 1.3,
+            ),
+          ),
+          const SizedBox(height: 8),
+          
+          // Case Reference
+          Row(
+            children: [
+              Icon(Icons.tag, size: 16, color: isDark ? Colors.white54 : Colors.grey),
+              const SizedBox(width: 6),
+              Text(
+                caseModel.caseReference,
+                style: TextStyle(
+                  color: isDark ? Colors.white54 : Colors.grey[600],
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBadge(String label, Color color, IconData icon, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withAlpha(isDark ? 65 : 30),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withAlpha(100)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoCard(ThemeData theme, AppLocalizations l10n, bool isDark, Color cardColor, Color textColor, Color subTextColor, CaseModel caseModel) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isDark ? Colors.white10 : Colors.black.withAlpha(12)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(isDark ? 38 : 10),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.info_outline, size: 20, color: theme.colorScheme.primary),
+              const SizedBox(width: 8),
+              Text(
+                l10n.importantInfo,
+                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: textColor),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  children: [
+                    _buildInfoItem(Icons.location_on_outlined, l10n.location, caseModel.locationName ?? 'Unknown', isDark, subTextColor, textColor),
+                    const SizedBox(height: 16),
+                    _buildInfoItem(Icons.layers_outlined, l10n.level, _getLevelLabel(l10n, caseModel.currentLevel), isDark, subTextColor, textColor),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  children: [
+                    _buildInfoItem(Icons.calendar_today_outlined, l10n.date, _formatDate(caseModel.createdAt), isDark, subTextColor, textColor),
+                    const SizedBox(height: 16),
+                    _buildInfoItem(Icons.access_time, l10n.time, _formatTime(caseModel.createdAt), isDark, subTextColor, textColor),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoItem(IconData icon, String label, String value, bool isDark, Color subTextColor, Color textColor) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: isDark ? Colors.white10 : Colors.grey.withAlpha(25),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, size: 18, color: isDark ? Colors.white70 : Colors.black54),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: subTextColor)),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textColor),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDescriptionCard(ThemeData theme, AppLocalizations l10n, bool isDark, Color cardColor, Color textColor, Color subTextColor, CaseModel caseModel) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isDark ? Colors.white10 : Colors.black.withAlpha(12)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(isDark ? 38 : 10),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.description_outlined, size: 20, color: theme.colorScheme.primary),
+              const SizedBox(width: 8),
+              Text(
+                l10n.description,
+                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: textColor),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.only(left: 16),
+            decoration: BoxDecoration(
+              border: Border(
+                left: BorderSide(
+                  color: theme.colorScheme.primary.withAlpha(125),
+                  width: 3,
+                ),
+              ),
+            ),
+            child: Text(
+              caseModel.description,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                height: 1.6,
+                fontSize: 14,
+                color: subTextColor,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEvidenceCard(ThemeData theme, AppLocalizations l10n, bool isDark, Color cardColor, Color textColor, CaseModel caseModel) {
+    final hasEvidence = caseModel.evidence != null && caseModel.evidence!.isNotEmpty;
+    
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isDark ? Colors.white10 : Colors.black.withAlpha(12)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(isDark ? 38 : 10),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.attach_file, size: 20, color: theme.colorScheme.primary),
+              const SizedBox(width: 8),
+              Text(
+                l10n.evidence,
+                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: textColor),
+              ),
+              const Spacer(),
+              if (hasEvidence)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withAlpha(38),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${caseModel.evidence!.length}',
+                    style: TextStyle(
+                      color: theme.colorScheme.primary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (!hasEvidence)
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.folder_off_outlined,
+                      size: 40,
+                      color: isDark ? Colors.white24 : Colors.grey[400],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      l10n.noEvidenceProvided,
+                      style: TextStyle(
+                        color: isDark ? Colors.white38 : Colors.grey[500],
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: caseModel.evidence!.map((e) {
+                final isImage = e.mimeType.startsWith('image/');
+                final isAudio = e.mimeType.startsWith('audio/');
+                
+                return Container(
+                  width: 70,
+                  height: 70,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: isDark ? Colors.white12 : Colors.grey.withAlpha(50)),
+                    borderRadius: BorderRadius.circular(12),
+                    color: isDark ? Colors.white.withAlpha(12) : Colors.grey.withAlpha(15),
+                  ),
+                  child: isImage
+                      ? const Icon(Icons.image, color: ImboniColors.primary)
+                      : isAudio
+                          ? const Icon(Icons.audiotrack, color: ImboniColors.secondary)
+                          : Icon(Icons.insert_drive_file, color: isDark ? Colors.white54 : Colors.grey[600]),
+                );
+              }).toList(),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // Horizontal Timeline Section
+  Widget _buildTimelineSection(ThemeData theme, AppLocalizations l10n, bool isDark, Color cardColor, Color textColor, Color subTextColor, CaseModel caseModel) {
+    // Build timeline from fetched actions or create default entries
+    final List<_TimelineData> timelineItems = [];
+    
+    if (_actions.isNotEmpty) {
+      for (final action in _actions.reversed) {
+        timelineItems.add(_TimelineData(
+          title: _getActionTitle(l10n, action.actionType),
+          date: action.createdAt,
+          color: _getActionColor(action.actionType),
+          icon: _getActionIcon(action.actionType),
+          notes: action.notes,
+        ));
+      }
+    } else {
+      // Default timeline based on case status
+      timelineItems.add(_TimelineData(
+        title: l10n.caseCreated,
+        date: caseModel.createdAt,
+        color: ImboniColors.primary,
+        icon: Icons.add_circle_outline,
+      ));
+      if (caseModel.status != 'OPEN') {
+        timelineItems.add(_TimelineData(
+          title: l10n.caseAccepted,
+          date: caseModel.createdAt.add(const Duration(hours: 1)),
+          color: ImboniColors.statusInProgress,
+          icon: Icons.pending,
+        ));
+      }
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isDark ? Colors.white10 : Colors.black.withAlpha(12)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(isDark ? 38 : 10),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.timeline, size: 20, color: theme.colorScheme.primary),
+              const SizedBox(width: 8),
+              Text(
+                l10n.timeline,
+                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: textColor),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // Horizontal Timeline
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: timelineItems.asMap().entries.map((entry) {
+                final index = entry.key;
+                final item = entry.value;
+                final isLast = index == timelineItems.length - 1;
+
+                return Row(
+                  children: [
+                    // Timeline Item Card
+                    Container(
+                      width: 140,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: item.color.withAlpha(isDark ? 38 : 20),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: item.color.withAlpha(75)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: item.color.withAlpha(50),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(item.icon, size: 14, color: item.color),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  item.title,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: item.color,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Icon(Icons.calendar_today, size: 12, color: subTextColor),
+                              const SizedBox(width: 4),
+                              Text(
+                                _formatDate(item.date),
+                                style: TextStyle(fontSize: 10, color: subTextColor),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(Icons.access_time, size: 12, color: subTextColor),
+                              const SizedBox(width: 4),
+                              Text(
+                                _formatTime(item.date),
+                                style: TextStyle(fontSize: 10, color: subTextColor),
+                              ),
+                            ],
+                          ),
+                          if (item.notes != null && item.notes!.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              item.notes!,
+                              style: TextStyle(fontSize: 10, color: textColor, fontStyle: FontStyle.italic),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    // Connector line
+                    if (!isLast)
+                      Container(
+                        width: 40,
+                        height: 2,
+                        margin: const EdgeInsets.symmetric(horizontal: 8),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [item.color.withAlpha(150), timelineItems[index + 1].color.withAlpha(150)],
+                          ),
+                          borderRadius: BorderRadius.circular(1),
+                        ),
+                      ),
+                  ],
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Helper methods
+  String _getStatusLabel(AppLocalizations l10n, String status) {
+    switch (status.toUpperCase()) {
+      case 'OPEN': return l10n.statusOpen;
+      case 'IN_PROGRESS': return l10n.statusInProgress;
+      case 'RESOLVED': return l10n.statusResolved;
+      case 'ESCALATED': return l10n.statusEscalated;
+      default: return status;
+    }
+  }
+
+  String _getCategoryLabel(AppLocalizations l10n, String category) {
+    switch (category.toUpperCase()) {
+      case 'JUSTICE': return l10n.categoryJustice;
+      case 'HEALTH': return l10n.categoryHealth;
+      case 'LAND': return l10n.categoryLand;
+      case 'INFRASTRUCTURE': return l10n.categoryInfrastructure;
+      case 'SECURITY': return l10n.categorySecurity;
+      case 'SOCIAL': return l10n.categorySocial;
+      case 'EDUCATION': return l10n.categoryEducation;
+      default: return l10n.categoryOther;
+    }
+  }
+
+  String _getUrgencyLabel(AppLocalizations l10n, String urgency) {
+    switch (urgency.toUpperCase()) {
+      case 'HIGH': return l10n.urgencyHigh;
+      case 'EMERGENCY': return l10n.urgencyEmergency;
+      default: return l10n.urgencyNormal;
+    }
+  }
+
+  String _getLevelLabel(AppLocalizations l10n, String level) {
+    switch (level.toUpperCase()) {
+      case 'VILLAGE': return l10n.levelVillage;
+      case 'CELL': return l10n.levelCell;
+      case 'SECTOR': return l10n.levelSector;
+      case 'DISTRICT': return l10n.levelDistrict;
+      case 'PROVINCE': return l10n.levelProvince;
+      case 'NATIONAL': return l10n.levelNational;
+      default: return level;
+    }
+  }
+
+  String _getActionTitle(AppLocalizations l10n, String type) {
+    switch (type) {
+      case 'CREATED': return l10n.caseCreated;
+      case 'ESCALATED': return l10n.caseEscalated;
+      case 'RESOLVED': return l10n.caseResolved;
+      case 'VIEWED': return l10n.caseViewed;
+      case 'ASSIGNED': return l10n.caseAssigned;
+      case 'ACCEPTED': return l10n.caseAccepted;
+      default: return type;
+    }
+  }
+
+  Color _getActionColor(String type) {
+    switch (type) {
+      case 'CREATED': return ImboniColors.info;
+      case 'ESCALATED': return ImboniColors.categoryJustice;
+      case 'RESOLVED': return ImboniColors.success;
+      case 'VIEWED': return Colors.grey;
+      case 'ASSIGNED': return ImboniColors.secondary;
+      case 'ACCEPTED': return ImboniColors.primary;
+      default: return Colors.grey;
+    }
+  }
+
+  IconData _getActionIcon(String type) {
+    switch (type) {
+      case 'CREATED': return Icons.add_circle_outline;
+      case 'ESCALATED': return Icons.arrow_upward;
+      case 'RESOLVED': return Icons.check_circle_outline;
+      case 'VIEWED': return Icons.visibility;
+      case 'ASSIGNED': return Icons.person_add;
+      case 'ACCEPTED': return Icons.thumb_up_alt_outlined;
+      default: return Icons.info_outline;
+    }
+  }
+
+  IconData _getCategoryIcon(String category) {
+    switch (category.toUpperCase()) {
+      case 'JUSTICE': return Icons.balance;
+      case 'HEALTH': return Icons.health_and_safety;
+      case 'LAND': return Icons.terrain;
+      case 'INFRASTRUCTURE': return Icons.construction;
+      case 'SECURITY': return Icons.security;
+      case 'SOCIAL': return Icons.people;
+      case 'EDUCATION': return Icons.school;
+      default: return Icons.category;
+    }
+  }
+
+  String _formatDate(DateTime date) => DateFormat('dd/MM/yyyy').format(date);
+  String _formatTime(DateTime date) => DateFormat('HH:mm').format(date);
+}
+
+/// Timeline data helper class
+class _TimelineData {
+  final String title;
+  final DateTime date;
+  final Color color;
+  final IconData icon;
+  final String? notes;
+
+  _TimelineData({
+    required this.title,
+    required this.date,
+    required this.color,
+    required this.icon,
+    this.notes,
+  });
 }

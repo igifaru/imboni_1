@@ -1,16 +1,23 @@
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
+import 'dart:io' show Platform;
 import 'package:http/http.dart' as http;
 
 /// API Client for backend communication
 class ApiClient {
   static String get _baseUrl {
     // For Web: use localhost
+    if (kIsWeb) return 'http://localhost:3000/api';
+    
+    // For Desktop (Linux, macOS, Windows): use localhost since both are on same machine
+    if (Platform.isLinux || Platform.isMacOS || Platform.isWindows) {
+      return 'http://localhost:3000/api';
+    }
+    
     // For Mobile (Android/iOS): use the computer's local IP address
     // Make sure your phone is on the same WiFi network as your computer
-    if (kIsWeb) return 'http://localhost:3000/api';
-    // Your computer's local IP address (run 'hostname -I' to find it)
-    return 'http://10.24.143.221:3000/api';
+    // Run 'hostname -I' to find your current IP
+    return 'http://172.31.123.85:3000/api';
   }
   
   static String get baseUrl => _baseUrl;
