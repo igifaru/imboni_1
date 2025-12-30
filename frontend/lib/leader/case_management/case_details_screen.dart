@@ -8,6 +8,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:imboni/shared/services/api_client.dart';
 import 'resolution_dialog.dart';
 import 'package:intl/intl.dart';
+import 'widgets/case_detail_card.dart';
 
 class LeaderCaseDetailsScreen extends StatefulWidget {
   final CaseModel caseData;
@@ -149,108 +150,120 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
     }
   }
 
+  // Theme Getters
+  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
+  Color get _bgColor => _isDark ? Theme.of(context).colorScheme.surface : const Color(0xFFF8FAFC);
+  Color get _cardColor => _isDark ? Theme.of(context).colorScheme.surfaceContainer : Colors.white;
+  Color get _textColor => _isDark ? Theme.of(context).colorScheme.onSurface : Colors.black87;
+  Color get _subTextColor => _isDark ? Theme.of(context).colorScheme.onSurfaceVariant : Colors.grey[700]!;
+
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: _bgColor,
+        appBar: _buildAppBar(Theme.of(context), _isDark),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth > 900;
     final isTablet = screenWidth > 600 && screenWidth <= 900;
-
-    final bgColor = isDark ? theme.colorScheme.surface : const Color(0xFFF8FAFC);
-    final cardColor = isDark ? theme.colorScheme.surfaceContainer : Colors.white;
-    final textColor = isDark ? theme.colorScheme.onSurface : Colors.black87;
-    final subTextColor = isDark ? theme.colorScheme.onSurfaceVariant : Colors.grey[700]!;
-
+    
+    // SAFE CENTERING: Calculate horizontal padding manually
+    final contentMaxWidth = 1200.0;
+    double horizontalPadding = 16.0;
+    
+    if (screenWidth > contentMaxWidth) {
+      horizontalPadding = (screenWidth - contentMaxWidth) / 2;
+    } else if (isDesktop) {
+      horizontalPadding = screenWidth * 0.1;
+    } else if (isTablet) {
+      horizontalPadding = 24.0;
+    }
+    
     final hasEvidence = _case.evidence != null && _case.evidence!.isNotEmpty;
 
-    return LoadingOverlay(
-      isLoading: _isLoading,
-      child: Scaffold(
-        backgroundColor: bgColor,
-        appBar: _buildAppBar(theme, isDark),
-        body: RefreshIndicator(
-          onRefresh: _refreshCaseDetails,
-          child: ListView(
-            padding: EdgeInsets.symmetric(
-              horizontal: isDesktop ? screenWidth * 0.15 : (isTablet ? 24 : 16),
-              vertical: 24,
-            ),
-            children: [
-              Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1200),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                // Header Card with Status, Title, Category, Urgency
-                _buildHeaderCard(theme, l10n, isDark, cardColor, textColor),
-                const SizedBox(height: 20),
-
-                // Two Column Layout for Desktop/Tablet
-                if (isDesktop || isTablet)
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Left Column: Info + Description
-                      Expanded(
-                        flex: 3,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildInfoCard(theme, l10n, isDark, cardColor, textColor, subTextColor),
-                            const SizedBox(height: 20),
-                            _buildDescriptionCard(theme, l10n, isDark, cardColor, textColor, subTextColor),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 20),
-                      // Right Column: Reporter + Evidence
-                      Expanded(
-                        flex: 2,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildReporterCard(theme, l10n, isDark, cardColor, textColor, subTextColor),
-                            const SizedBox(height: 20),
-                            _buildEvidenceCard(theme, l10n, isDark, cardColor, textColor, hasEvidence),
-                          ],
-                        ),
-                      ),
-                    ],
-                  )
-                else
-                  // Mobile: Single column
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _buildInfoCard(theme, l10n, isDark, cardColor, textColor, subTextColor),
-                      const SizedBox(height: 16),
-                      _buildDescriptionCard(theme, l10n, isDark, cardColor, textColor, subTextColor),
-                      const SizedBox(height: 16),
-                      _buildReporterCard(theme, l10n, isDark, cardColor, textColor, subTextColor),
-                      const SizedBox(height: 16),
-                      _buildEvidenceCard(theme, l10n, isDark, cardColor, textColor, hasEvidence),
-                    ],
-                  ),
-                
-                const SizedBox(height: 20),
-
-                // Timeline - Horizontal Row Format (Aho Kigeze)
-                _buildTimelineSection(theme, l10n, isDark, cardColor, textColor, subTextColor),
-
-                    ],
-                  ),
-                ),
-              ),
-            ],
+    return Scaffold(
+      backgroundColor: _bgColor,
+      appBar: _buildAppBar(theme, _isDark),
+      body: RefreshIndicator(
+        onRefresh: _refreshCaseDetails,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.symmetric(
+            horizontal: horizontalPadding,
+            vertical: 24,
           ),
+          children: [
+            // Header Section
+            _buildHeaderCard(theme, l10n, _isDark, _cardColor, _textColor),
+            const SizedBox(height: 20),
+
+            // Main Content (Grid-like logic)
+            if (isDesktop || isTablet)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Left Column
+                  Expanded(
+                    flex: 3,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildInfoCard(theme, l10n, _isDark, _cardColor, _textColor, _subTextColor),
+                        const SizedBox(height: 20),
+                        _buildDescriptionCard(theme, l10n, _isDark, _cardColor, _textColor, _subTextColor),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  // Right Column
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildReporterCard(theme, l10n, _isDark, _cardColor, _textColor, _subTextColor),
+                        const SizedBox(height: 20),
+                        _buildEvidenceCard(theme, l10n, _isDark, _cardColor, _textColor, hasEvidence),
+                      ],
+                    ),
+                  ),
+                ],
+              )
+            else
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildInfoCard(theme, l10n, _isDark, _cardColor, _textColor, _subTextColor),
+                  const SizedBox(height: 16),
+                  _buildDescriptionCard(theme, l10n, _isDark, _cardColor, _textColor, _subTextColor),
+                  const SizedBox(height: 16),
+                  _buildReporterCard(theme, l10n, _isDark, _cardColor, _textColor, _subTextColor),
+                  const SizedBox(height: 16),
+                  _buildEvidenceCard(theme, l10n, _isDark, _cardColor, _textColor, hasEvidence),
+                ],
+              ),
+
+            const SizedBox(height: 20),
+            _buildTimelineSection(theme, l10n, _isDark, _cardColor, _textColor, _subTextColor),
+            
+            // Action Buttons (Moved Inline)
+            if (!(_case.status == 'RESOLVED' || _case.status == 'CLOSED'))
+             Padding(
+                padding: const EdgeInsets.only(top: 20),
+                child: _buildActionButtonsCard(theme, l10n, _isDark, _cardColor),
+              ),
+
+            const SizedBox(height: 40),
+          ],
         ),
-        bottomNavigationBar: _buildBottomAction(theme, l10n, isDark),
       ),
     );
   }
@@ -290,20 +303,8 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
     final urgencyColor = ImboniColors.getUrgencyColor(_case.urgency);
     final categoryColor = ImboniColors.getCategoryColor(_case.category);
 
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? Colors.white10 : Colors.black.withAlpha(12)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(isDark ? 50 : 15),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+    return CaseDetailCard(
+      backgroundColor: cardColor,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -421,35 +422,13 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
   }
 
   Widget _buildInfoCard(ThemeData theme, AppLocalizations l10n, bool isDark, Color cardColor, Color textColor, Color subTextColor) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? Colors.white10 : Colors.black.withAlpha(12)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(isDark ? 38 : 10),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return CaseDetailCard(
+      title: l10n.importantInfo,
+      icon: Icons.info_outline,
+      backgroundColor: cardColor,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(Icons.info_outline, size: 20, color: theme.colorScheme.primary),
-              const SizedBox(width: 8),
-              Text(
-                l10n.importantInfo,
-                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: textColor),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          
           // Info Grid - 2 columns
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -552,127 +531,73 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
   }
 
   Widget _buildDescriptionCard(ThemeData theme, AppLocalizations l10n, bool isDark, Color cardColor, Color textColor, Color subTextColor) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? Colors.white10 : Colors.black.withAlpha(12)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(isDark ? 38 : 10),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.description_outlined, size: 20, color: theme.colorScheme.primary),
-              const SizedBox(width: 8),
-              Text(
-                l10n.description,
-                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: textColor),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.only(left: 16),
-            decoration: BoxDecoration(
-              border: Border(
-                left: BorderSide(
-                  color: theme.colorScheme.primary.withAlpha(125),
-                  width: 3,
-                ),
-              ),
-            ),
-            child: Text(
-              _case.description,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                height: 1.6,
-                fontSize: 14,
-                color: subTextColor,
-              ),
+    return CaseDetailCard(
+      title: l10n.description,
+      icon: Icons.description_outlined,
+      backgroundColor: cardColor,
+      child: Container(
+        padding: const EdgeInsets.only(left: 16),
+        decoration: BoxDecoration(
+          border: Border(
+            left: BorderSide(
+              color: theme.colorScheme.primary.withAlpha(125),
+              width: 3,
             ),
           ),
-        ],
+        ),
+        child: Text(
+          _case.description,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            height: 1.6,
+            fontSize: 14,
+            color: subTextColor,
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildReporterCard(ThemeData theme, AppLocalizations l10n, bool isDark, Color cardColor, Color textColor, Color subTextColor) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? Colors.white10 : Colors.black.withAlpha(12)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(isDark ? 38 : 10),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return CaseDetailCard(
+      title: l10n.reporter,
+      icon: Icons.person_outline,
+      backgroundColor: cardColor,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Icon(Icons.person_outline, size: 20, color: theme.colorScheme.primary),
-              const SizedBox(width: 8),
-              Text(
-                l10n.reporter,
-                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: textColor),
-              ),
-            ],
+          CircleAvatar(
+            radius: 24,
+            backgroundColor: _case.isAnonymous 
+                ? (isDark ? Colors.grey[700] : Colors.grey[300])
+                : theme.colorScheme.primaryContainer,
+            child: Icon(
+              _case.isAnonymous ? Icons.visibility_off : Icons.person,
+              color: _case.isAnonymous 
+                  ? (isDark ? Colors.white54 : Colors.grey[600])
+                  : theme.colorScheme.primary,
+              size: 22,
+            ),
           ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: _case.isAnonymous 
-                    ? (isDark ? Colors.grey[700] : Colors.grey[300])
-                    : theme.colorScheme.primaryContainer,
-                child: Icon(
-                  _case.isAnonymous ? Icons.visibility_off : Icons.person,
-                  color: _case.isAnonymous 
-                      ? (isDark ? Colors.white54 : Colors.grey[600])
-                      : theme.colorScheme.primary,
-                  size: 22,
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _case.isAnonymous ? l10n.anonymous : (_case.citizenName ?? l10n.citizen),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                    color: textColor,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _case.isAnonymous ? l10n.anonymous : (_case.citizenName ?? l10n.citizen),
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                        color: textColor,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      _case.isAnonymous ? l10n.submittedAnonymouslyLabel : l10n.citizen,
-                      style: TextStyle(fontSize: 12, color: subTextColor),
-                    ),
-                  ],
+                const SizedBox(height: 2),
+                Text(
+                  _case.isAnonymous ? l10n.submittedAnonymouslyLabel : l10n.citizen,
+                  style: TextStyle(fontSize: 12, color: subTextColor),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -680,75 +605,33 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
   }
 
   Widget _buildEvidenceCard(ThemeData theme, AppLocalizations l10n, bool isDark, Color cardColor, Color textColor, bool hasEvidence) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? Colors.white10 : Colors.black.withAlpha(12)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(isDark ? 38 : 10),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return CaseDetailCard(
+      title: l10n.evidence,
+      icon: Icons.attach_file,
+      backgroundColor: cardColor,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(Icons.attach_file, size: 20, color: theme.colorScheme.primary),
-              const SizedBox(width: 8),
-              Text(
-                l10n.evidence,
-                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: textColor),
-              ),
-              const Spacer(),
-              if (hasEvidence)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withAlpha(38),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '${_case.evidence!.length}',
-                    style: TextStyle(
-                      color: theme.colorScheme.primary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 16),
           if (!hasEvidence)
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 24),
-              child: Center(
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.folder_off_outlined,
-                      size: 40,
-                      color: isDark ? Colors.white24 : Colors.grey[400],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      l10n.noEvidenceProvided,
-                      style: TextStyle(
-                        color: isDark ? Colors.white38 : Colors.grey[500],
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
+             Center(
+               child: Column(
+                 children: [
+                   Icon(
+                     Icons.folder_off_outlined,
+                     size: 40,
+                     color: isDark ? Colors.white24 : Colors.grey[400],
+                   ),
+                   const SizedBox(height: 8),
+                   Text(
+                     l10n.noEvidenceProvided,
+                     style: TextStyle(
+                       color: isDark ? Colors.white38 : Colors.grey[500],
+                       fontSize: 13,
+                     ),
+                   ),
+                 ],
+               ),
+             )
           else
             _buildEvidenceGrid(isDark),
         ],
@@ -840,21 +723,8 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
 
     final reversedActions = _actions.reversed.toList();
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? Colors.white10 : Colors.black.withAlpha(12)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(isDark ? 38 : 10),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return CaseDetailCard(
+      backgroundColor: cardColor,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1022,115 +892,91 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
     }
   }
 
-  Widget _buildBottomAction(ThemeData theme, AppLocalizations l10n, bool isDark) {
-    if (_case.status == 'RESOLVED' || _case.status == 'CLOSED') return const SizedBox.shrink();
-
-    return Container(
-      color: isDark ? theme.colorScheme.surface : Colors.white,
-      padding: const EdgeInsets.only(top: 8),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1200),
+  Widget _buildActionButtonsCard(ThemeData theme, AppLocalizations l10n, bool isDark, Color cardColor) {
+    return CaseDetailCard(
+      backgroundColor: cardColor,
+      child: Row(
+        children: [
+          Expanded(
             child: Container(
               decoration: BoxDecoration(
-                color: isDark ? theme.colorScheme.surfaceContainer : Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [ImboniColors.primary, ImboniColors.primaryDark],
+                ),
+                borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withAlpha(isDark ? 75 : 25),
-                    blurRadius: 16,
-                    offset: const Offset(0, -4),
+                    color: ImboniColors.primary.withAlpha(100),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
                   ),
                 ],
-                border: Border.all(color: isDark ? Colors.white10 : Colors.grey.withAlpha(38)),
               ),
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [ImboniColors.primary, ImboniColors.primaryDark],
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: (_case.status == 'OPEN')
+                      ? () => _performAction('ACCEPT')
+                      : (_case.status == 'IN_PROGRESS') ? _resolveCase : null,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          (_case.status == 'OPEN') ? Icons.pan_tool_alt : Icons.check_circle_outline,
+                          color: Colors.white,
+                          size: 20,
                         ),
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: ImboniColors.primary.withAlpha(100),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: (_case.status == 'OPEN')
-                              ? () => _performAction('ACCEPT')
-                              : (_case.status == 'IN_PROGRESS') ? _resolveCase : null,
-                          borderRadius: BorderRadius.circular(12),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  (_case.status == 'OPEN') ? Icons.pan_tool_alt : Icons.check_circle_outline,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 10),
-                                Text(
-                                  (_case.status == 'OPEN') ? l10n.takeCase : l10n.resolveCase,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 15,
-                                  ),
-                                ),
-                              ],
-                            ),
+                        const SizedBox(width: 10),
+                        Text(
+                          (_case.status == 'OPEN') ? l10n.takeCase : l10n.resolveCase,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
                           ),
                         ),
-                      ),
+                      ],
                     ),
                   ),
-                  if (_case.status == 'IN_PROGRESS' || _case.status == 'OPEN') ...[
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: _escalateCase,
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: ImboniColors.error,
-                          side: const BorderSide(color: ImboniColors.error, width: 1.5),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.arrow_upward, size: 18, color: ImboniColors.error),
-                            const SizedBox(width: 8),
-                            Text(
-                              l10n.escalate,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                                color: ImboniColors.error,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
+                ),
               ),
             ),
           ),
-        ),
+          if (_case.status == 'IN_PROGRESS' || _case.status == 'OPEN') ...[
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _escalateCase,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: ImboniColors.error,
+                  side: const BorderSide(color: ImboniColors.error, width: 1.5),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.arrow_upward, size: 18, color: ImboniColors.error),
+                    const SizedBox(width: 8),
+                    Text(
+                      l10n.escalate,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        color: ImboniColors.error,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
