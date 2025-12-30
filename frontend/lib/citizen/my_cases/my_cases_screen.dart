@@ -1615,7 +1615,10 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
       case 'VIEWED': return l10n.caseViewed;
       case 'ASSIGNED': return l10n.caseAssigned;
       case 'ACCEPTED': return l10n.caseAccepted;
-      default: return type;
+      case 'STATUS_UPDATE': return l10n.statusUpdate ?? 'Status Update';
+      case 'RESOLUTION': return l10n.resolution ?? 'Resolution';
+      case 'PENDING_CONFIRMATION': return 'Resolution Confirmation Required';
+      default: return type.replaceAll('_', ' ').toLowerCase().split(' ').map((s) => s.isNotEmpty ? '${s[0].toUpperCase()}${s.substring(1)}' : '').join(' ');
     }
   }
 
@@ -1627,6 +1630,9 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
       case 'VIEWED': return Colors.grey;
       case 'ASSIGNED': return ImboniColors.secondary;
       case 'ACCEPTED': return ImboniColors.primary;
+      case 'STATUS_UPDATE': return ImboniColors.statusInProgress;
+      case 'RESOLUTION': return ImboniColors.success;
+      case 'PENDING_CONFIRMATION': return ImboniColors.warning;
       default: return Colors.grey;
     }
   }
@@ -1639,6 +1645,9 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
       case 'VIEWED': return Icons.visibility;
       case 'ASSIGNED': return Icons.person_add;
       case 'ACCEPTED': return Icons.thumb_up_alt_outlined;
+      case 'STATUS_UPDATE': return Icons.update;
+      case 'RESOLUTION': return Icons.task_alt;
+      case 'PENDING_CONFIRMATION': return Icons.hourglass_bottom;
       default: return Icons.info_outline;
     }
   }
