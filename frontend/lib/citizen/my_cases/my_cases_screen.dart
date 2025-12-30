@@ -1241,12 +1241,32 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
     );
   }
 
+  // Horizontal Timeline Section
   Widget _buildTimelineSection(ThemeData theme, AppLocalizations l10n, bool isDark, Color cardColor, Color textColor, Color subTextColor, CaseModel caseModel) {
-    // Build timeline from fetched actions or create default entries
-    final List<_TimelineData> timelineItems = [];
-    
+    // 1. Start with Creation
+    final List<_TimelineData> timelineItems = [
+      _TimelineData(
+        title: l10n.caseCreated,
+        date: caseModel.createdAt,
+        color: ImboniColors.primary,
+        icon: Icons.add_circle_outline,
+      )
+    ];
+
+    // 2. Add Actions (Oldest to Newest)
+    // Assuming _actions is fetched newest-first, we reverse it.
+    // If _actions is empty, we rely on status synthesis below.
     if (_actions.isNotEmpty) {
-      for (final action in _actions.reversed) {
+      final sortedActions = List<CaseAction>.from(_actions);
+      sortedActions.sort((a, b) => a.createdAt.compareTo(b.createdAt)); // Ensure ascending
+
+      for (final action in sortedActions) {
+        // Skip CREATED action if it duplicates the base item (within 1 min)
+        if (action.actionType == 'CREATED' && 
+            action.createdAt.difference(caseModel.createdAt).inMinutes.abs() < 1) {
+          continue;
+        }
+        
         timelineItems.add(_TimelineData(
           title: _getActionTitle(l10n, action.actionType),
           date: action.createdAt,
@@ -1256,26 +1276,99 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
         ));
       }
     } else {
-      // Default timeline based on case status
-      timelineItems.add(_TimelineData(
-        title: l10n.caseCreated,
-        date: caseModel.createdAt,
-        color: ImboniColors.primary,
-        icon: Icons.add_circle_outline,
-      ));
-      if (caseModel.status != 'OPEN') {
-        timelineItems.add(_TimelineData(
-          title: l10n.caseAccepted,
-          date: caseModel.createdAt.add(const Duration(hours: 1)),
-          color: ImboniColors.statusInProgress,
-          icon: Icons.pending,
-        ));
-      }
+       // If no history but status is advanced, synthesize intermediate steps
+       if (caseModel.status != 'OPEN') {
+          // Add "Accepted" synthetic step if missing
+          timelineItems.add(_TimelineData(
+             title: l10n.caseAccepted,
+             date: caseModel.createdAt.add(const Duration(minutes: 5)), // Synthetic time
+             color: ImboniColors.statusInProgress,
+             icon: Icons.assignment_ind, 
+          ));
+       }
+    }
+
+    // 3. Synthesize Current Status Node if not represented by last action
+    // This ensures the timeline always reflects the *current* state at the end
+    final lastItem = timelineItems.last;
+    final status = caseModel.status;
+    
+    bool needsStatusNode = true;
+    
+    // Check if last action title roughly matches status (simple heuristc)
+    // E.g. last action "Resolved" matches status "RESOLVED"
+    if (_getActionTitle(l10n, status).toLowerCase() == lastItem.title.toLowerCase()) {
+      needsStatusNode = false;
+    }
+    
+    // Specifically handle PENDING_CONFIRMATION
+    if (status == 'PENDING_CONFIRMATION') {
+       // Even if last action was "Resolved", we might want to show "Pending Confirmation" as a distinct step?
+       // Let's add it as a new node to be clear.
+       needsStatusNode = true;
+    }
+
+    if (needsStatusNode) {
+       Color statusColor = ImboniColors.primary;
+       IconData statusIcon = Icons.circle;
+       String statusTitle = _getStatusLabel(l10n, status);
+       
+       switch(status) {
+         case 'PENDING_CONFIRMATION':
+           statusColor = ImboniColors.warning;
+           statusIcon = Icons.hourglass_bottom;
+           statusTitle = 'Resolution Confirmation Required'; // Use localized string if available
+           break;
+         case 'RESOLVED':
+           statusColor = ImboniColors.success;
+           statusIcon = Icons.check_circle;
+           break;
+         case 'ESCALATED':
+           statusColor = Colors.red;
+           statusIcon = Icons.trending_up;
+           break;
+         case 'IN_PROGRESS':
+           statusColor = ImboniColors.statusInProgress;
+           statusIcon = Icons.pending;
+           break;
+       }
+       
+       // Only add if it's not effectively the same as last item
+       if (statusTitle != lastItem.title && status != 'OPEN') {
+          timelineItems.add(_TimelineData(
+            title: statusTitle,
+            date: DateTime.now(), // Represents "Now"
+            color: statusColor,
+            icon: statusIcon,
+            isCurrent: true,
+          ));
+       } else {
+         // Mark the existing last item as current
+         timelineItems[timelineItems.length - 1] = _TimelineData(
+            title: lastItem.title,
+            date: lastItem.date,
+            color: lastItem.color,
+            icon: lastItem.icon,
+            notes: lastItem.notes,
+            isCurrent: true,
+         );
+       }
+    } else {
+       // Mark the existing last item as current
+       timelineItems[timelineItems.length - 1] = _TimelineData(
+          title: lastItem.title,
+          date: lastItem.date,
+          color: lastItem.color,
+          icon: lastItem.icon,
+          notes: lastItem.notes,
+          isCurrent: true,
+       );
     }
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.only(bottom: 24),
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(16),
@@ -1301,106 +1394,156 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
 
-          // Horizontal Timeline
+          // Horizontal Timeline List
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            child: Row(
-              children: timelineItems.asMap().entries.map((entry) {
-                final index = entry.key;
-                final item = entry.value;
-                final isLast = index == timelineItems.length - 1;
-
-                return Row(
-                  children: [
-                    // Timeline Item Card
-                    Container(
-                      width: 140,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: item.color.withAlpha(isDark ? 38 : 20),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: item.color.withAlpha(75)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: timelineItems.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final item = entry.value;
+                  final isLast = index == timelineItems.length - 1;
+              
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Timeline Item Card
+                      Column(
                         children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: item.color.withAlpha(50),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(item.icon, size: 14, color: item.color),
+                          Container(
+                            width: 160,
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: item.isCurrent 
+                                  ? item.color.withOpacity(0.1) 
+                                  : (isDark ? Colors.white.withOpacity(0.05) : Colors.grey[50]),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: item.isCurrent 
+                                    ? item.color 
+                                    : (isDark ? Colors.white12 : Colors.grey.withOpacity(0.2)),
+                                width: item.isCurrent ? 2 : 1,
                               ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
+                              boxShadow: item.isCurrent ? [
+                                BoxShadow(
+                                  color: item.color.withOpacity(0.3),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
+                                )
+                              ] : null,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: item.color.withOpacity(0.2),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(item.icon, size: 18, color: item.color),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    if (item.isCurrent)
+                                      Container(
+                                        width: 8,
+                                        height: 8,
+                                        decoration: BoxDecoration(
+                                          color: item.color,
+                                          shape: BoxShape.circle,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: item.color.withOpacity(0.6),
+                                              blurRadius: 6,
+                                              spreadRadius: 2,
+                                            )
+                                          ]
+                                        ),
+                                      )
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
                                   item.title,
                                   style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: item.color,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: item.isCurrent ? item.color : textColor,
                                   ),
-                                  maxLines: 1,
+                                  maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                 ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          Row(
-                            children: [
-                              Icon(Icons.calendar_today, size: 12, color: subTextColor),
-                              const SizedBox(width: 4),
-                              Text(
-                                _formatDate(item.date),
-                                style: TextStyle(fontSize: 10, color: subTextColor),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Icon(Icons.access_time, size: 12, color: subTextColor),
-                              const SizedBox(width: 4),
-                              Text(
-                                _formatTime(item.date),
-                                style: TextStyle(fontSize: 10, color: subTextColor),
-                              ),
-                            ],
-                          ),
-                          if (item.notes != null && item.notes!.isNotEmpty) ...[
-                            const SizedBox(height: 8),
-                            Text(
-                              item.notes!,
-                              style: TextStyle(fontSize: 10, color: textColor, fontStyle: FontStyle.italic),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Icon(Icons.calendar_today, size: 12, color: subTextColor),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _formatDate(item.date),
+                                      style: TextStyle(fontSize: 11, color: subTextColor),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Icon(Icons.access_time, size: 12, color: subTextColor),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _formatTime(item.date),
+                                      style: TextStyle(fontSize: 11, color: subTextColor),
+                                    ),
+                                  ],
+                                ),
+                                if (item.notes != null && item.notes!.isNotEmpty) ...[
+                                  const SizedBox(height: 12),
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: isDark ? Colors.black26 : Colors.grey[100],
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      item.notes!,
+                                      style: TextStyle(
+                                        fontSize: 11, 
+                                        color: textColor.withOpacity(0.8), 
+                                        fontStyle: FontStyle.italic
+                                      ),
+                                      maxLines: 3,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
-                          ],
+                          ),
+                          
+                          // Dot/Connector below logic if vertical layout desired, 
+                          // but here we are horizontal.
                         ],
                       ),
-                    ),
-                    // Connector line
-                    if (!isLast)
-                      Container(
-                        width: 40,
-                        height: 2,
-                        margin: const EdgeInsets.symmetric(horizontal: 8),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [item.color.withAlpha(150), timelineItems[index + 1].color.withAlpha(150)],
-                          ),
-                          borderRadius: BorderRadius.circular(1),
-                        ),
-                      ),
-                  ],
-                );
-              }).toList(),
+                      
+                      // Horizontal Connector
+                      if (!isLast)
+                         Container(
+                           height: 2,
+                           width: 40,
+                           margin: const EdgeInsets.only(top: 40, left: 4, right: 4), // Optimize alignment
+                           decoration: BoxDecoration(
+                             gradient: LinearGradient(
+                               colors: [
+                                 item.color.withOpacity(0.5), 
+                                 timelineItems[index+1].color.withOpacity(0.5)
+                               ],
+                             ),
+                           ),
+                         ),
+                    ],
+                  );
+                }).toList(),
+              ),
             ),
           ),
         ],
@@ -1703,7 +1846,7 @@ class _TimelineData {
   final DateTime date;
   final Color color;
   final IconData icon;
-  final String? notes;
+  final bool isCurrent;
 
   _TimelineData({
     required this.title,
@@ -1711,5 +1854,6 @@ class _TimelineData {
     required this.color,
     required this.icon,
     this.notes,
+    this.isCurrent = false,
   });
 }
