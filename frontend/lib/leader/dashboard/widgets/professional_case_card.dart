@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:imboni/shared/models/models.dart';
 import 'package:imboni/shared/theme/colors.dart';
-
+import 'package:imboni/shared/localization/app_localizations.dart';
 import 'package:intl/intl.dart';
 
 class ProfessionalCaseCard extends StatelessWidget {
@@ -17,6 +17,7 @@ class ProfessionalCaseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final statusColor = ImboniColors.getStatusColor(caseData.status);
 
@@ -82,7 +83,7 @@ class ProfessionalCaseCard extends StatelessWidget {
                             flex: 2,
                             child: _buildDetailItem(
                               context: context,
-                              label: 'Case ID',
+                              label: 'ID', // Keeping generic or use localized ID if needed
                               value: '#${caseData.caseReference}',
                               valueStyle: TextStyle(fontWeight: FontWeight.w600, color: theme.colorScheme.primary),
                             ),
@@ -92,7 +93,7 @@ class ProfessionalCaseCard extends StatelessWidget {
                             flex: 3,
                             child: _buildDetailItem(
                               context: context,
-                              label: 'Category',
+                              label: l10n.categoryLabel,
                               value: caseData.category,
                               icon: Icons.category_outlined,
                             ),
@@ -108,7 +109,7 @@ class ProfessionalCaseCard extends StatelessWidget {
                             flex: 2,
                             child: _buildDetailItem(
                               context: context,
-                              label: 'Location',
+                              label: l10n.location,
                               value: caseData.locationName ?? 'Unknown',
                               icon: Icons.location_on_outlined,
                             ),
@@ -118,7 +119,7 @@ class ProfessionalCaseCard extends StatelessWidget {
                             flex: 3,
                             child: _buildDetailItem(
                               context: context,
-                              label: 'Submitted',
+                              label: l10n.submitted,
                               value: _formatTimeAgo(caseData.createdAt),
                               icon: Icons.access_time,
                             ),
@@ -145,7 +146,7 @@ class ProfessionalCaseCard extends StatelessWidget {
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                   foregroundColor: theme.colorScheme.primary,
                                 ),
-                                child: const Text('View Details', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                                child: Text(l10n.viewDetails, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                               ),
                             ),
                           ),
@@ -176,7 +177,7 @@ class ProfessionalCaseCard extends StatelessWidget {
 
   Widget _buildStatusChip(String status, Color color) {
     String label = status.replaceAll('_', ' ');
-    // Handle translation if needed or formatting
+    // Simple mock localization for status if l10n not passed, but ideal is to pass l10n. For now keeping label format.
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(

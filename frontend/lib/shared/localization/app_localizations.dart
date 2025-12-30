@@ -289,6 +289,18 @@ class AppLocalizations {
   String get failed => get('failed');
   String get notificationsLabel => get('notifications_label');
   String get themeLabel => get('theme_label');
+  
+  // Assigned Cases Screen
+  String get assignedCases => get('assigned_cases');
+  String get searchHint => get('search_hint');
+  String get sortNewest => get('sort_newest');
+  String get sortOldest => get('sort_oldest');
+  String get sortPriority => get('sort_priority');
+  String get sortBy => get('sort_by');
+  String get priority => get('priority'); // Reusing urgency_title if appropriate, but priority is used for sorting
+  String get submitted => get('submitted');
+  String get categoryLabel => get('category_label');
+
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
@@ -398,6 +410,16 @@ const Map<String, Map<String, String>> _translations = {
     
     // Dashboard RW
     'dashboard': 'Incamake',
+    'assigned_cases': 'Ibibazo Byatanzwe',
+    'search_hint': 'Shakisha ikibazo...',
+    'sort_newest': 'Bya vuba',
+    'sort_oldest': 'Bimaze igihe',
+    'sort_priority': 'Uburemere',
+    'sort_by': 'Tonganya:',
+    'priority': 'Uburemere',
+    'submitted': 'Yatanzwe',
+    'category_label': 'Icyiciro',
+
     'my_cases': 'Ibibazo',
     'alerts': 'Imburira',
     'performance': 'Imikorere',
@@ -758,6 +780,17 @@ const Map<String, Map<String, String>> _translations = {
     'about_app': 'About App',
     'notifications_label': 'Notifications',
     'theme_label': 'Theme',
+    // Assigned Cases EN
+    'assigned_cases': 'Assigned Cases',
+    'search_hint': 'Search cases...',
+    'sort_newest': 'Newest First',
+    'sort_oldest': 'Oldest First',
+    'sort_priority': 'Priority',
+    'sort_by': 'Sort by:',
+    'priority': 'Priority',
+    'submitted': 'Submitted',
+    'category_label': 'Category',
+
     // Submit Case Screen EN
     'processing': 'Processing...',
     'problem': 'Problem',
@@ -999,6 +1032,17 @@ const Map<String, Map<String, String>> _translations = {
     'about_app': 'À propos de l\'Application',
     'notifications_label': 'Notifications',
     'theme_label': 'Thème',
+    // Assigned Cases FR
+    'assigned_cases': 'Dossiers Assignés',
+    'search_hint': 'Rechercher...',
+    'sort_newest': 'Plus récents',
+    'sort_oldest': 'Plus anciens',
+    'sort_priority': 'Priorité',
+    'sort_by': 'Trier par:',
+    'priority': 'Priorité',
+    'submitted': 'Soumis',
+    'category_label': 'Catégorie',
+
     // Submit Case Screen FR
     'processing': 'Traitement...',
     'problem': 'Problème',
