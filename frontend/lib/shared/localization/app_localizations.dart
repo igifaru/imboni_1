@@ -728,7 +728,7 @@ const Map<String, Map<String, String>> _translations = {
     'no_evidence_provided': 'No evidence provided',
     'timeline': 'Timeline',
     'case_created': 'Created',
-    'case_escalated': 'Escalated',
+    // case_escalated defined above
     'case_resolved': 'Resolved',
     'case_viewed': 'Viewed',
     'case_assigned': 'Assigned',
