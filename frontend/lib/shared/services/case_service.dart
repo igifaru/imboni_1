@@ -45,8 +45,19 @@ class CaseService {
     if (status != null) endpoint += '&status=$status';
     
     final response = await apiClient.get(endpoint);
+    print('CaseService: getUserCases response.data type: ${response.data.runtimeType}');
     if (response.isSuccess && response.data != null) {
-      final List<dynamic> casesJson = response.data['cases'] ?? response.data ?? [];
+      final List<dynamic> casesJson;
+      final data = response.data;
+      if (data is Map && data['cases'] is List) {
+        casesJson = data['cases'];
+      } else if (data is Map && data['data'] is List) {
+        casesJson = data['data'];
+      } else if (data is List) {
+        casesJson = data;
+      } else {
+        casesJson = [];
+      }
       final cases = casesJson.map((json) => CaseModel.fromJson(json)).toList();
       return ApiResponse.success(cases);
     }
@@ -66,7 +77,17 @@ class CaseService {
   Future<ApiResponse<List<CaseAction>>> getCaseActions(String caseId) async {
     final response = await apiClient.get('/cases/$caseId/actions');
     if (response.isSuccess && response.data != null) {
-      final List<dynamic> actionsJson = response.data['actions'] ?? response.data ?? [];
+      final List<dynamic> actionsJson;
+      final data = response.data;
+      if (data is Map && data['actions'] is List) {
+        actionsJson = data['actions'];
+      } else if (data is Map && data['data'] is List) {
+        actionsJson = data['data'];
+      } else if (data is List) {
+        actionsJson = data;
+      } else {
+        actionsJson = [];
+      }
       final actions = actionsJson.map((json) => CaseAction.fromJson(json)).toList();
       return ApiResponse.success(actions);
     }
@@ -138,8 +159,19 @@ class CaseService {
     if (status != null) endpoint += '&status=$status';
     
     final response = await apiClient.get(endpoint);
+    print('CaseService: getAssignedCases response.data type: ${response.data.runtimeType}');
     if (response.isSuccess && response.data != null) {
-      final List<dynamic> casesJson = response.data['cases'] ?? response.data ?? [];
+      final List<dynamic> casesJson;
+      final data = response.data;
+      if (data is Map && data['cases'] is List) {
+        casesJson = data['cases'];
+      } else if (data is Map && data['data'] is List) {
+        casesJson = data['data'];
+      } else if (data is List) {
+        casesJson = data;
+      } else {
+        casesJson = [];
+      }
       final cases = casesJson.map((json) => CaseModel.fromJson(json)).toList();
       return ApiResponse.success(cases);
     }
@@ -152,8 +184,19 @@ class CaseService {
     if (query != null && query.isNotEmpty) endpoint += '&search=$query';
 
     final response = await apiClient.get(endpoint);
+    print('CaseService: getAllCases response.data type: ${response.data.runtimeType}');
     if (response.isSuccess && response.data != null) {
-      final List<dynamic> casesJson = response.data['data'] ?? response.data ?? [];
+      final List<dynamic> casesJson;
+      final data = response.data;
+      if (data is Map && data['cases'] is List) {
+        casesJson = data['cases'];
+      } else if (data is Map && data['data'] is List) {
+        casesJson = data['data'];
+      } else if (data is List) {
+        casesJson = data;
+      } else {
+        casesJson = [];
+      }
       final cases = casesJson.map((json) => CaseModel.fromJson(json)).toList();
       return ApiResponse.success(cases);
     }
@@ -172,8 +215,19 @@ class CaseService {
   /// Get escalation alerts (for leaders)
   Future<ApiResponse<List<CaseModel>>> getEscalationAlerts() async {
     final response = await apiClient.get('/cases/escalation-alerts');
+    print('CaseService: getEscalationAlerts response.data type: ${response.data.runtimeType}');
     if (response.isSuccess && response.data != null) {
-      final List<dynamic> casesJson = response.data['cases'] ?? response.data ?? [];
+      final List<dynamic> casesJson;
+      final data = response.data;
+      if (data is Map && data['cases'] is List) {
+        casesJson = data['cases'];
+      } else if (data is Map && data['data'] is List) {
+        casesJson = data['data'];
+      } else if (data is List) {
+        casesJson = data;
+      } else {
+        casesJson = [];
+      }
       final cases = casesJson.map((json) => CaseModel.fromJson(json)).toList();
       return ApiResponse.success(cases);
     }

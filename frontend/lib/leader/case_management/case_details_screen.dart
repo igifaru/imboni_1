@@ -170,15 +170,21 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
       child: Scaffold(
         backgroundColor: bgColor,
         appBar: _buildAppBar(theme, isDark),
-        body: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1200),
-            child: ListView(
-              padding: EdgeInsets.symmetric(
-                horizontal: isDesktop ? 32 : (isTablet ? 24 : 16),
-                vertical: 16,
-              ),
-              children: [
+        body: RefreshIndicator(
+          onRefresh: _refreshCaseDetails,
+          child: ListView(
+            padding: EdgeInsets.symmetric(
+              horizontal: isDesktop ? screenWidth * 0.15 : (isTablet ? 24 : 16),
+              vertical: 24,
+            ),
+            children: [
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1200),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                 // Header Card with Status, Title, Category, Urgency
                 _buildHeaderCard(theme, l10n, isDark, cardColor, textColor),
                 const SizedBox(height: 20),
@@ -192,6 +198,8 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
                       Expanded(
                         flex: 3,
                         child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             _buildInfoCard(theme, l10n, isDark, cardColor, textColor, subTextColor),
                             const SizedBox(height: 20),
@@ -204,6 +212,8 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
                       Expanded(
                         flex: 2,
                         child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             _buildReporterCard(theme, l10n, isDark, cardColor, textColor, subTextColor),
                             const SizedBox(height: 20),
@@ -216,6 +226,7 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
                 else
                   // Mobile: Single column
                   Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       _buildInfoCard(theme, l10n, isDark, cardColor, textColor, subTextColor),
                       const SizedBox(height: 16),
@@ -232,9 +243,11 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
                 // Timeline - Horizontal Row Format (Aho Kigeze)
                 _buildTimelineSection(theme, l10n, isDark, cardColor, textColor, subTextColor),
 
-                const SizedBox(height: 100), // Space for bottom bar
-              ],
-            ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
         bottomNavigationBar: _buildBottomAction(theme, l10n, isDark),
@@ -640,6 +653,7 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
@@ -1017,104 +1031,102 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1200),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: isDark ? theme.colorScheme.surfaceContainer : Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withAlpha(isDark ? 75 : 25),
-                      blurRadius: 16,
-                      offset: const Offset(0, -4),
-                    ),
-                  ],
-                  border: Border.all(color: isDark ? Colors.white10 : Colors.grey.withAlpha(38)),
-                ),
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [ImboniColors.primary, ImboniColors.primaryDark],
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1200),
+            child: Container(
+              decoration: BoxDecoration(
+                color: isDark ? theme.colorScheme.surfaceContainer : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(isDark ? 75 : 25),
+                    blurRadius: 16,
+                    offset: const Offset(0, -4),
+                  ),
+                ],
+                border: Border.all(color: isDark ? Colors.white10 : Colors.grey.withAlpha(38)),
+              ),
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [ImboniColors.primary, ImboniColors.primaryDark],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: ImboniColors.primary.withAlpha(100),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
                           ),
+                        ],
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: (_case.status == 'OPEN')
+                              ? () => _performAction('ACCEPT')
+                              : (_case.status == 'IN_PROGRESS') ? _resolveCase : null,
                           borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: ImboniColors.primary.withAlpha(100),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  (_case.status == 'OPEN') ? Icons.pan_tool_alt : Icons.check_circle_outline,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  (_case.status == 'OPEN') ? l10n.takeCase : l10n.resolveCase,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (_case.status == 'IN_PROGRESS' || _case.status == 'OPEN') ...[
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _escalateCase,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: ImboniColors.error,
+                          side: const BorderSide(color: ImboniColors.error, width: 1.5),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.arrow_upward, size: 18, color: ImboniColors.error),
+                            const SizedBox(width: 8),
+                            Text(
+                              l10n.escalate,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                                color: ImboniColors.error,
+                              ),
                             ),
                           ],
                         ),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: (_case.status == 'OPEN')
-                                ? () => _performAction('ACCEPT')
-                                : (_case.status == 'IN_PROGRESS') ? _resolveCase : null,
-                            borderRadius: BorderRadius.circular(12),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    (_case.status == 'OPEN') ? Icons.pan_tool_alt : Icons.check_circle_outline,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Text(
-                                    (_case.status == 'OPEN') ? l10n.takeCase : l10n.resolveCase,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
                       ),
                     ),
-                    if (_case.status == 'IN_PROGRESS' || _case.status == 'OPEN') ...[
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: _escalateCase,
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: ImboniColors.error,
-                            side: const BorderSide(color: ImboniColors.error, width: 1.5),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.arrow_upward, size: 18, color: ImboniColors.error),
-                              const SizedBox(width: 8),
-                              Text(
-                                l10n.escalate,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
-                                  color: ImboniColors.error,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
                   ],
-                ),
+                ],
               ),
             ),
           ),

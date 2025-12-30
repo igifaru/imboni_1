@@ -873,6 +873,8 @@ export class CaseService {
             currentLevel: entity.currentLevel,
             locationName: (entity as any).administrativeUnit?.name || 'Unknown Location',
             status: entity.status,
+            submittedAnonymously: entity.submittedAnonymously,
+            citizenName: entity.submittedAnonymously ? null : (entity as any).submitter?.name,
             createdAt: entity.createdAt.toISOString(),
             resolvedAt: entity.resolvedAt?.toISOString() || null,
             deadline: null, // Will be populated from assignment

@@ -40,6 +40,7 @@ export interface CaseEntity {
     createdAt: Date;
     resolvedAt: Date | null;
     evidence?: EvidenceEntity[];
+    submitter?: { id: string; name: string | null };
     administrativeUnit?: { id: string; name: string };
 }
 

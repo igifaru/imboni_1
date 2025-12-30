@@ -42,6 +42,8 @@ export interface CaseResponseDto {
     currentLevel: string;
     locationName: string;
     status: string;
+    submittedAnonymously: boolean;
+    citizenName: string | null;
     createdAt: string;
     resolvedAt: string | null;
     deadline: string | null;

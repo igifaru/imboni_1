@@ -44,7 +44,7 @@ export class CaseRepository {
     async findById(id: string): Promise<CaseEntity | null> {
         const result = await prisma.case.findUnique({
             where: { id },
-            include: { evidence: true, administrativeUnit: true },
+            include: { evidence: true, administrativeUnit: true, submitter: true },
         });
         return result as unknown as CaseEntity | null;
     }
@@ -55,7 +55,7 @@ export class CaseRepository {
     async findByReference(caseReference: string): Promise<CaseEntity | null> {
         const result = await prisma.case.findUnique({
             where: { caseReference },
-            include: { evidence: true, administrativeUnit: true },
+            include: { evidence: true, administrativeUnit: true, submitter: true },
         });
         return result as unknown as CaseEntity | null;
     }
@@ -76,7 +76,7 @@ export class CaseRepository {
                         },
                     },
                 },
-                include: { evidence: true, administrativeUnit: true },
+                include: { evidence: true, administrativeUnit: true, submitter: true },
                 skip,
                 take: limit,
                 orderBy: { createdAt: 'desc' },

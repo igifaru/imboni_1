@@ -131,6 +131,7 @@ model User {
   caseActions       CaseAction[]
   notifications     Notification[]
   auditLogs         AuditLog[]
+  cases             Case[]
 
   @@map("users")
 }
@@ -182,6 +183,7 @@ model Case {
   status               CaseStatus          @default(OPEN)
   submittedAnonymously Boolean             @default(false) @map("submitted_anonymously")
   submitterId          String?             @map("submitter_id")
+  submitter            User?               @relation(fields: [submitterId], references: [id])
   createdAt            DateTime            @default(now()) @map("created_at")
   resolvedAt           DateTime?           @map("resolved_at")
 
