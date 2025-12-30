@@ -8,7 +8,7 @@ import { publishEvent, CHANNELS } from '../../../../libs/messaging/messaging.ser
 import { createServiceLogger } from '../../../../libs/logging/logger.service';
 import { prisma } from '../../../../libs/database/prisma.service';
 import { config } from '../../../../libs/config/config.service';
-import { AdministrativeLevel } from '@prisma/client';
+import { AdministrativeLevel, CaseStatus } from '@prisma/client';
 
 const logger = createServiceLogger('case-service');
 
@@ -310,8 +310,7 @@ export class CaseService {
 
         if (parentLeader) {
             const now = new Date();
-            const deadline = new Date();
-            deadline.setHours(deadline.getHours() + 48); // 48h for escalated cases
+            const deadline = this.getDeadlineForUrgency(existingCase.urgency);
 
             await prisma.caseAssignment.create({
                 data: {
@@ -332,9 +331,9 @@ export class CaseService {
                 caseId,
                 fromLevel: unit.level,
                 toLevel: unit.parent.level,
-                formattedReason: reason, // Assuming schema match, or triggerReason
-                // triggeredBy: userId
-            } as any // Bypass strict type check for now if schema differs slighlty
+                triggerReason: 'MANUAL_ESCALATION',
+                triggeredBy: userId
+            }
         });
 
         return this.toResponseDto(updatedCase as unknown as CaseEntity);
@@ -399,16 +398,15 @@ export class CaseService {
      */
     async resolveCase(caseId: string, resolutionNotes: string, userId: string, attachmentId?: string): Promise<CaseResponseDto> {
         const result = await prisma.$transaction(async (tx) => {
-            // 1. Update Case Status
+            // 1. Update Case Status to PENDING_CONFIRMATION (awaiting citizen confirmation)
             const updatedCase = await tx.case.update({
                 where: { id: caseId },
                 data: {
-                    status: 'RESOLVED',
-                    resolvedAt: new Date(),
+                    status: CaseStatus.PENDING_CONFIRMATION, // Changed from RESOLVED - awaits citizen confirmation
                 }
             });
 
-            // 2. Create CaseResolution
+            // 2. Create CaseResolution record
             await tx.caseResolution.create({
                 data: {
                     caseId,
@@ -423,16 +421,12 @@ export class CaseService {
                 data: {
                     caseId,
                     performedBy: userId,
-                    actionType: 'STATUS_UPDATE',
-                    notes: `Status changed to RESOLVED. Notes: ${resolutionNotes}`,
+                    actionType: 'RESOLUTION',
+                    notes: `Leader marked resolved. Awaiting citizen confirmation. Notes: ${resolutionNotes}`,
                 }
             });
 
-            // 4. Complete Assignment
-            await tx.caseAssignment.updateMany({
-                where: { caseId, isActive: true },
-                data: { isActive: false, completedAt: new Date() }
-            });
+            // Note: Assignment NOT completed yet - stays active until citizen confirms or disputes
 
             return updatedCase;
         });
@@ -440,10 +434,12 @@ export class CaseService {
         // Publish event (outside transaction)
         await publishEvent(CHANNELS.CASE_UPDATED, {
             caseId,
-            status: 'RESOLVED',
+            status: 'PENDING_CONFIRMATION',
             updatedBy: userId,
         });
-        await publishEvent(CHANNELS.CASE_RESOLVED, { caseId });
+        await publishEvent(CHANNELS.CASE_RESOLVED, { caseId, status: 'PENDING_CONFIRMATION' });
+
+        logger.info('Case marked as resolved, awaiting citizen confirmation', { caseId });
 
         // Return full DTO
         const finalCase = await this.repository.findById(caseId);
@@ -541,6 +537,142 @@ export class CaseService {
         });
 
         return assignments.map(a => this.toResponseDto(a.case as unknown as CaseEntity));
+    }
+
+    /**
+     * Get case history/actions
+     */
+    async getCaseHistory(caseId: string): Promise<any[]> {
+        return prisma.caseAction.findMany({
+            where: { caseId },
+            orderBy: { createdAt: 'desc' },
+        });
+    }
+
+    /**
+     * Calculate deadline based on case urgency
+     */
+    getDeadlineForUrgency(urgency: string): Date {
+        const now = new Date();
+        switch (urgency) {
+            case 'EMERGENCY':
+                return new Date(now.getTime() + 30 * 60 * 1000); // 30 minutes
+            case 'HIGH':
+                return new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours
+            case 'NORMAL':
+            default:
+                return new Date(now.getTime() + 48 * 60 * 60 * 1000); // 48 hours
+        }
+    }
+
+    /**
+     * Mark case as resolved (pending citizen confirmation)
+     */
+    async markResolved(caseId: string, resolution: string, userId: string): Promise<CaseResponseDto> {
+        const existingCase = await this.repository.findById(caseId);
+        if (!existingCase) throw new Error('Case not found');
+
+        // Create resolution record
+        await prisma.caseResolution.create({
+            data: {
+                caseId,
+                notes: resolution,
+                resolvedBy: userId,
+            }
+        });
+
+        // Update status to PENDING_CONFIRMATION
+        const updatedCase = await prisma.case.update({
+            where: { id: caseId },
+            data: { status: CaseStatus.PENDING_CONFIRMATION }
+        });
+
+        // Log action
+        await prisma.caseAction.create({
+            data: {
+                caseId,
+                performedBy: userId,
+                actionType: 'RESOLUTION',
+                notes: resolution,
+            }
+        });
+
+        logger.info('Case marked resolved, awaiting citizen confirmation', { caseId });
+        await publishEvent(CHANNELS.CASE_RESOLVED, { caseId, status: 'PENDING_CONFIRMATION' });
+
+        return this.toResponseDto(updatedCase as unknown as CaseEntity);
+    }
+
+    /**
+     * Citizen confirms case is fully resolved
+     */
+    async citizenConfirmResolution(caseId: string, userId: string): Promise<CaseResponseDto> {
+        const existingCase = await this.repository.findById(caseId);
+        if (!existingCase) throw new Error('Case not found');
+
+        if ((existingCase.status as string) !== 'PENDING_CONFIRMATION') {
+            throw new Error('Case is not pending confirmation');
+        }
+
+        // Verify it's the case submitter (if not anonymous)
+        if (existingCase.submitterId && existingCase.submitterId !== userId) {
+            throw new Error('Only the case submitter can confirm resolution');
+        }
+
+        // Complete assignments
+        await prisma.caseAssignment.updateMany({
+            where: { caseId, isActive: true },
+            data: { isActive: false, completedAt: new Date() }
+        });
+
+        // Update to CLOSED
+        const updatedCase = await prisma.case.update({
+            where: { id: caseId },
+            data: {
+                status: 'CLOSED',
+                resolvedAt: new Date()
+            }
+        });
+
+        // Log action
+        await prisma.caseAction.create({
+            data: {
+                caseId,
+                performedBy: userId,
+                actionType: 'STATUS_UPDATE',
+                notes: 'Citizen confirmed resolution - case closed',
+            }
+        });
+
+        logger.info('Citizen confirmed resolution, case closed', { caseId });
+        await publishEvent(CHANNELS.CASE_RESOLVED, { caseId, status: 'CLOSED', confirmedBy: userId });
+
+        return this.toResponseDto(updatedCase as unknown as CaseEntity);
+    }
+
+    /**
+     * Citizen disputes resolution - escalate to next level
+     */
+    async citizenDisputeResolution(caseId: string, userId: string, disputeReason: string): Promise<CaseResponseDto> {
+        const existingCase = await this.repository.findById(caseId);
+        if (!existingCase) throw new Error('Case not found');
+
+        if ((existingCase.status as string) !== 'PENDING_CONFIRMATION') {
+            throw new Error('Case is not pending confirmation');
+        }
+
+        // Verify it's the case submitter
+        if (existingCase.submitterId && existingCase.submitterId !== userId) {
+            throw new Error('Only the case submitter can dispute resolution');
+        }
+
+        // Escalate to next level with dispute reason
+        const escalationReason = `Citizen disputed: ${disputeReason}`;
+
+        logger.info('Citizen disputed resolution, escalating', { caseId, reason: disputeReason });
+
+        // Use the escalateCase method with a system user flag
+        return this.escalateCase(caseId, escalationReason, userId);
     }
 
     /**
