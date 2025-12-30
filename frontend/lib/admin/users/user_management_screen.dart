@@ -565,7 +565,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             children: [
               _buildHeaderCell(l10n.name, Icons.person_outline, 3, theme),
               const SizedBox(width: 8),
-              _buildHeaderCell('Email', Icons.email_outlined, 4, theme),
+              _buildHeaderCell('Email', Icons.email_outlined, 3, theme),
+              const SizedBox(width: 8),
+              _buildHeaderCell(l10n.phone, Icons.phone_outlined, 2, theme),
               const SizedBox(width: 12),
               _buildHeaderCell(l10n.role, Icons.badge_outlined, 2, theme),
               const SizedBox(width: 12),
@@ -625,9 +627,22 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                           
                           // Email
                           Expanded(
-                            flex: 4,
+                            flex: 3,
                             child: Text(
                               user.email ?? '-',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          
+                          // Phone
+                          Expanded(
+                            flex: 2,
+                            child: Text(
+                              user.phone ?? '-',
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 color: theme.colorScheme.onSurfaceVariant,
                               ),
