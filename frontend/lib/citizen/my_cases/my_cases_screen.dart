@@ -1414,7 +1414,7 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
                       Column(
                         children: [
                           Container(
-                            width: 160,
+                            width: 180,
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
                               color: item.isCurrent 
@@ -1479,20 +1479,32 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 const SizedBox(height: 8),
-                                Row(
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 4,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
                                   children: [
-                                    Icon(Icons.calendar_today, size: 12, color: subTextColor),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      _formatDate(item.date),
-                                      style: TextStyle(fontSize: 11, color: subTextColor),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.calendar_today, size: 12, color: subTextColor),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          _formatDate(item.date),
+                                          style: TextStyle(fontSize: 11, color: subTextColor),
+                                        ),
+                                      ],
                                     ),
-                                    const SizedBox(width: 8),
-                                    Icon(Icons.access_time, size: 12, color: subTextColor),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      _formatTime(item.date),
-                                      style: TextStyle(fontSize: 11, color: subTextColor),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.access_time, size: 12, color: subTextColor),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          _formatTime(item.date),
+                                          style: TextStyle(fontSize: 11, color: subTextColor),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
