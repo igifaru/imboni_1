@@ -729,7 +729,7 @@ const Map<String, Map<String, String>> _translations = {
     'timeline': 'Timeline',
     'case_created': 'Created',
     // case_escalated defined above
-    'case_resolved': 'Resolved',
+    // case_resolved defined above
     'case_viewed': 'Viewed',
     'case_assigned': 'Assigned',
     'case_accepted': 'Accepted',
