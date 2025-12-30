@@ -900,6 +900,8 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
   }
 
   Widget _buildActionButtonsCard(ThemeData theme, AppLocalizations l10n, bool isDark, Color cardColor) {
+    final canTakeCase = _case.status == 'OPEN' || _case.status == 'ESCALATED';
+    
     return CaseDetailCard(
       backgroundColor: cardColor,
       child: Row(
@@ -924,7 +926,7 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: (_case.status == 'OPEN')
+                  onTap: canTakeCase
                       ? () => _performAction('ACCEPT')
                       : (_case.status == 'IN_PROGRESS') ? _resolveCase : null,
                   borderRadius: BorderRadius.circular(12),
@@ -934,13 +936,13 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
-                          (_case.status == 'OPEN') ? Icons.pan_tool_alt : Icons.check_circle_outline,
+                          canTakeCase ? Icons.pan_tool_alt : Icons.check_circle_outline,
                           color: Colors.white,
                           size: 20,
                         ),
                         const SizedBox(width: 10),
                         Text(
-                          (_case.status == 'OPEN') ? l10n.takeCase : l10n.resolveCase,
+                          canTakeCase ? l10n.takeCase : l10n.resolveCase,
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -954,7 +956,7 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
               ),
             ),
           ),
-          if (_case.status == 'IN_PROGRESS' || _case.status == 'OPEN') ...[
+          if (_case.status == 'IN_PROGRESS') ...[
             const SizedBox(width: 12),
             Expanded(
               child: OutlinedButton(
