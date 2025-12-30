@@ -141,16 +141,24 @@ class CaseService {
     return ApiResponse.error(response.error ?? 'Failed to escalate case');
   }
 
-  /// Confirm resolution (for citizens)
+  /// Confirm resolution (for citizens) - marks case as CLOSED
   Future<ApiResponse<CaseModel>> confirmResolution(String caseId) async {
-    final response = await apiClient.patch('/cases/$caseId', {
-      'status': 'CLOSED',
-      'notes': 'Citizen confirmed the issue is permanently solved.',
-    });
+    final response = await apiClient.post('/cases/$caseId/confirm', {});
     if (response.isSuccess && response.data != null) {
       return ApiResponse.success(CaseModel.fromJson(response.data));
     }
     return ApiResponse.error(response.error ?? 'Failed to confirm resolution');
+  }
+
+  /// Dispute resolution (for citizens) - escalates to next level
+  Future<ApiResponse<CaseModel>> disputeResolution(String caseId, String reason) async {
+    final response = await apiClient.post('/cases/$caseId/dispute', {
+      'reason': reason,
+    });
+    if (response.isSuccess && response.data != null) {
+      return ApiResponse.success(CaseModel.fromJson(response.data));
+    }
+    return ApiResponse.error(response.error ?? 'Failed to dispute resolution');
   }
 
   /// Get assigned cases (for leaders)

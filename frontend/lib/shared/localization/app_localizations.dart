@@ -33,6 +33,7 @@ class AppLocalizations {
   String get register => get('register');
   String get cancel => get('cancel');
   String get confirm => get('confirm');
+  String get dispute => get('dispute');
   String get save => get('save');
   String get notifications => get('notifications');
   String get selectCategory => get('select_category');
@@ -325,6 +326,7 @@ const Map<String, Map<String, String>> _translations = {
     'register': 'Kwiyandikisha',
     'cancel': 'Kureka',
     'confirm': 'Kwemeza',
+    'dispute': 'Kuregera',
     'save': 'Kubika',
     'notifications': 'Ubutumwa',
     'select_category': 'Hitamo icyiciro',
@@ -576,6 +578,7 @@ const Map<String, Map<String, String>> _translations = {
     'register': 'Register',
     'cancel': 'Cancel',
     'confirm': 'Confirm',
+    'dispute': 'Dispute',
     'save': 'Save',
     'notifications': 'Notifications',
     'select_category': 'Select Category',
@@ -828,6 +831,7 @@ const Map<String, Map<String, String>> _translations = {
     'register': "S'inscrire",
     'cancel': 'Annuler',
     'confirm': 'Confirmer',
+    'dispute': 'Contester',
     'save': 'Sauvegarder',
     'notifications': 'Notifications',
     'select_category': 'Sélectionner une catégorie',

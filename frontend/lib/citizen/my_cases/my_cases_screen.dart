@@ -47,9 +47,106 @@ class _MyCasesScreenState extends State<MyCasesScreen> with SingleTickerProvider
     }
   }
 
+  Future<void> _confirmResolution(CaseModel c) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Emeza ko ikibazo cyakemutse'),
+        content: const Text('Uremeza ko iki kibazo cyakemutse neza? Iki gikorwa ntishobora gusubirwaho.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Hagarika')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: const Text('Emeza'),
+          ),
+        ],
+      ),
+    );
+    
+    if (confirm != true) return;
+    
+    setState(() => _isLoading = true);
+    try {
+      final response = await CaseService.instance.confirmResolution(c.id);
+      if (mounted) {
+        setState(() => _isLoading = false);
+        if (response.isSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Ikibazo cyafunzwe. Murakoze!'), backgroundColor: Colors.green),
+          );
+          _loadCases();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(response.error ?? 'Byanze'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ikosa: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  Future<void> _disputeResolution(CaseModel c) async {
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Regera ikibazo'),
+        content: TextField(
+          decoration: const InputDecoration(
+            labelText: 'Impamvu yo kuregera',
+            hintText: 'Sobanura impamvu iki kibazo kitakemutse neza...',
+          ),
+          maxLines: 3,
+          onSubmitted: (v) => Navigator.pop(ctx, v),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Hagarika')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, 'Ikibazo nticyakemutse neza'),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            child: const Text('Ohereza'),
+          ),
+        ],
+      ),
+    );
+    
+    if (reason == null || reason.isEmpty) return;
+    
+    setState(() => _isLoading = true);
+    try {
+      final response = await CaseService.instance.disputeResolution(c.id, reason);
+      if (mounted) {
+        setState(() => _isLoading = false);
+        if (response.isSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Ikibazo cyoherejwe ku rwego rukurikira'), backgroundColor: Colors.orange),
+          );
+          _loadCases();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(response.error ?? 'Byanze'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ikosa: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
   List<CaseModel> get _openCases => _allCases.where((c) => c.status == 'OPEN').toList();
   List<CaseModel> get _inProgressCases => _allCases.where((c) => c.status == 'IN_PROGRESS' || c.status == 'ESCALATED').toList();
-  List<CaseModel> get _resolvedCases => _allCases.where((c) => c.status == 'RESOLVED' || c.status == 'CLOSED').toList();
+  List<CaseModel> get _resolvedCases => _allCases.where((c) => c.status == 'RESOLVED' || c.status == 'CLOSED' || c.status == 'PENDING_CONFIRMATION').toList();
 
   @override
   Widget build(BuildContext context) {
@@ -290,13 +387,38 @@ class _MyCasesScreenState extends State<MyCasesScreen> with SingleTickerProvider
                       ),
                     ],
                   ),
-                  Text(
-                    _formatTimeAgo(c.createdAt),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isDark ? Colors.white54 : Colors.grey[600],
+                  // Show confirm/dispute buttons for PENDING_CONFIRMATION status
+                  if (c.status == 'PENDING_CONFIRMATION')
+                    Row(
+                      children: [
+                        TextButton.icon(
+                          onPressed: () => _disputeResolution(c),
+                          icon: const Icon(Icons.close, size: 16, color: Colors.orange),
+                          label: Text(l10n.dispute, style: const TextStyle(fontSize: 12, color: Colors.orange)),
+                          style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton.icon(
+                          onPressed: () => _confirmResolution(c),
+                          icon: const Icon(Icons.check, size: 16),
+                          label: Text(l10n.confirm, style: const TextStyle(fontSize: 12)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            visualDensity: VisualDensity.compact,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          ),
+                        ),
+                      ],
+                    )
+                  else
+                    Text(
+                      _formatTimeAgo(c.createdAt),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? Colors.white54 : Colors.grey[600],
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
