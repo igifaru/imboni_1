@@ -1287,7 +1287,7 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Resolution Confirmation Required',
+                  l10n.pendingConfirmation,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: textColor,
@@ -1298,7 +1298,7 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            'The leader has marked this case as resolved. Please confirm if you are satisfied with the resolution, or dispute it if the issue persists.',
+            l10n.resolutionActionDesc,
             style: theme.textTheme.bodyMedium?.copyWith(color: textColor.withValues(alpha: 0.8)),
           ),
           const SizedBox(height: 20),
@@ -1362,12 +1362,22 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
           continue;
         }
         
+        // Parse localized notes if applicable
+        String? displayNotes = action.notes;
+        if (displayNotes != null && displayNotes.startsWith('Status changed to ')) {
+           final statusPart = displayNotes.replaceFirst('Status changed to ', '');
+           // Try to find status enum matching key
+           // Use raw string first as _getStatusLabel handles the translation map
+           // We might need to handle mapped values if the backend stores something else
+           displayNotes = '${l10n.statusChangedTo} ${_getStatusLabel(l10n, statusPart)}';
+        }
+
         timelineItems.add(_TimelineData(
           title: _getActionTitle(l10n, action.actionType),
           date: action.createdAt,
           color: _getActionColor(action.actionType),
           icon: _getActionIcon(action.actionType),
-          notes: action.notes,
+          notes: displayNotes,
         ));
       }
     } else {

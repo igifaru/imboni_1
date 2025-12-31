@@ -315,6 +315,9 @@ class AppLocalizations {
   
   String get escalationIn => get('escalation_in');
   String get overdue => get('overdue');
+  
+  String get resolutionActionDesc => get('resolution_action_desc');
+  String get statusChangedTo => get('status_changed_to');
 
 }
 
@@ -591,6 +594,8 @@ const Map<String, Map<String, String>> _translations = {
     'failed': 'Byanze',
     'escalation_in': 'Kizazamurwa mu',
     'overdue': 'Cyarengeje igihe',
+    'resolution_action_desc': 'Umuyobozi yagaragaje ko iki kibazo cyakemutse. Niba mwanyuzwe, muremeze. Niba bitara kemuka, mushobora kuregera.',
+    'status_changed_to': 'Imiterere yahindutse ikaba',
   },
   'en': {
     'app_name': 'Imboni',
@@ -805,6 +810,8 @@ const Map<String, Map<String, String>> _translations = {
     'logout': 'Logout',
     'escalation_in': 'Escalates in',
     'overdue': 'Overdue',
+    'resolution_action_desc': 'The leader has marked this case as resolved. Please confirm if you are satisfied with the resolution, or dispute it if the issue persists.',
+    'status_changed_to': 'Status changed to',
     'registered_on': 'Registered on',
     'residence_location': 'Residence Location',
     'edit_profile': 'Edit Profile',
