@@ -14,11 +14,13 @@ import 'package:imboni/shared/utils/highcharts_parser.dart';
 class RwandaMapWidget extends StatefulWidget {
   final Map<String, int> casesByDistrict;
   final Function(String) onDistrictSelected;
+  final String? mapTitle; // New: Dynamic title for map header
 
   const RwandaMapWidget({
     super.key,
     required this.casesByDistrict,
     required this.onDistrictSelected,
+    this.mapTitle,
   });
 
   @override
@@ -347,10 +349,10 @@ class _RwandaMapWidgetState extends State<RwandaMapWidget> {
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
-        children: const [
+        children: [
           Text(
-            'National "God View" Dashboard',
-            style: TextStyle(
+            widget.mapTitle ?? 'National "God View" Dashboard',
+            style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
               fontSize: 16,

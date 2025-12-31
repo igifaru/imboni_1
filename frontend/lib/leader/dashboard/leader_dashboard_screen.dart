@@ -186,12 +186,35 @@ class _DashboardHomeState extends State<_DashboardHome> {
   
   String? _selectedLocationId;
   String? _selectedLocationName;
+  String? _rootLocationName; 
   final List<Map<String, String>> _drillHistory = [];
-
+  
+  String? _currentLevel;
+  
   @override
   void initState() {
     super.initState();
     _loadDashboardData();
+  }
+
+  // ... (keep _casesByDistrict same)
+
+  Future<void> _fetchLevel() async {
+      try {
+        final context = await adminService.getMyJurisdiction();
+        
+        if (mounted) {
+           if (context != null) {
+              _currentLevel = context['level'];
+              // If level is NATIONAL, default to 'National', else use jurisdiction name
+              // Backend returns 'jurisdiction' field for the unit name
+              final name = context['jurisdiction'];
+              _rootLocationName = (_currentLevel == 'NATIONAL') ? 'National' : (name ?? 'National');
+           }
+        }
+      } catch (e) {
+        // Ignore error
+      }
   }
 
   Map<String, int> get _casesByDistrict {
@@ -217,20 +240,28 @@ class _DashboardHomeState extends State<_DashboardHome> {
   Future<void> _loadDashboardData() async {
     setState(() => _isLoading = true);
     
-    // Execute all loads but don't let one failure stop others
-    await Future.wait([
-      _loadLocationData(),
-      // If a location is selected, or user is ADMIN, load all cases (filtered by location).
-      // Otherwise (Leader at root), load assigned cases.
-      (_selectedLocationId != null || authService.currentUser?.role == 'ADMIN') 
-          ? _loadAllCases() 
-          : _loadAssignedCases(),
-      _loadEscalationAlerts(),
-      _loadPerformanceMetrics(),
-    ]);
-
+    try {
+       // Fetch level first to ensure headers are correct
+       await _fetchLevel();
+       
+       // Execute all loads but don't let one failure stop others
+       await Future.wait([
+        _loadLocationData(),
+        // If a location is selected, or user is ADMIN, load all cases (filtered by location).
+        // Otherwise (Leader at root), load assigned cases.
+        (_selectedLocationId != null || authService.currentUser?.role == 'ADMIN') 
+            ? _loadAllCases() 
+            : _loadAssignedCases(),
+        _loadEscalationAlerts(),
+        _loadPerformanceMetrics(),
+      ]);
+    } catch (e) {
+       debugPrint('Dashboard Load Error: $e');
+    }
+    
     if (mounted) setState(() => _isLoading = false);
   }
+
 
   Future<void> _loadLocationData() async {
     try {
@@ -296,21 +327,87 @@ class _DashboardHomeState extends State<_DashboardHome> {
 
   void _handleUnitSelected(String unitId, String unitName) {
     setState(() {
-      _drillHistory.add({'id': _selectedLocationId ?? 'root', 'name': _selectedLocationName ?? 'National'});
+      // Use _rootLocationName for the root fallback instead of hardcoded 'National'
+      _drillHistory.add({'id': _selectedLocationId ?? 'root', 'name': _selectedLocationName ?? _rootLocationName ?? 'National'});
       _selectedLocationId = unitId;
       _selectedLocationName = unitName;
     });
     _loadDashboardData();
   }
 
-  void _navigateBack() {
-    if (_drillHistory.isEmpty) return;
-    final last = _drillHistory.removeLast();
-    setState(() {
-      _selectedLocationId = last['id'] == 'root' ? null : last['id'];
-      _selectedLocationName = last['name'] == 'National' ? null : last['name'];
-    });
-    _loadDashboardData();
+  void _jumpToBreadcrumb(int index) {
+      if (index < 0) {
+        // Reset to root (National or Jurisdiction)
+        setState(() {
+           _drillHistory.clear();
+           _selectedLocationId = null;
+           _selectedLocationName = null;
+        });
+      } else {
+         final targetState = _drillHistory[index];
+         
+         setState(() {
+           _selectedLocationId = targetState['id'] == 'root' ? null : targetState['id'];
+           // Use root location name if 'National' is stored but we have a custom root
+           final isRootTarget = targetState['name'] == 'National' || targetState['name'] == (_rootLocationName ?? 'National');
+           _selectedLocationName = isRootTarget ? null : targetState['name'];
+           
+           _drillHistory.removeRange(index, _drillHistory.length);
+         });
+      }
+      _loadDashboardData();
+  }
+
+  Widget _buildBreadcrumbs(ThemeData theme) {
+    final List<Widget> crumbs = [];
+    
+    // 1. Root Item
+    final bool isRoot = _selectedLocationId == null;
+    // Use the fetched root location name (e.g. "Northern Province") or fallback
+    final rootLabel = _rootLocationName ?? 'National';
+    
+    crumbs.add(_buildBreadcrumbItem(theme, rootLabel, isRoot ? null : () => _jumpToBreadcrumb(-1), isValid: true));
+    
+    // 2. History Items
+    for (int i = 0; i < _drillHistory.length; i++) {
+        final item = _drillHistory[i];
+        if (item['id'] == 'root') continue; 
+        
+        crumbs.add(_buildChevron(theme));
+        crumbs.add(_buildBreadcrumbItem(theme, item['name']!, () => _jumpToBreadcrumb(i), isValid: true));
+    }
+    
+    // 3. Current Item (if not root)
+    if (_selectedLocationName != null) {
+        crumbs.add(_buildChevron(theme));
+        crumbs.add(_buildBreadcrumbItem(theme, _selectedLocationName!, null, isValid: false, isCurrent: true));
+    }
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(children: crumbs),
+    );
+  }
+  
+  Widget _buildChevron(ThemeData theme) {
+      return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4), 
+          child: Icon(Icons.chevron_right, size: 16, color: theme.disabledColor)
+      );
+  }
+
+  Widget _buildBreadcrumbItem(ThemeData theme, String label, VoidCallback? onTap, {bool isValid = true, bool isCurrent = false}) {
+     final color = isCurrent ? theme.colorScheme.primary : (onTap != null ? theme.colorScheme.onSurface : theme.disabledColor);
+     final weight = isCurrent ? FontWeight.bold : FontWeight.normal;
+     
+     return InkWell(
+         onTap: onTap,
+         borderRadius: BorderRadius.circular(4),
+         child: Padding(
+             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+             child: Text(label, style: TextStyle(color: color, fontWeight: weight, fontSize: 14)),
+         ),
+     );
   }
 
   @override
@@ -342,6 +439,7 @@ class _DashboardHomeState extends State<_DashboardHome> {
                         child: RwandaMapWidget(
                           casesByDistrict: _casesByDistrict,
                           onDistrictSelected: (d) => debugPrint('Selected District: $d'),
+                          mapTitle: _selectedLocationName ?? _rootLocationName ?? 'National "God View" Dashboard',
                         ),
                       ),
                       const SizedBox(width: 24),
@@ -351,23 +449,17 @@ class _DashboardHomeState extends State<_DashboardHome> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            if (_selectedLocationId != null)
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 8.0),
-                                child: TextButton.icon(
-                                  onPressed: _navigateBack,
-                                  icon: const Icon(Icons.arrow_back, size: 16),
-                                  label: Text('Back to ${_drillHistory.isNotEmpty ? _drillHistory.last['name'] : 'National'}'),
-                                  style: TextButton.styleFrom(padding: EdgeInsets.zero),
-                                ),
-                              ),
-                      DistrictCasesWidget(
-                        subUnitStats: _metrics?.subUnitBreakdown ?? [],
-                        isDashboardLoading: _isLoading,
-                        currentLevel: _metrics?.currentLevel ?? widget.currentLevel ?? '',
-                        onUnitSelected: _handleUnitSelected,
-                        currentMetrics: _metrics, // Pass metrics
-                      ),
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 8.0),
+                              child: _buildBreadcrumbs(theme),
+                            ),
+                            DistrictCasesWidget(
+                              subUnitStats: _metrics?.subUnitBreakdown ?? [],
+                              isDashboardLoading: _isLoading,
+                              currentLevel: _metrics?.currentLevel ?? widget.currentLevel ?? '',
+                              onUnitSelected: _handleUnitSelected,
+                              currentMetrics: _metrics, // Pass metrics
+                            ),
                           ],
                         ),
                       ),
@@ -377,14 +469,13 @@ class _DashboardHomeState extends State<_DashboardHome> {
                     RwandaMapWidget(
                       casesByDistrict: _casesByDistrict,
                       onDistrictSelected: (d) => debugPrint('Selected District: $d'),
+                      mapTitle: _selectedLocationName ?? _rootLocationName ?? 'National "God View" Dashboard',
                     ),
                     const SizedBox(height: 24),
-                    if (_selectedLocationId != null)
-                      TextButton.icon(
-                        onPressed: _navigateBack,
-                        icon: const Icon(Icons.arrow_back),
-                        label: Text('Back to ${_drillHistory.isNotEmpty ? _drillHistory.last['name'] : 'Overview'}'),
-                      ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: _buildBreadcrumbs(theme),
+                    ),
                     DistrictCasesWidget(
                       subUnitStats: _metrics?.subUnitBreakdown ?? [],
                       isDashboardLoading: _isLoading,
@@ -469,7 +560,7 @@ class _DashboardHomeState extends State<_DashboardHome> {
             // Show dynamic title based on selection
             _selectedLocationName != null 
                 ? 'Cases in $_selectedLocationName' 
-                : 'All Cases',
+                : 'Cases in ${_rootLocationName ?? 'National'}',
             style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)
           ),
         ),
