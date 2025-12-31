@@ -1015,6 +1015,7 @@ export class CaseService {
             let uResolved = 0;
             let uEscalated = 0;
             let uOpen = 0;
+            let uActive = 0; // New: In Progress
             let uResponseTime = 0;
             let uTimeCount = 0;
 
@@ -1029,9 +1030,10 @@ export class CaseService {
                     }
                 } else if (status === 'ESCALATED') {
                     uEscalated++;
-                } else if (status === 'OPEN' || status === 'IN_PROGRESS' || status === 'COMMUNITY') {
-                    uOpen++;
+                } else if (status === 'IN_PROGRESS') {
+                    uActive++;
                 } else {
+                    // OPEN, COMMUNITY, or others
                     uOpen++;
                 }
             });
@@ -1042,6 +1044,7 @@ export class CaseService {
                 unitName: unit.name,
                 totalCases: uTotal,
                 openCases: uOpen,
+                activeCases: uActive, // New field
                 resolvedCases: uResolved,
                 escalatedCases: uEscalated,
                 resolutionRate: uTotal > 0 ? (uResolved / uTotal) * 100 : 0,
@@ -1053,10 +1056,25 @@ export class CaseService {
 
         logger.info(`[Metrics Debug] Returning ${subUnitBreakdown.length} sub-units breakdown.`);
 
+        // Calculate top-level breakdown for the current unit
+        let topActive = 0;
+        let topOpen = 0;
+        // We can iterate 'cases' (which are all cases in this jurisdiction filtered by date/category)
+        cases.forEach(c => {
+            const status = c.status as any;
+            if (status === 'IN_PROGRESS') {
+                topActive++;
+            } else if (status !== 'RESOLVED' && status !== 'CLOSED' && status !== 'PENDING_CONFIRMATION' && status !== 'ESCALATED') {
+                topOpen++;
+            }
+        });
+
         return {
             totalCases: total,
             resolvedCases: resolved,
             pendingCases: total - resolved,
+            openCases: topOpen, // New
+            activeCases: topActive, // New
             escalatedCases: escalated,
             resolutionRate: total > 0 ? (resolved / total) * 100 : 0,
             avgResponseTimeHours: casesWithResponseTime > 0 ? (totalResponseTimeMinutes / casesWithResponseTime) / 60 : 0,

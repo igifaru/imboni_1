@@ -233,6 +233,8 @@ class PerformanceMetrics {
   final double avgResponseTimeHours;
   final double escalationRate; // New
   final int overdueCases; // New
+  final int activeCases; // New: Top level active
+  final int openCases; // New: Top level open
   final Map<String, int> casesByCategory;
   final List<DailyTrend> weeklyTrends;
   final List<SubUnitPerformance> subUnitBreakdown; // New
@@ -247,6 +249,8 @@ class PerformanceMetrics {
     required this.avgResponseTimeHours,
     required this.escalationRate,
     required this.overdueCases,
+    this.activeCases = 0,
+    this.openCases = 0,
     required this.casesByCategory,
     required this.weeklyTrends,
     required this.subUnitBreakdown,
@@ -277,6 +281,8 @@ class PerformanceMetrics {
       avgResponseTimeHours: (json['avgResponseTimeHours'] ?? 0).toDouble(),
       escalationRate: (json['escalationRate'] ?? 0).toDouble(),
       overdueCases: json['overdueCases'] ?? 0,
+      activeCases: json['activeCases'] ?? 0,
+      openCases: json['openCases'] ?? 0,
       casesByCategory: Map<String, int>.from(json['casesByCategory'] ?? {}),
       weeklyTrends: trends,
       subUnitBreakdown: breakdown,
@@ -333,6 +339,7 @@ class SubUnitPerformance {
   final String unitName;
   final int totalCases;
   final int openCases;
+  final int activeCases; // New: In Progress
   final int resolvedCases;
   final int escalatedCases;
   final double resolutionRate;
@@ -344,9 +351,10 @@ class SubUnitPerformance {
     required this.unitId,
     required this.unitName,
     required this.totalCases,
-    this.openCases = 0,
-    this.resolvedCases = 0,
-    this.escalatedCases = 0,
+    required this.openCases,
+    required this.activeCases,
+    required this.resolvedCases,
+    required this.escalatedCases,
     required this.resolutionRate,
     required this.avgResponseTimeHours,
     required this.escalationRate,
@@ -359,12 +367,13 @@ class SubUnitPerformance {
       unitName: json['unitName'] ?? 'Unknown',
       totalCases: json['totalCases'] ?? 0,
       openCases: json['openCases'] ?? 0,
+      activeCases: json['activeCases'] ?? 0, // Fallback to 0 if missing
       resolvedCases: json['resolvedCases'] ?? 0,
       escalatedCases: json['escalatedCases'] ?? 0,
       resolutionRate: (json['resolutionRate'] ?? 0).toDouble(),
       avgResponseTimeHours: (json['avgResponseTimeHours'] ?? 0).toDouble(),
       escalationRate: (json['escalationRate'] ?? 0).toDouble(),
-      status: json['status'] ?? 'On Track',
+      status: json['status'] ?? 'Unknown',
     );
   }
 }

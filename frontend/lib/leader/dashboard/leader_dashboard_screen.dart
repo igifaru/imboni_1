@@ -220,7 +220,11 @@ class _DashboardHomeState extends State<_DashboardHome> {
     // Execute all loads but don't let one failure stop others
     await Future.wait([
       _loadLocationData(),
-      authService.currentUser?.role == 'ADMIN' ? _loadAllCases() : _loadAssignedCases(),
+      // If a location is selected, or user is ADMIN, load all cases (filtered by location).
+      // Otherwise (Leader at root), load assigned cases.
+      (_selectedLocationId != null || authService.currentUser?.role == 'ADMIN') 
+          ? _loadAllCases() 
+          : _loadAssignedCases(),
       _loadEscalationAlerts(),
       _loadPerformanceMetrics(),
     ]);
@@ -357,12 +361,13 @@ class _DashboardHomeState extends State<_DashboardHome> {
                                   style: TextButton.styleFrom(padding: EdgeInsets.zero),
                                 ),
                               ),
-                            DistrictCasesWidget(
-                              subUnitStats: _metrics?.subUnitBreakdown ?? [],
-                              isDashboardLoading: _isLoading,
-                              currentLevel: _metrics?.currentLevel ?? widget.currentLevel ?? '',
-                              onUnitSelected: _handleUnitSelected,
-                            ),
+                      DistrictCasesWidget(
+                        subUnitStats: _metrics?.subUnitBreakdown ?? [],
+                        isDashboardLoading: _isLoading,
+                        currentLevel: _metrics?.currentLevel ?? widget.currentLevel ?? '',
+                        onUnitSelected: _handleUnitSelected,
+                        currentMetrics: _metrics, // Pass metrics
+                      ),
                           ],
                         ),
                       ),
@@ -385,6 +390,7 @@ class _DashboardHomeState extends State<_DashboardHome> {
                       isDashboardLoading: _isLoading,
                       currentLevel: _metrics?.currentLevel ?? widget.currentLevel ?? '',
                       onUnitSelected: _handleUnitSelected,
+                      currentMetrics: _metrics, // Pass metrics for mobile too
                     ),
                   ],
                   const SizedBox(height: 32),
@@ -457,6 +463,16 @@ class _DashboardHomeState extends State<_DashboardHome> {
     return Container(
       decoration: BoxDecoration(color: theme.cardColor, borderRadius: BorderRadius.circular(16), border: Border.all(color: theme.dividerColor)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            // Show dynamic title based on selection
+            _selectedLocationName != null 
+                ? 'Cases in $_selectedLocationName' 
+                : 'All Cases',
+            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)
+          ),
+        ),
         _buildDataTable(theme, isDark),
       ]),
     );
