@@ -179,7 +179,7 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 48, color: ImboniColors.error),
+            const Icon(Icons.error_outline, size: 48, color: ImboniColors.error),
             const SizedBox(height: 16),
             Text(_initError!, style: theme.textTheme.bodyLarge),
             const SizedBox(height: 24),

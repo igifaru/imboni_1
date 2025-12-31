@@ -382,8 +382,8 @@ class _RwandaMapWidgetState extends State<RwandaMapWidget> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-           Row(
-             children: const [
+           const Row(
+             children: [
                Icon(Icons.auto_awesome, color: Colors.blueAccent, size: 16),
                SizedBox(width: 8),
                Text('AI Insights', style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
@@ -397,7 +397,7 @@ class _RwandaMapWidgetState extends State<RwandaMapWidget> {
                borderRadius: BorderRadius.circular(8),
                border: Border.all(color: Colors.orange.withValues(alpha: 0.5)),
              ),
-             child: Row(
+             child: const Row(
                children: [
                  Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 20),
                  SizedBox(width: 8),

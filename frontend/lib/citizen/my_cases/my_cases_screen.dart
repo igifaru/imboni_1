@@ -1283,7 +1283,7 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
         children: [
           Row(
             children: [
-              Icon(Icons.check_circle_outline, color: ImboniColors.primary, size: 28),
+              const Icon(Icons.check_circle_outline, color: ImboniColors.primary, size: 28),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -1955,7 +1955,7 @@ class _AudioPlayerDialogState extends State<_AudioPlayerDialog> {
              const SizedBox(height: 16),
              TextButton(
                onPressed: () => Navigator.pop(context),
-               child: Text('Close'),
+               child: const Text('Close'),
              ),
           ],
         ),

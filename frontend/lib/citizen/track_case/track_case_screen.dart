@@ -186,7 +186,7 @@ class _TrackCaseScreenState extends State<TrackCaseScreen> {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(8)),
                 child: Row(children: [
-                  Icon(Icons.location_on_outlined, size: 18, color: ImboniColors.primary),
+                  const Icon(Icons.location_on_outlined, size: 18, color: ImboniColors.primary),
                   const SizedBox(width: 8),
                   Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(l10n.currentLevel, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),

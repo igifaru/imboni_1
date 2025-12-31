@@ -107,14 +107,14 @@ class _RwandaAdministrativeMapState extends State<RwandaAdministrativeMap> {
   }
 
   Widget _buildLegend(ThemeData theme) {
-    return Row(
+    return const Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const _LegendItem(color: Color(0xFF4CAF50), label: 'Low'),
-        const SizedBox(width: 16),
-        const _LegendItem(color: Color(0xFFFF9800), label: 'Medium'),
-        const SizedBox(width: 16),
-        const _LegendItem(color: Color(0xFFF44336), label: 'High Priority'),
+        _LegendItem(color: Color(0xFF4CAF50), label: 'Low'),
+        SizedBox(width: 16),
+        _LegendItem(color: Color(0xFFFF9800), label: 'Medium'),
+        SizedBox(width: 16),
+        _LegendItem(color: Color(0xFFF44336), label: 'High Priority'),
       ],
     );
   }
