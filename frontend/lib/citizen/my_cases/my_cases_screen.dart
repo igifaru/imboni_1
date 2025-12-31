@@ -1274,9 +1274,9 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: ImboniColors.primary.withOpacity(0.1),
+        color: ImboniColors.primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: ImboniColors.primary.withOpacity(0.3)),
+        border: Border.all(color: ImboniColors.primary.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1299,7 +1299,7 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
           const SizedBox(height: 12),
           Text(
             'The leader has marked this case as resolved. Please confirm if you are satisfied with the resolution, or dispute it if the issue persists.',
-            style: theme.textTheme.bodyMedium?.copyWith(color: textColor.withOpacity(0.8)),
+            style: theme.textTheme.bodyMedium?.copyWith(color: textColor.withValues(alpha: 0.8)),
           ),
           const SizedBox(height: 20),
           Row(
@@ -1513,18 +1513,18 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
                               color: item.isCurrent 
-                                  ? item.color.withOpacity(0.1) 
-                                  : (isDark ? Colors.white.withOpacity(0.05) : Colors.grey[50]),
+                                  ? item.color.withValues(alpha: 0.1) 
+                                  : (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey[50]),
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
                                 color: item.isCurrent 
                                     ? item.color 
-                                    : (isDark ? Colors.white12 : Colors.grey.withOpacity(0.2)),
+                                    : (isDark ? Colors.white12 : Colors.grey.withValues(alpha: 0.2)),
                                 width: item.isCurrent ? 2 : 1,
                               ),
                               boxShadow: item.isCurrent ? [
                                 BoxShadow(
-                                  color: item.color.withOpacity(0.3),
+                                  color: item.color.withValues(alpha: 0.3),
                                   blurRadius: 12,
                                   offset: const Offset(0, 4),
                                 )
@@ -1538,7 +1538,7 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
                                     Container(
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: item.color.withOpacity(0.2),
+                                        color: item.color.withValues(alpha: 0.2),
                                         shape: BoxShape.circle,
                                       ),
                                       child: Icon(item.icon, size: 18, color: item.color),
@@ -1553,7 +1553,7 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
                                           shape: BoxShape.circle,
                                           boxShadow: [
                                             BoxShadow(
-                                              color: item.color.withOpacity(0.6),
+                                              color: item.color.withValues(alpha: 0.6),
                                               blurRadius: 6,
                                               spreadRadius: 2,
                                             )
@@ -1615,7 +1615,7 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
                                       item.notes!,
                                       style: TextStyle(
                                         fontSize: 11, 
-                                        color: textColor.withOpacity(0.8), 
+                                        color: textColor.withValues(alpha: 0.8), 
                                         fontStyle: FontStyle.italic
                                       ),
                                       maxLines: 3,
@@ -1641,8 +1641,8 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
                            decoration: BoxDecoration(
                              gradient: LinearGradient(
                                colors: [
-                                 item.color.withOpacity(0.5), 
-                                 timelineItems[index+1].color.withOpacity(0.5)
+                                 item.color.withValues(alpha: 0.5), 
+                                 timelineItems[index+1].color.withValues(alpha: 0.5)
                                ],
                              ),
                            ),
@@ -1710,8 +1710,8 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
       case 'VIEWED': return l10n.caseViewed;
       case 'ASSIGNED': return l10n.caseAssigned;
       case 'ACCEPTED': return l10n.caseAccepted;
-      case 'STATUS_UPDATE': return l10n.statusUpdate ?? 'Status Update';
-      case 'RESOLUTION': return l10n.resolution ?? 'Resolution';
+      case 'STATUS_UPDATE': return l10n.statusUpdate;
+      case 'RESOLUTION': return l10n.resolution;
       case 'PENDING_CONFIRMATION': return l10n.pendingConfirmation;
       default: return type.replaceAll('_', ' ').toLowerCase().split(' ').map((s) => s.isNotEmpty ? '${s[0].toUpperCase()}${s.substring(1)}' : '').join(' ');
     }
@@ -1764,12 +1764,10 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
   String _formatTime(DateTime date) => DateFormat('HH:mm').format(date);
 
   void _handleEvidenceTap(BuildContext context, EvidenceModel e) {
-    if (e.url == null) return;
-    
     // Construct full URL
-    final fullUrl = e.url!.startsWith('http') 
-        ? e.url! 
-        : '${ApiClient.storageUrl}${e.url!.startsWith('/') ? '' : '/'}${e.url}';
+    final fullUrl = e.url.startsWith('http') 
+        ? e.url 
+        : '${ApiClient.storageUrl}${e.url.startsWith('/') ? '' : '/'}${e.url}';
         
     debugPrint('Opening evidence: $fullUrl');
 

@@ -177,9 +177,9 @@ class _MediaAttachmentWidgetState extends State<MediaAttachmentWidget> {
   Widget _buildAttachmentsGrid(ThemeData theme, ColorScheme colorScheme, bool isDark) {
     return Container(
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withAlpha(isDark ? 50 : 30),
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: isDark ? 0.2 : 0.12),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colorScheme.outline.withAlpha(50)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.2)),
       ),
       child: GridView.builder(
         shrinkWrap: true,
@@ -217,10 +217,10 @@ class _MediaAttachmentWidgetState extends State<MediaAttachmentWidget> {
             decoration: BoxDecoration(
               color: colorScheme.surface,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: colorScheme.outline.withAlpha(30)),
+              border: Border.all(color: colorScheme.outline.withValues(alpha: 0.12)),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),
@@ -234,7 +234,7 @@ class _MediaAttachmentWidgetState extends State<MediaAttachmentWidget> {
                   flex: 3,
                   child: Container(
                     decoration: BoxDecoration(
-                      color: attachment.getColor(colorScheme).withAlpha(15),
+                      color: attachment.getColor(colorScheme).withValues(alpha: 0.06),
                       borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                     ),
                     child: Center(
@@ -302,7 +302,7 @@ class _MediaAttachmentWidgetState extends State<MediaAttachmentWidget> {
                   shape: BoxShape.circle,
                   border: Border.all(color: colorScheme.surface, width: 2), // White border for separation
                   boxShadow: [
-                     BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4)
+                     BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4)
                   ],
                 ),
                 child: Icon(Icons.close, size: 12, color: colorScheme.onError),
@@ -375,16 +375,16 @@ class _MediaAttachmentWidgetState extends State<MediaAttachmentWidget> {
         errorBuilder: (ctx, err, stack) => const Icon(Icons.broken_image_rounded, size: 30, color: Colors.grey),
       );
     }
-    return Icon(Icons.image, size: 32);
+    return const Icon(Icons.image, size: 32);
   }
 
   Widget _buildEmptyState(ThemeData theme, ColorScheme colorScheme) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withAlpha(30),
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colorScheme.outline.withAlpha(50), style: BorderStyle.solid),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.2), style: BorderStyle.solid),
       ),
       child: Column(
         children: [
@@ -415,7 +415,7 @@ class _MediaAttachmentWidgetState extends State<MediaAttachmentWidget> {
     if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.windows || defaultTargetPlatform == TargetPlatform.macOS)) {
       if (source == ImageSource.camera) {
          ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context).cameraNotSupported ?? 'Camera not supported on this platform.')),
+          SnackBar(content: Text(AppLocalizations.of(context).cameraNotSupported)),
         );
         return;
       }
@@ -495,7 +495,7 @@ class _MediaAttachmentWidgetState extends State<MediaAttachmentWidget> {
       if (mounted) {
          ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Could not capture photo. Ensure webcam is available.'),
+            content: const Text('Could not capture photo. Ensure webcam is available.'),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
@@ -610,7 +610,7 @@ class _AttachmentButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: color.withAlpha(25),
+      color: color.withValues(alpha: 0.1),
       borderRadius: BorderRadius.circular(10),
       child: InkWell(
         onTap: onTap,

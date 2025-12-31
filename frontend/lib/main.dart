@@ -143,10 +143,10 @@ class _ImboniAppState extends State<ImboniApp> {
     }
 
     if (_isLeader) {
-      return LeaderDashboardScreen();
+      return const LeaderDashboardScreen();
     }
     
-    return CitizenHomeScreen();
+    return const CitizenHomeScreen();
   }
 }
 
@@ -158,7 +158,7 @@ class _RwMaterialLocalizationsDelegate extends LocalizationsDelegate<MaterialLoc
   bool isSupported(Locale locale) => locale.languageCode == 'rw';
 
   @override
-  Future<MaterialLocalizations> load(Locale locale) async => DefaultMaterialLocalizations();
+  Future<MaterialLocalizations> load(Locale locale) async => const DefaultMaterialLocalizations();
 
   @override
   bool shouldReload(_RwMaterialLocalizationsDelegate old) => false;
@@ -172,7 +172,7 @@ class _RwCupertinoLocalizationsDelegate extends LocalizationsDelegate<CupertinoL
   bool isSupported(Locale locale) => locale.languageCode == 'rw';
 
   @override
-  Future<CupertinoLocalizations> load(Locale locale) async => DefaultCupertinoLocalizations();
+  Future<CupertinoLocalizations> load(Locale locale) async => const DefaultCupertinoLocalizations();
 
   @override
   bool shouldReload(_RwCupertinoLocalizationsDelegate old) => false;

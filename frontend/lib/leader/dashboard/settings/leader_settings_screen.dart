@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../shared/theme/colors.dart';
+
 import '../../../../shared/theme/responsive.dart';
 import '../../../../shared/services/auth_service.dart';
 import '../../../../shared/models/models.dart';
@@ -240,7 +240,7 @@ class _LeaderSettingsScreenState extends State<LeaderSettingsScreen> {
   Widget _buildSwitch(String label, bool value, ValueChanged<bool> onChanged, ThemeData theme, ColorScheme colorScheme) {
     return Padding(
       padding: const EdgeInsets.only(left: 34, top: 4),
-      child: Row(children: [Expanded(child: Text(label, style: theme.textTheme.bodyMedium)), Switch(value: value, onChanged: onChanged, activeColor: colorScheme.primary)]),
+      child: Row(children: [Expanded(child: Text(label, style: theme.textTheme.bodyMedium)), Switch(value: value, onChanged: onChanged, activeThumbColor: colorScheme.primary)]),
     );
   }
 

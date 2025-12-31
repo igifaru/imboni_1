@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../theme/colors.dart';
+
 import '../services/admin_units_service.dart';
 import '../models/models.dart';
 
@@ -126,7 +126,7 @@ class _LocationSelectorState extends State<LocationSelector> {
         Text(label, style: Theme.of(context).textTheme.labelLarge),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          value: value,
+          initialValue: value,
           decoration: InputDecoration(
             filled: true,
             enabled: enabled,

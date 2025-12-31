@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:ui';
+
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -61,9 +61,9 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withAlpha(40),
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.15), // alpha 40/255 approx 0.15
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colorScheme.outline.withAlpha(50)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -103,9 +103,9 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 24),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface.withOpacity(0.3),
+        color: theme.colorScheme.surface.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.1)),
+        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -137,7 +137,7 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: (_isRecording ? colorScheme.error : const Color(0xFF00C853)).withOpacity(0.4),
+                    color: (_isRecording ? colorScheme.error : const Color(0xFF00C853)).withValues(alpha: 0.4),
                     blurRadius: _isRecording ? 20 : 10,
                     spreadRadius: _isRecording ? 4 : 0,
                   ),
@@ -213,7 +213,7 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            color: Colors.green.withAlpha(25),
+            color: Colors.green.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
@@ -291,7 +291,7 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> {
     } catch (e) {
       debugPrint('Error starting recording: $e');
       if (mounted) {
-        String errorMessage = AppLocalizations.of(context).recordingError ?? 'Could not start recording.';
+        String errorMessage = AppLocalizations.of(context).recordingError;
         if (!kIsWeb && Platform.isLinux && e.toString().contains('ProcessException')) {
            // Even our fallback failed?
            errorMessage = 'Linux recording requires "arecord" (ALSA) or "parecord".';

@@ -15,6 +15,7 @@ import 'settings/leader_settings_screen.dart';
 import '../../admin/services/admin_service.dart';
 import '../../shared/localization/app_localizations.dart';
 import '../case_management/case_details_screen.dart';
+import '../../shared/services/auth_service.dart';
 
 /// Leader Dashboard Screen - Professional responsive design
 class LeaderDashboardScreen extends StatefulWidget {
@@ -36,21 +37,21 @@ class _LeaderDashboardScreenState extends State<LeaderDashboardScreen> {
   }
 
   Future<void> _fetchLevel() async {
-    try {
-      final context = await adminService.getMyJurisdiction();
-      if (mounted) {
-        setState(() {
-          if (context != null) {
-            _currentLevel = context['level'];
-          }
-          _isLevelLoading = false;
-        });
+      try {
+        final context = await adminService.getMyJurisdiction();
+        if (mounted) {
+          setState(() {
+            if (context != null) {
+              _currentLevel = context['level'];
+            }
+            _isLevelLoading = false;
+          });
+        }
+      } catch (e) {
+        if (mounted) setState(() => _isLevelLoading = false);
       }
-    } catch (e) {
-      if (mounted) setState(() => _isLevelLoading = false);
-    }
   }
-
+  
   @override
   Widget build(BuildContext context) {
     if (_isLevelLoading) {
@@ -219,7 +220,7 @@ class _DashboardHomeState extends State<_DashboardHome> {
     // Execute all loads but don't let one failure stop others
     await Future.wait([
       _loadLocationData(),
-      _loadAssignedCases(),
+      authService.currentUser?.role == 'ADMIN' ? _loadAllCases() : _loadAssignedCases(),
       _loadEscalationAlerts(),
       _loadPerformanceMetrics(),
     ]);
@@ -232,6 +233,22 @@ class _DashboardHomeState extends State<_DashboardHome> {
       await LocationService().load();
     } catch (e) {
       // Non-critical
+    }
+  }
+
+  Future<void> _loadAllCases() async {
+    final response = await caseService.getAllCases(
+      query: _searchQuery, 
+      locationId: _selectedLocationId
+    );
+    if (response.isSuccess) {
+      if (mounted) {
+        setState(() {
+          _assignedCases = response.data ?? []; 
+        });
+      }
+    } else {
+       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to load: ${response.error}')));
     }
   }
 

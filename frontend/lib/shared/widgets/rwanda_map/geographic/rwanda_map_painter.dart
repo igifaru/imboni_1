@@ -54,8 +54,8 @@ class RwandaMapPainter extends CustomPainter {
       final fillPaint = Paint()
         ..shader = RadialGradient(
           colors: [
-            baseColor.withOpacity(isHovered ? 1.0 : 0.9),
-            baseColor.withOpacity(isHovered ? 0.8 : 0.6),
+            baseColor.withValues(alpha: isHovered ? 1.0 : 0.9),
+            baseColor.withValues(alpha: isHovered ? 0.8 : 0.6),
           ],
           center: Alignment.center,
           radius: 0.8,
@@ -64,14 +64,14 @@ class RwandaMapPainter extends CustomPainter {
       
       // Shadow for elevation
       if (isSelected || isHovered) {
-        canvas.drawShadow(path, Colors.black.withOpacity(0.3), 4.0, true);
+        canvas.drawShadow(path, Colors.black.withValues(alpha: 0.3), 4.0, true);
       }
       
       canvas.drawPath(path, fillPaint);
 
       // Stroke
       final strokePaint = Paint()
-        ..color = isDark ? Colors.white.withOpacity(0.4) : Colors.black.withOpacity(0.2)
+        ..color = isDark ? Colors.white.withValues(alpha: 0.4) : Colors.black.withValues(alpha: 0.2)
         ..style = PaintingStyle.stroke
         ..strokeWidth = isSelected ? 2.0 : 0.5;
       
@@ -269,7 +269,7 @@ class RwandaMapData {
   }
   
   static Color getBubbleColor(int count) {
-     if (count == 0) return Colors.green.withOpacity(0.5);
+     if (count == 0) return Colors.green.withValues(alpha: 0.5);
      if (count < 20) return Colors.greenAccent;
      if (count < 50) return Colors.orange;
      return Colors.redAccent;

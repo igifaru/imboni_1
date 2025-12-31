@@ -79,7 +79,7 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       decoration: BoxDecoration(
         color: theme.scaffoldBackgroundColor,
-        border: Border(bottom: BorderSide(color: theme.dividerColor.withOpacity(0.1))),
+        border: Border(bottom: BorderSide(color: theme.dividerColor.withValues(alpha: 0.1))),
       ),
       child: Row(children: [
         _buildStepItem(0, l10n.problem, theme),
@@ -102,7 +102,7 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
           shape: BoxShape.circle,
           color: isActive ? ImboniColors.primary : Colors.transparent,
           border: Border.all(color: isActive ? ImboniColors.primary : theme.colorScheme.outline, width: 2),
-          boxShadow: isActive ? [BoxShadow(color: ImboniColors.primary.withOpacity(0.3), blurRadius: 8, spreadRadius: 1)] : null,
+          boxShadow: isActive ? [BoxShadow(color: ImboniColors.primary.withValues(alpha: 0.3), blurRadius: 8, spreadRadius: 1)] : null,
         ),
         child: Center(
           child: isActive 
@@ -141,14 +141,14 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
               decoration: BoxDecoration(
                 color: theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: theme.colorScheme.outline.withOpacity(0.1)),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+                border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))],
               ),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Row(children: [
                   Container(
                     padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(color: ImboniColors.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                    decoration: BoxDecoration(color: ImboniColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
                     child: const Icon(Icons.edit_note, color: ImboniColors.primary, size: 20),
                   ),
                   const SizedBox(width: 12),
@@ -170,7 +170,7 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
                   decoration: InputDecoration(
                     hintText: l10n.caseTitleHint,
                     filled: true,
-                    fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                    fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   ),
@@ -185,7 +185,7 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
                   decoration: InputDecoration(
                     hintText: l10n.descHint,
                     filled: true,
-                    fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                    fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   ),
@@ -212,7 +212,7 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
                     backgroundColor: ImboniColors.primary,
                     foregroundColor: Colors.white,
                     elevation: 4,
-                    shadowColor: ImboniColors.primary.withOpacity(0.4),
+                    shadowColor: ImboniColors.primary.withValues(alpha: 0.4),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                   icon: const Icon(Icons.arrow_forward_rounded, size: 18),
@@ -232,9 +232,9 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
     margin: const EdgeInsets.only(bottom: 24),
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
-      color: ImboniColors.urgencyEmergency.withOpacity(0.1),
+      color: ImboniColors.urgencyEmergency.withValues(alpha: 0.1),
       borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: ImboniColors.urgencyEmergency.withOpacity(0.5)),
+      border: Border.all(color: ImboniColors.urgencyEmergency.withValues(alpha: 0.5)),
     ),
     child: Row(children: [
       Container(
@@ -250,9 +250,9 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
   Widget _buildAnonymousToggle(AppLocalizations l10n, ThemeData theme) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
     decoration: BoxDecoration(
-      color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
       borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: theme.colorScheme.outline.withOpacity(0.2)),
+      border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.2)),
     ),
     child: SwitchListTile(
       title: Text(l10n.submitAnonymously, style: const TextStyle(fontWeight: FontWeight.w600)),
@@ -262,7 +262,7 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
       secondary: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: _isAnonymous ? theme.colorScheme.primary.withOpacity(0.1) : theme.colorScheme.surface,
+          color: _isAnonymous ? theme.colorScheme.primary.withValues(alpha: 0.1) : theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(_isAnonymous ? Icons.visibility_off : Icons.visibility, color: _isAnonymous ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant),
@@ -292,7 +292,7 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
               decoration: BoxDecoration(
                 color: ImboniColors.info.withAlpha(25),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: ImboniColors.info.withOpacity(0.3)),
+                border: Border.all(color: ImboniColors.info.withValues(alpha: 0.3)),
               ),
               child: Row(children: [
                 const Icon(Icons.info_outline, color: ImboniColors.info),
@@ -308,8 +308,8 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
               decoration: BoxDecoration(
                 color: theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: theme.colorScheme.outline.withOpacity(0.1)),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+                border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))],
               ),
               child: LocationSelector(
                 initialSelection: _location,
@@ -373,7 +373,7 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
                             backgroundColor: ImboniColors.primary,
                             foregroundColor: Colors.white,
                             elevation: 4,
-                            shadowColor: ImboniColors.primary.withOpacity(0.4),
+                            shadowColor: ImboniColors.primary.withValues(alpha: 0.4),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           ),
                           icon: const Icon(Icons.arrow_forward_rounded, size: 18),
@@ -427,8 +427,8 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
               decoration: BoxDecoration(
                 color: theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: theme.colorScheme.outline.withOpacity(0.1)),
-                 boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+                border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
+                 boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -502,7 +502,7 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
                             backgroundColor: ImboniColors.primary,
                             foregroundColor: Colors.white,
                             elevation: 4,
-                            shadowColor: ImboniColors.primary.withOpacity(0.4),
+                            shadowColor: ImboniColors.primary.withValues(alpha: 0.4),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           ),
                           icon: const Icon(Icons.check_circle_outline, size: 18),
@@ -584,14 +584,16 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
         
         // 3. Success (with warning if uploads failed)
         if (failedUploads.isNotEmpty) {
-           ScaffoldMessenger.of(context).showSnackBar(
+           if (mounted) {
+             ScaffoldMessenger.of(context).showSnackBar(
              SnackBar(
                content: Text('${l10n.partialSuccess}: ${failedUploads.join(', ')}'), 
                backgroundColor: Colors.orange,
                duration: const Duration(seconds: 5),
              )
            );
-            _showSuccessDialog(response.data!, l10n); // Still show success as case is created
+            _showSuccessDialog(response.data!, l10n);
+           }
         } else {
              _showSuccessDialog(response.data!, l10n); 
         }
@@ -600,7 +602,7 @@ class _SubmitCaseScreenState extends State<SubmitCaseScreen> {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response.error ?? l10n.failed), backgroundColor: ImboniColors.error)); 
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${l10n.failed}: $e'), backgroundColor: ImboniColors.error));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${l10n.failed}: $e'), backgroundColor: ImboniColors.error));
     } finally { 
       if (mounted) setState(() => _isLoading = false); 
     }
@@ -639,9 +641,9 @@ class _UrgencyChip extends StatelessWidget {
     duration: const Duration(milliseconds: 200),
     padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
     decoration: BoxDecoration(
-      color: isSelected ? color.withOpacity(0.15) : Colors.transparent,
+      color: isSelected ? color.withValues(alpha: 0.15) : Colors.transparent,
       borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: isSelected ? color : Theme.of(context).colorScheme.outline.withOpacity(0.5), width: isSelected ? 2 : 1)
+      border: Border.all(color: isSelected ? color : Theme.of(context).colorScheme.outline.withValues(alpha: 0.5), width: isSelected ? 2 : 1)
     ),
     child: Column(mainAxisSize: MainAxisSize.min, children: [
         Icon(icon, color: isSelected ? color : Theme.of(context).colorScheme.onSurfaceVariant, size: 24),

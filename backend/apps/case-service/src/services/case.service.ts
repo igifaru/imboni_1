@@ -245,8 +245,8 @@ export class CaseService {
     /**
      * Get all cases (Admin only)
      */
-    async getAllCases(page = 1, limit = 50, search?: string) {
-        const result = await this.repository.findAll(page, limit, search);
+    async getAllCases(page = 1, limit = 50, search?: string, locationId?: string) {
+        const result = await this.repository.findAll(page, limit, search, locationId);
         return {
             cases: result.cases.map(c => this.toResponseDto(c)),
             total: result.total,

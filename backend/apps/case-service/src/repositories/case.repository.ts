@@ -186,7 +186,7 @@ export class CaseRepository {
     /**
      * Find all cases (for Admin)
      */
-    async findAll(page = 1, limit = 50, search?: string): Promise<{ cases: CaseEntity[]; total: number }> {
+    async findAll(page = 1, limit = 50, search?: string, locationId?: string): Promise<{ cases: CaseEntity[]; total: number }> {
         const skip = (page - 1) * limit;
         const where: any = {};
 
@@ -195,6 +195,15 @@ export class CaseRepository {
                 { caseReference: { contains: search, mode: 'insensitive' } },
                 { title: { contains: search, mode: 'insensitive' } },
             ];
+        }
+
+        if (locationId) {
+            const unit = await prisma.administrativeUnit.findUnique({ where: { id: locationId } });
+            if (unit) {
+                where.administrativeUnit = {
+                    code: { startsWith: unit.code }
+                };
+            }
         }
 
         const [cases, total] = await Promise.all([

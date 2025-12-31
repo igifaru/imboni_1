@@ -1,5 +1,6 @@
 /// Rwanda's 5 Provinces with their Kinyarwanda names
 /// This is the single source of truth for province definitions across the app.
+library rwanda_provinces;
 
 /// Province data class
 class RwandaProvince {

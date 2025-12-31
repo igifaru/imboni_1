@@ -11,8 +11,8 @@ class ListSelector extends StatelessWidget {
     required this.items,
     required this.onSelected,
     this.onBack,
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {

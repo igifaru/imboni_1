@@ -642,10 +642,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
         position: position,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         items: [
-           PopupMenuItem(
-             value: {'id': null, 'name': 'All Locations'}, 
-             child: const Text('All Locations')
-           ),
+           const PopupMenuItem(value: {'id': null, 'name': 'All Locations'},  child: Text('All Locations')),
            ...breakdown.map((u) => PopupMenuItem(
              value: {'id': u.unitId, 'name': u.unitName}, 
              child: Text(u.unitName)
@@ -709,10 +706,10 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
         position: position,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         items: [
-           PopupMenuItem(value: '7', child: Text('Last 7 Days')),
-           PopupMenuItem(value: '30', child: Text('Last 30 Days')),
-           PopupMenuItem(value: '90', child: Text('Last 90 Days')),
-           PopupMenuItem(value: 'custom', child: Row(children: [Icon(Icons.calendar_today, size: 16), SizedBox(width: 8), Text('Custom Range')])),
+           const PopupMenuItem(value: '7', child: Text('Last 7 Days')),
+           const PopupMenuItem(value: '30', child: Text('Last 30 Days')),
+           const PopupMenuItem(value: '90', child: Text('Last 90 Days')),
+           const PopupMenuItem(value: 'custom', child: Row(children: [Icon(Icons.calendar_today, size: 16), SizedBox(width: 8), Text('Custom Range')])),
         ]
       );
 
@@ -778,15 +775,15 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                     headerForegroundColor: onBg,
                     surfaceTintColor: Colors.transparent,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                    rangeSelectionBackgroundColor: ImboniColors.primary.withAlpha(50), // Standard replacement for withOpacity
+                    rangeSelectionBackgroundColor: ImboniColors.primary.withValues(alpha: 0.2), // Standard replacement for withOpacity
                     rangePickerBackgroundColor: dialogBg,
                     rangePickerHeaderBackgroundColor: dialogBg,
                     rangePickerHeaderForegroundColor: onBg,
                     rangePickerSurfaceTintColor: Colors.transparent,
                     dayStyle: TextStyle(color: onBg),
-                    weekdayStyle: TextStyle(color: onBg.withAlpha(180)),
+                    weekdayStyle: TextStyle(color: onBg.withValues(alpha: 0.7)),
                     yearStyle: TextStyle(color: onBg),
-                    dayOverlayColor:  WidgetStateProperty.all(ImboniColors.primary.withAlpha(25)),
+                    dayOverlayColor:  WidgetStateProperty.all(ImboniColors.primary.withValues(alpha: 0.1)),
                     headerHeadlineStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: onBg),
                   ),
                   textButtonTheme: TextButtonThemeData(

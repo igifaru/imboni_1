@@ -15,7 +15,7 @@ class LoadingOverlay extends StatelessWidget {
       if (isLoading)
         Positioned.fill(
           child: Container(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withValues(alpha: 0.3),
             child: Center(
               child: Card(
                 elevation: 8,
@@ -51,7 +51,7 @@ class EmptyState extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: 64, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5)),
+          Icon(icon, size: 64, color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5)),
           const SizedBox(height: 16),
           Text(title, style: theme.textTheme.titleLarge, textAlign: TextAlign.center),
           if (description != null) ...[const SizedBox(height: 8), Text(description!, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant), textAlign: TextAlign.center)],

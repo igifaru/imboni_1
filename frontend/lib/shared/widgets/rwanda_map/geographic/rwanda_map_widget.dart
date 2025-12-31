@@ -35,8 +35,7 @@ class _RwandaMapWidgetState extends State<RwandaMapWidget> {
   final MapController _mapController = MapController();
   double _currentZoom = 9.0;
 
-  // Hover state
-  String? _hoveredDistrict;
+
 
   @override
   void initState() {
@@ -51,12 +50,12 @@ class _RwandaMapWidgetState extends State<RwandaMapWidget> {
   // Colors matching the reference map style (Official / Figma)
   Color _getProvinceColor(String id) {
     switch (id) {
-      case 'RW.K': return Colors.pinkAccent.withOpacity(0.4);
-      case 'RW.N': return Colors.amber.withOpacity(0.4);
-      case 'RW.S': return Colors.orangeAccent.withOpacity(0.4);
-      case 'RW.E': return const Color(0xFFD2B48C).withOpacity(0.4); // Tan
-      case 'RW.W': return Colors.lightGreen.withOpacity(0.4);
-      default: return Colors.grey.withOpacity(0.4);
+      case 'RW.K': return Colors.pinkAccent.withValues(alpha: 0.4);
+      case 'RW.N': return Colors.amber.withValues(alpha: 0.4);
+      case 'RW.S': return Colors.orangeAccent.withValues(alpha: 0.4);
+      case 'RW.E': return const Color(0xFFD2B48C).withValues(alpha: 0.4); // Tan
+      case 'RW.W': return Colors.lightGreen.withValues(alpha: 0.4);
+      default: return Colors.grey.withValues(alpha: 0.4);
     }
   }
 
@@ -71,7 +70,7 @@ class _RwandaMapWidgetState extends State<RwandaMapWidget> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -108,7 +107,7 @@ class _RwandaMapWidgetState extends State<RwandaMapWidget> {
                         Polygon(
                            points: ring,
                            color: _getProvinceColor(region.id),
-                           borderColor: Colors.white.withOpacity(0.2),
+                           borderColor: Colors.white.withValues(alpha: 0.2),
                            borderStrokeWidth: 2.0,
                          ),
                        );
@@ -125,7 +124,7 @@ class _RwandaMapWidgetState extends State<RwandaMapWidget> {
                           Polygon(
                             points: ring,
                             color: Colors.transparent, 
-                            borderColor: Colors.white.withOpacity(0.5),
+                            borderColor: Colors.white.withValues(alpha: 0.5),
                             borderStrokeWidth: 1.0,
                             label: region.name,
                           ),
@@ -143,7 +142,7 @@ class _RwandaMapWidgetState extends State<RwandaMapWidget> {
                           Polygon(
                             points: ring,
                             color: Colors.transparent, // Or slight fill?
-                            borderColor: Colors.cyanAccent.withOpacity(0.5),
+                            borderColor: Colors.cyanAccent.withValues(alpha: 0.5),
                             borderStrokeWidth: 1.2, // Thicker for visibility
                             label: region.name,
                           ),
@@ -161,7 +160,7 @@ class _RwandaMapWidgetState extends State<RwandaMapWidget> {
                           Polygon(
                             points: ring,
                             color: Colors.transparent, 
-                            borderColor: Colors.yellowAccent.withOpacity(0.4),
+                            borderColor: Colors.yellowAccent.withValues(alpha: 0.4),
                             borderStrokeWidth: 0.8,
                             label: region.name,
                             labelStyle: const TextStyle(
@@ -185,7 +184,7 @@ class _RwandaMapWidgetState extends State<RwandaMapWidget> {
                           Polygon(
                             points: ring,
                             color: Colors.transparent, 
-                            borderColor: Colors.greenAccent.withOpacity(0.4),
+                            borderColor: Colors.greenAccent.withValues(alpha: 0.4),
                             borderStrokeWidth: 0.5,
                             label: region.name,
                             labelStyle: const TextStyle(
@@ -206,7 +205,7 @@ class _RwandaMapWidgetState extends State<RwandaMapWidget> {
                 if (_currentZoom < 13.0) {
                   for (var region in districts) {
                      final name = region.name;
-                     final count = widget.casesByDistrict[name] ?? 0;
+                     // final count = widget.casesByDistrict[name] ?? 0;
                      final countUpper = widget.casesByDistrict[name.toUpperCase()] ?? 
                                         widget.casesByDistrict[name] ?? 0;
 
@@ -221,7 +220,7 @@ class _RwandaMapWidgetState extends State<RwandaMapWidget> {
                               child: Text(
                                 name.toUpperCase(),
                                 style: TextStyle(
-                                  color: Colors.white.withOpacity(0.8),
+                                  color: Colors.white.withValues(alpha: 0.8),
                                   fontSize: 9,
                                   fontWeight: FontWeight.bold,
                                   letterSpacing: 0.5,
@@ -250,11 +249,11 @@ class _RwandaMapWidgetState extends State<RwandaMapWidget> {
                                 duration: const Duration(milliseconds: 500),
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: bubbleColor.withOpacity(0.6),
+                                  color: bubbleColor.withValues(alpha: 0.6),
                                   border: Border.all(color: Colors.white, width: 2),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: bubbleColor.withOpacity(0.4),
+                                      color: bubbleColor.withValues(alpha: 0.4),
                                       blurRadius: 10,
                                       spreadRadius: 2,
                                     )
@@ -276,9 +275,9 @@ class _RwandaMapWidgetState extends State<RwandaMapWidget> {
                     minZoom: 8.0,
                     maxZoom: 18.0, // Increased max zoom for villages
                     onPositionChanged: (pos, hasGesture) {
-                       if (pos.zoom != null && (pos.zoom! - _currentZoom).abs() > 0.1) {
+                       if ((pos.zoom - _currentZoom).abs() > 0.1) {
                          final oldZ = _currentZoom;
-                         final newZ = pos.zoom!;
+                         final newZ = pos.zoom;
                          bool crossedThreshold = (oldZ <= 10.0 && newZ > 10.0) || (oldZ > 10.0 && newZ <= 10.0) ||
                                                  (oldZ <= 12.0 && newZ > 12.0) || (oldZ > 12.0 && newZ <= 12.0) ||
                                                  (oldZ <= 13.5 && newZ > 13.5) || (oldZ > 13.5 && newZ <= 13.5);
@@ -342,9 +341,9 @@ class _RwandaMapWidgetState extends State<RwandaMapWidget> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.7),
+        color: Colors.black.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -367,12 +366,12 @@ class _RwandaMapWidgetState extends State<RwandaMapWidget> {
       width: 280,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E2A38).withOpacity(0.9),
+        color: const Color(0xFF1E2A38).withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blueAccent.withOpacity(0.3)),
+        border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.3)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withValues(alpha: 0.3),
             blurRadius: 10,
           )
         ],
@@ -392,12 +391,12 @@ class _RwandaMapWidgetState extends State<RwandaMapWidget> {
            Container(
              padding: const EdgeInsets.all(8),
              decoration: BoxDecoration(
-               color: Colors.orange.withOpacity(0.2),
+               color: Colors.orange.withValues(alpha: 0.2),
                borderRadius: BorderRadius.circular(8),
-               border: Border.all(color: Colors.orange.withOpacity(0.5)),
+               border: Border.all(color: Colors.orange.withValues(alpha: 0.5)),
              ),
              child: Row(
-               children: const [
+               children: [
                  Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 20),
                  SizedBox(width: 8),
                  Expanded(
@@ -418,7 +417,7 @@ class _RwandaMapWidgetState extends State<RwandaMapWidget> {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.8),
+        color: Colors.black.withValues(alpha: 0.8),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(

@@ -103,8 +103,9 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         const page = parseInt(req.query.page as string) || 1;
         const limit = parseInt(req.query.limit as string) || 50;
         const search = req.query.search as string;
+        const locationId = req.query.locationId as string;
 
-        const result = await caseService.getAllCases(page, limit, search);
+        const result = await caseService.getAllCases(page, limit, search, locationId);
         res.json({
             success: true,
             data: result.cases,

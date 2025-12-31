@@ -17,8 +17,8 @@ class HierarchicalMapView extends StatelessWidget {
     this.casesByProvince,
     this.casesByDistrict,
     this.isDark = false,
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +44,7 @@ class HierarchicalMapView extends StatelessWidget {
           onSelectionChanged(selection.copyWith(district: district));
         },
         onBack: () {
-          onSelectionChanged(LocationSelection(province: null));
+          onSelectionChanged(const LocationSelection(province: null));
         },
       );
     } else if (selection.sector == null) {

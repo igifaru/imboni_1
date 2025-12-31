@@ -5,9 +5,7 @@ import '../../shared/localization/app_localizations.dart';
 import '../../shared/services/auth_service.dart';
 import '../../shared/services/case_service.dart';
 import '../../shared/models/models.dart';
-import '../../shared/widgets/case_card.dart';
 import '../report_case/submit_case_screen.dart';
-import '../track_case/track_case_screen.dart';
 import '../profile/profile_screen.dart';
 import '../my_cases/my_cases_screen.dart';
 import '../../leader/dashboard/widgets/professional_case_card.dart';
@@ -151,7 +149,7 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: ImboniColors.primary.withAlpha(isDark ? 50 : 30),
+            color: ImboniColors.primary.withValues(alpha: isDark ? 0.2 : 0.12),
             blurRadius: 20,
             offset: const Offset(0, 10),
           )
@@ -167,9 +165,9 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      ImboniColors.primary.withAlpha(isDark ? 255 : 230),
-                      ImboniColors.primaryDark.withAlpha(isDark ? 255 : 230),
-                      ImboniColors.primary.withAlpha(isDark ? 230 : 200),
+                      ImboniColors.primary.withValues(alpha: isDark ? 1.0 : 0.9),
+                      ImboniColors.primaryDark.withValues(alpha: isDark ? 1.0 : 0.9),
+                      ImboniColors.primary.withValues(alpha: isDark ? 0.9 : 0.8),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -199,7 +197,7 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
                 height: 100,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withAlpha(15),
+                  color: Colors.white.withValues(alpha: 0.06),
                 ),
               ),
             ),
@@ -233,7 +231,7 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
                             Text(
                               l10n.welcomeSubtitle,
                               style: theme.textTheme.bodyMedium?.copyWith(
-                                color: Colors.white.withAlpha(200),
+                                color: Colors.white.withValues(alpha: 0.8),
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -249,9 +247,9 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                         decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(40),
+                          color: Colors.white.withValues(alpha: 0.16),
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.white.withAlpha(50), width: 1.5),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1.5),
                         ),
                         child: IntrinsicHeight(
                           child: Row(
@@ -263,7 +261,7 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
                                 margin: const EdgeInsets.symmetric(horizontal: 20),
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
-                                    colors: [Colors.white.withAlpha(0), Colors.white.withAlpha(150), Colors.white.withAlpha(0)],
+                                    colors: [Colors.white.withValues(alpha: 0), Colors.white.withValues(alpha: 0.6), Colors.white.withValues(alpha: 0)],
                                     begin: Alignment.topCenter,
                                     end: Alignment.bottomCenter,
                                   ),
@@ -311,7 +309,7 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: Colors.white.withAlpha(180),
+            color: Colors.white.withValues(alpha: 0.7),
           ),
         ),
       ],
@@ -401,8 +399,8 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
       child: Column(children: [
         Container(
           padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(color: ImboniColors.primary.withAlpha(isDark ? 50 : 25), shape: BoxShape.circle),
-          child: Icon(Icons.folder_open_outlined, size: 48, color: ImboniColors.primary.withAlpha(isDark ? 200 : 150)),
+          decoration: BoxDecoration(color: ImboniColors.primary.withValues(alpha: isDark ? 0.2 : 0.1), shape: BoxShape.circle),
+          child: Icon(Icons.folder_open_outlined, size: 48, color: ImboniColors.primary.withValues(alpha: isDark ? 0.8 : 0.6)),
         ),
         const SizedBox(height: 20),
         Text(l10n.noCasesYet, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
@@ -432,7 +430,7 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
       context: context,
       barrierDismissible: true,
       barrierLabel: l10n.cancel,
-      barrierColor: Colors.black.withOpacity(0.5),
+      barrierColor: Colors.black.withValues(alpha: 0.5),
       transitionDuration: const Duration(milliseconds: 200),
       pageBuilder: (ctx, anim1, anim2) => StatefulBuilder(
         builder: (context, setStateDialog) {
@@ -449,7 +447,7 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
             try {
               final result = await caseService.trackCase(ref);
               
-              if (!ctx.mounted) return;
+              if (!ctx.mounted || !mounted) return;
 
               setStateDialog(() {
                 loading = false;
@@ -487,9 +485,9 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
                   color: theme.cardColor,
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 20, offset: const Offset(0, 10)),
+                    BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 20, offset: const Offset(0, 10)),
                   ],
-                  border: isDark ? Border.all(color: Colors.white.withOpacity(0.1)) : null,
+                  border: isDark ? Border.all(color: Colors.white.withValues(alpha: 0.1)) : null,
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -498,7 +496,7 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: ImboniColors.primary.withOpacity(0.1),
+                        color: ImboniColors.primary.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(Icons.search_rounded, size: 32, color: ImboniColors.primary),
@@ -518,7 +516,7 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
                       decoration: InputDecoration(
                         hintText: l10n.enterReference,
                         filled: true,
-                        fillColor: isDark ? Colors.black.withOpacity(0.2) : Colors.grey.withOpacity(0.05),
+                        fillColor: isDark ? Colors.black.withValues(alpha: 0.2) : Colors.grey.withValues(alpha: 0.05),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: ImboniColors.primary, width: 2)),
                         errorText: error,
@@ -605,12 +603,12 @@ class _QuickActionCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: isDark ? theme.dividerColor : color.withAlpha(50)),
+            border: Border.all(color: isDark ? theme.dividerColor : color.withValues(alpha: 0.2)),
           ),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Container(
               padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(color: color.withAlpha(isDark ? 50 : 25), borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(color: color.withValues(alpha: isDark ? 0.2 : 0.1), borderRadius: BorderRadius.circular(12)),
               child: Icon(icon, color: color, size: 22),
             ),
             const SizedBox(height: 14),

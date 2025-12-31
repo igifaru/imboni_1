@@ -54,7 +54,7 @@ class _EscalationAlertsScreenState extends State<EscalationAlertsScreen> {
                       padding: const EdgeInsets.all(32),
                       child: Column(
                         children: [
-                          Icon(Icons.check_circle_outline, size: 64, color: ImboniColors.success.withAlpha(100)),
+                          Icon(Icons.check_circle_outline, size: 64, color: ImboniColors.success.withValues(alpha: 0.4)),
                           const SizedBox(height: 16),
                           Text('All Clear!', style: theme.textTheme.titleMedium),
                           const SizedBox(height: 8),
@@ -67,9 +67,9 @@ class _EscalationAlertsScreenState extends State<EscalationAlertsScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: ImboniColors.warning.withOpacity(0.1),
+                      color: ImboniColors.warning.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: ImboniColors.warning.withOpacity(0.3)),
+                      border: Border.all(color: ImboniColors.warning.withValues(alpha: 0.3)),
                     ),
                     child: Row(
                       children: [
@@ -116,7 +116,7 @@ class _AlertCard extends StatelessWidget {
     
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      color: isUrgent ? ImboniColors.error.withOpacity(0.05) : null,
+      color: isUrgent ? ImboniColors.error.withValues(alpha: 0.05) : null,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -132,7 +132,7 @@ class _AlertCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: hoursRemaining < 4 ? ImboniColors.error.withOpacity(0.1) : ImboniColors.warning.withOpacity(0.1),
+                    color: hoursRemaining < 4 ? ImboniColors.error.withValues(alpha: 0.1) : ImboniColors.warning.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Row(

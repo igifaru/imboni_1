@@ -64,7 +64,7 @@ class _RwandaAdministrativeMapState extends State<RwandaAdministrativeMap> {
         border: Border.all(color: theme.dividerColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -110,11 +110,11 @@ class _RwandaAdministrativeMapState extends State<RwandaAdministrativeMap> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        _LegendItem(color: const Color(0xFF4CAF50), label: 'Low'),
+        const _LegendItem(color: Color(0xFF4CAF50), label: 'Low'),
         const SizedBox(width: 16),
-        _LegendItem(color: const Color(0xFFFF9800), label: 'Medium'),
+        const _LegendItem(color: Color(0xFFFF9800), label: 'Medium'),
         const SizedBox(width: 16),
-        _LegendItem(color: const Color(0xFFF44336), label: 'High Priority'),
+        const _LegendItem(color: Color(0xFFF44336), label: 'High Priority'),
       ],
     );
   }

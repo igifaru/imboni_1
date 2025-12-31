@@ -91,11 +91,17 @@ class GeoJsonParser {
         String id = rawName;
         // Colors mapping logic for provinces
         if (isProvince) {
-             if (rawName.contains('Kigali')) id = 'RW.K';
-             else if (rawName.contains('North')) id = 'RW.N';
-             else if (rawName.contains('South')) id = 'RW.S';
-             else if (rawName.contains('East')) id = 'RW.E';
-             else if (rawName.contains('West')) id = 'RW.W';
+             if (rawName.contains('Kigali')) {
+               id = 'RW.K';
+             } else if (rawName.contains('North')) {
+               id = 'RW.N';
+             } else if (rawName.contains('South')) {
+               id = 'RW.S';
+             } else if (rawName.contains('East')) {
+               id = 'RW.E';
+             } else if (rawName.contains('West')) {
+               id = 'RW.W';
+             }
         }
 
         final geometry = f['geometry'];

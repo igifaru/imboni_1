@@ -3,7 +3,7 @@ import '../theme/colors.dart';
 import '../widgets/loading_overlay.dart';
 import '../widgets/location_selector.dart';
 import '../services/auth_service.dart';
-import '../services/admin_units_service.dart';
+
 import '../models/models.dart';
 
 /// Login Screen - Professional Design
@@ -683,10 +683,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (!mounted) return;
       if (response.isSuccess) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Row(children: [
-            const Icon(Icons.check_circle_rounded, color: Colors.white),
-            const SizedBox(width: 12),
-            const Text('Kwiyandikisha byagenze neza!'),
+          content: const Row(children: [
+            Icon(Icons.check_circle_rounded, color: Colors.white),
+            SizedBox(width: 12),
+            Text('Kwiyandikisha byagenze neza!'),
           ]),
           backgroundColor: Colors.green.shade600,
           behavior: SnackBarBehavior.floating,

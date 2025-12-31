@@ -13,8 +13,8 @@ class SelectionCard extends StatefulWidget {
     this.count,
     this.maxCount,
     this.isDark = false,
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   State<SelectionCard> createState() => _SelectionCardState();
@@ -53,7 +53,7 @@ class _SelectionCardState extends State<SelectionCard>
   Widget build(BuildContext context) {
     final color = _getHeatColor();
     final baseColor = widget.count != null 
-        ? color.withOpacity(widget.isDark ? 0.3 : 0.15) 
+        ? color.withValues(alpha: widget.isDark ? 0.3 : 0.15) 
         : (widget.isDark ? Colors.grey.shade800 : Colors.white);
     
     final borderColor = widget.count != null ? color : Colors.transparent;

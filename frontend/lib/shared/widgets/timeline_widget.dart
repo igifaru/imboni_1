@@ -63,14 +63,14 @@ class TimelineWidget extends StatelessWidget {
                     color: item.color ?? Theme.of(context).primaryColor,
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.white, width: 2),
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4)],
+                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4)],
                   ),
                 ),
                 if (!isLast)
                   Container(
                     width: 2,
                     height: 50, // Minimum height between items
-                    color: Colors.grey.withOpacity(0.3),
+                    color: Colors.grey.withValues(alpha: 0.3),
                   ),
               ],
             ),

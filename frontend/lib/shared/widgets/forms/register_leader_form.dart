@@ -2,8 +2,6 @@
 import 'package:flutter/material.dart';
 import '../../../admin/services/admin_service.dart';
 import '../../theme/colors.dart';
-import '../../theme/responsive.dart';
-import '../../constants/rwanda_provinces.dart';
 import '../../localization/app_localizations.dart';
 import 'package:flutter/services.dart';
 
@@ -300,7 +298,7 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                       color: theme.dividerColor.withOpacity(0.1),
+                       color: theme.dividerColor.withValues(alpha: 0.1),
                        shape: BoxShape.circle,
                     ),
                     child: Icon(Icons.camera_alt_outlined, size: 40, color: theme.disabledColor),
@@ -454,7 +452,7 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
                       decoration: BoxDecoration(
                         color: theme.scaffoldBackgroundColor,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: theme.dividerColor.withOpacity(0.1)),
+                        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.1)),
                       ),
                       child: Row(
                         children: [
@@ -499,7 +497,7 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
                         Text(_isActive ? l10n.active : l10n.inactive, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
                         Switch(
                           value: _isActive,
-                          activeColor: ImboniColors.primary,
+                          activeTrackColor: ImboniColors.primary,
                           onChanged: (v) => setState(() => _isActive = v),
                         ),
                       ],
@@ -581,7 +579,7 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
     required ThemeData theme,
   }) {
     return DropdownButtonFormField<String>(
-      value: value,
+      initialValue: value,
       isExpanded: true,
       items: items.map((name) => DropdownMenuItem(
         value: name,
@@ -612,10 +610,15 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
     // HOWEVER, correct labels should come from `_targetLevel` Logic.
     
     String parentLabel = 'Urwego rw\'Ibanze (Parent Level)';
-    if (_targetLevel == 'VILLAGE') parentLabel = 'Akagari (Cell)';
-    else if (_targetLevel == 'CELL') parentLabel = 'Umurenge (Sector)';
-    else if (_targetLevel == 'SECTOR') parentLabel = 'Akarere (District)';
-    else if (_targetLevel == 'DISTRICT') parentLabel = 'Intara (Province)';
+    if (_targetLevel == 'VILLAGE') {
+      parentLabel = 'Akagari (Cell)';
+    } else if (_targetLevel == 'CELL') {
+      parentLabel = 'Umurenge (Sector)';
+    } else if (_targetLevel == 'SECTOR') {
+      parentLabel = 'Akarere (District)';
+    } else if (_targetLevel == 'DISTRICT') {
+      parentLabel = 'Intara (Province)';
+    }
     
     String targetLabel = _formatLevel(_targetLevel);
 
@@ -623,7 +626,7 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: theme.dividerColor.withOpacity(0.2)),
+        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.2)),
       ),
       child: Column(
         children: [

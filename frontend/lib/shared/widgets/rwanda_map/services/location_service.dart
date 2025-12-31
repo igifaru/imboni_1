@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 
 class LocationService {
   static final LocationService _instance = LocationService._internal();
@@ -22,7 +23,7 @@ class LocationService {
       _data = json.decode(jsonString);
       _parseHierarchy();
     } catch (e) {
-      print('Error loading location data: $e');
+      debugPrint('Error loading location data: $e');
       // Fallback or empty initialization
       _data = {};
     }

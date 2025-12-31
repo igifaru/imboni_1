@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../theme/app_theme.dart';
+
 import '../../theme/colors.dart';
 
 class ConfirmationDialog extends StatelessWidget {
@@ -45,7 +45,7 @@ class ConfirmationDialog extends StatelessWidget {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 20,
               offset: const Offset(0, 10),
             )
@@ -58,7 +58,7 @@ class ConfirmationDialog extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: (iconColor ?? (isDestructive ? ImboniColors.error : ImboniColors.primary)).withOpacity(0.1),
+                  color: (iconColor ?? (isDestructive ? ImboniColors.error : ImboniColors.primary)).withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -92,7 +92,7 @@ class ConfirmationDialog extends StatelessWidget {
                     onPressed: onCancel ?? () => Navigator.pop(context, false),
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: isDark ? Colors.grey.withOpacity(0.1) : Colors.grey.shade100,
+                      backgroundColor: isDark ? Colors.grey.withValues(alpha: 0.1) : Colors.grey.shade100,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     child: Text(

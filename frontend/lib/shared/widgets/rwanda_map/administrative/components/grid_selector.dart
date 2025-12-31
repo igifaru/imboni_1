@@ -16,12 +16,12 @@ class GridSelector extends StatelessWidget {
     this.onBack,
     this.counts,
     this.isDark = false,
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final maxCount = counts?.values.fold(0, (a, b) => (a ?? 0) > (b ?? 0) ? a : b) ?? 0;
+    final maxCount = counts?.values.fold(0, (a, b) => a > b ? a : b) ?? 0;
 
     return Column(
       children: [

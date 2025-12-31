@@ -45,7 +45,7 @@ class CaseService {
     if (status != null) endpoint += '&status=$status';
     
     final response = await apiClient.get(endpoint);
-    print('CaseService: getUserCases response.data type: ${response.data.runtimeType}');
+    debugPrint('CaseService: getUserCases response.data type: ${response.data.runtimeType}');
     if (response.isSuccess && response.data != null) {
       final List<dynamic> casesJson;
       final data = response.data;
@@ -167,7 +167,7 @@ class CaseService {
     if (status != null) endpoint += '&status=$status';
     
     final response = await apiClient.get(endpoint);
-    print('CaseService: getAssignedCases response.data type: ${response.data.runtimeType}');
+    debugPrint('CaseService: getAssignedCases response.data type: ${response.data.runtimeType}');
     if (response.isSuccess && response.data != null) {
       final List<dynamic> casesJson;
       final data = response.data;
@@ -187,12 +187,13 @@ class CaseService {
   }
 
   /// Get ALL cases (for Admin)
-  Future<ApiResponse<List<CaseModel>>> getAllCases({int page = 1, int limit = 50, String? query}) async {
+  Future<ApiResponse<List<CaseModel>>> getAllCases({int page = 1, int limit = 50, String? query, String? locationId}) async {
     String endpoint = '/cases?page=$page&limit=$limit';
     if (query != null && query.isNotEmpty) endpoint += '&search=$query';
+    if (locationId != null && locationId.isNotEmpty) endpoint += '&locationId=$locationId';
 
     final response = await apiClient.get(endpoint);
-    print('CaseService: getAllCases response.data type: ${response.data.runtimeType}');
+    debugPrint('CaseService: getAllCases response.data type: ${response.data.runtimeType}');
     if (response.isSuccess && response.data != null) {
       final List<dynamic> casesJson;
       final data = response.data;
@@ -223,7 +224,7 @@ class CaseService {
   /// Get escalation alerts (for leaders)
   Future<ApiResponse<List<CaseModel>>> getEscalationAlerts() async {
     final response = await apiClient.get('/cases/escalation-alerts');
-    print('CaseService: getEscalationAlerts response.data type: ${response.data.runtimeType}');
+    debugPrint('CaseService: getEscalationAlerts response.data type: ${response.data.runtimeType}');
     if (response.isSuccess && response.data != null) {
       final List<dynamic> casesJson;
       final data = response.data;
