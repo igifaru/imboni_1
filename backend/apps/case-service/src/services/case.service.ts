@@ -903,7 +903,8 @@ export class CaseService {
                 administrativeUnit: true,
                 assignments: {
                     where: { isActive: true }
-                }
+                },
+                escalationEvents: true // NEW: Include to count escalated cases
             }
         });
 
@@ -980,7 +981,10 @@ export class CaseService {
                     const idx = getTrendIndex(new Date(c.resolvedAt));
                     if (idx !== -1) weeklyTrends[idx].resolvedCases++;
                 }
-            } else if (status === 'ESCALATED') {
+            }
+
+            // FIX: Check if case has escalation events instead of status === 'ESCALATED'
+            if (c.escalationEvents && c.escalationEvents.length > 0) {
                 escalated++;
             }
 
@@ -1042,7 +1046,10 @@ export class CaseService {
                         uResponseTime += diff;
                         uTimeCount++;
                     }
-                } else if (status === 'ESCALATED') {
+                }
+
+                // FIX: Check escalation events instead of status
+                if (c.escalationEvents && c.escalationEvents.length > 0) {
                     uEscalated++;
                 } else if (status === 'IN_PROGRESS') {
                     uActive++;
