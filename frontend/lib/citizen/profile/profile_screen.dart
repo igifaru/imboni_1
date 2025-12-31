@@ -3,12 +3,13 @@ import '../../shared/theme/responsive.dart';
 import '../../shared/services/auth_service.dart';
 import '../../shared/services/settings_service.dart';
 import '../../shared/widgets/location_selector.dart';
-import '../../shared/services/admin_units_service.dart';
+// import '../../shared/services/admin_units_service.dart';
 import '../../shared/models/models.dart';
 import '../../shared/widgets/dialogs/change_password_dialog.dart';
 import '../../shared/widgets/dialogs/confirmation_dialog.dart';
 import '../../shared/localization/app_localizations.dart';
 import '../../main.dart';
+import '../../features/community/screens/community_home_screen.dart';
 
 /// Settings Screen - Fully functional with real backend integration
 class ProfileScreen extends StatefulWidget {
@@ -96,6 +97,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         _buildAccountSection(theme, colorScheme, user, l10n),
+                        const SizedBox(height: 16),
+                        _buildCommunitySection(theme, colorScheme, l10n),
                         const SizedBox(height: 16),
                         _buildPreferencesSection(theme, colorScheme, l10n),
                         const SizedBox(height: 16),
@@ -313,6 +316,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _buildSwitch(l10n.darkMode, settingsService.isDarkMode, (v) => settingsService.setDarkMode(v), theme, colorScheme),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCommunitySection(ThemeData theme, ColorScheme colorScheme, AppLocalizations l10n) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.communityTitle, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            _buildActionTile(
+              theme, 
+              colorScheme, 
+              l10n.channels, 
+              Icons.forum_outlined, 
+              () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CommunityHomeScreen())),
+            ),
+          ],
         ),
       ),
     );
