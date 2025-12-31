@@ -3,7 +3,7 @@
  */
 import { caseRepository, CaseRepository } from '../repositories/case.repository';
 import { CreateCaseDto, UpdateCaseDto, CaseResponseDto } from '../dto/case.dto';
-import { CaseEntity, getNextLevel, canEscalate } from '../entities/case.entity';
+import { CaseEntity } from '../entities/case.entity';
 import { publishEvent, CHANNELS } from '../../../../libs/messaging/messaging.service';
 import { createServiceLogger } from '../../../../libs/logging/logger.service';
 import { prisma } from '../../../../libs/database/prisma.service';
@@ -13,8 +13,9 @@ import { AdministrativeLevel, CaseStatus } from '@prisma/client';
 const logger = createServiceLogger('case-service');
 
 // Professionalization: Pre-load static hierarchy once
-const rwandaAdminData = require('../../../api-gateway/src/data/rwanda-admin.json');
-const ADMIN_JSON = rwandaAdminData.default || rwandaAdminData;
+// Professionalization: Pre-load static hierarchy once
+import rwandaAdminData from '../../../api-gateway/src/data/rwanda-admin.json';
+const ADMIN_JSON = rwandaAdminData;
 
 /**
  * Province name mapping: Kinyarwanda -> data.json keys
@@ -404,7 +405,7 @@ export class CaseService {
      * Resolve case
      */
     async resolveCase(caseId: string, resolutionNotes: string, userId: string, attachmentId?: string): Promise<CaseResponseDto> {
-        const result = await prisma.$transaction(async (tx) => {
+        await prisma.$transaction(async (tx) => {
             // 1. Update Case Status to PENDING_CONFIRMATION (awaiting citizen confirmation)
             const updatedCase = await tx.case.update({
                 where: { id: caseId },
@@ -523,7 +524,7 @@ export class CaseService {
      */
     async getEscalationAlerts(leaderId: string): Promise<CaseResponseDto[]> {
         // Find active assignments with approaching deadlines (< 24 hours)
-        const now = new Date();
+        // const now = new Date();
         const tomorrow = new Date();
         tomorrow.setHours(tomorrow.getHours() + 24);
 

@@ -18,6 +18,7 @@ app.get('/health', (req, res) => {
 // import { JudiciaryIntegration } from './judiciary';
 
 app.listen(PORT, () => {
+    // eslint-disable-next-line no-console
     console.log(`🔗 Integration Service running on port ${PORT}`);
 });
 

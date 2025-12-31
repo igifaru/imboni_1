@@ -3,11 +3,8 @@
  */
 import { Request, Response, NextFunction } from 'express';
 import { verifyToken, extractToken, DecodedToken } from '../../../../libs/auth/jwt.service';
-import { createServiceLogger } from '../../../../libs/logging/logger.service';
-
-const logger = createServiceLogger('auth-middleware');
-
 // Extend Express Request to include user
+/* eslint-disable @typescript-eslint/no-namespace */
 declare global {
     namespace Express {
         interface Request {

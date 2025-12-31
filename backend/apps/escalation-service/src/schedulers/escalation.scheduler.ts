@@ -11,7 +11,6 @@ import { publishEvent, CHANNELS } from '../../../../libs/messaging/messaging.ser
 import {
     getNextEscalationLevel,
     isEligibleForEscalation,
-    isDeadlineExpired,
     calculateNewDeadline,
     getEmergencyNotificationLevels,
     AdministrativeLevel,

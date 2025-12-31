@@ -24,7 +24,7 @@ const storage = multer.diskStorage({
 // File filter (whitelist)
 const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
     // Log the incoming file type for debugging
-    console.log(`[Upload Middleware] Receiving file: ${file.originalname}, MIME: ${file.mimetype}`);
+    // console.log(`[Upload Middleware] Receiving file: ${file.originalname}, MIME: ${file.mimetype}`);
 
     const allowedMimes = [
         'image/jpeg', 'image/png', 'image/webp', 'image/jpg', // Images
@@ -43,7 +43,7 @@ const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilt
     } else {
         // Warn but allow for now to prevent user blockage, or stick to strict?
         // Let's keep strict but with better logging and expanded list.
-        console.warn(`[Upload Middleware] Rejected file type: ${file.mimetype}`);
+        // console.warn(`[Upload Middleware] Rejected file type: ${file.mimetype}`);
         // For now, let's ALLOW everything to ensure it works, then refine.
         // cb(new Error(`Invalid file type. Allowed: ${allowedMimes.join(', ')}`));
         cb(null, true);

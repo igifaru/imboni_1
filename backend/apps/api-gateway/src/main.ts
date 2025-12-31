@@ -70,6 +70,10 @@ app.use('/api/leader', authMiddleware);
 import { adminRoutes } from './admin/admin.routes';
 app.use('/api/admin', authMiddleware, adminRoutes);
 
+// Community routes - require auth
+import { communityController } from '../../community-service/src/controllers/community.controller';
+app.use('/api/community', authMiddleware, communityController);
+
 // Proxy to services (if running as gateway) - only for production with separate microservices
 if (config.isProduction) {
     // Case service proxy (override the inline mount above for true microservice mode if needed)
@@ -81,7 +85,7 @@ if (config.isProduction) {
 }
 
 // Error handler
-app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+app.use((err: Error, req: express.Request, res: express.Response, _next: express.NextFunction) => {
     logger.error('Unhandled error', { error: err.message, stack: err.stack });
     res.status(500).json({
         error: 'Internal server error',
