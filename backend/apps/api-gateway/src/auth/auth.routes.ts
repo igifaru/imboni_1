@@ -155,7 +155,7 @@ router.post('/login', async (req: Request, res: Response) => {
 
         const { identifier, password } = validation.data;
 
-        // Find user by phone or email
+        // Find user by phone or email WITH profile
         const user = await prisma.user.findFirst({
             where: {
                 OR: [
@@ -163,6 +163,19 @@ router.post('/login', async (req: Request, res: Response) => {
                     { email: identifier },
                 ],
             },
+            include: {
+                profile: {
+                    select: {
+                        nationalId: true,
+                        country: true,
+                        province: true,
+                        district: true,
+                        sector: true,
+                        cell: true,
+                        village: true,
+                    }
+                }
+            }
         });
 
         if (!user) {
@@ -201,6 +214,15 @@ router.post('/login', async (req: Request, res: Response) => {
                 email: user.email,
                 profilePicture: user.profilePicture,
                 status: user.status,
+                createdAt: user.createdAt,
+                // Profile location data
+                nationalId: user.profile?.nationalId || null,
+                country: user.profile?.country || 'Rwanda',
+                province: user.profile?.province || null,
+                district: user.profile?.district || null,
+                sector: user.profile?.sector || null,
+                cell: user.profile?.cell || null,
+                village: user.profile?.village || null,
             },
         });
     } catch (error) {
