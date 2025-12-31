@@ -182,13 +182,16 @@ class _DashboardHomeState extends State<_DashboardHome> {
   PerformanceMetrics? _metrics;
   bool _isLoading = true;
   String _searchQuery = '';
+  
+  String? _selectedLocationId;
+  String? _selectedLocationName;
+  final List<Map<String, String>> _drillHistory = [];
 
   @override
   void initState() {
     super.initState();
     _loadDashboardData();
   }
-
 
   Map<String, int> get _casesByDistrict {
     final map = <String, int>{};
@@ -228,19 +231,7 @@ class _DashboardHomeState extends State<_DashboardHome> {
     try {
       await LocationService().load();
     } catch (e) {
-      debugPrint('Location Service Error: $e');
-      // Non-critical, just map won't work
-    }
-  }
-
-  Future<void> _loadPerformanceMetrics() async {
-    try {
-      final response = await caseService.getPerformanceMetrics();
-      if (mounted && response.isSuccess && response.data != null) {
-        setState(() => _metrics = response.data);
-      }
-    } catch (e) {
-      debugPrint('Performance Metrics Error: $e');
+      // Non-critical
     }
   }
 
@@ -269,6 +260,36 @@ class _DashboardHomeState extends State<_DashboardHome> {
   List<CaseModel> get _filteredCases {
     if (_searchQuery.isEmpty) return _assignedCases;
     return _assignedCases.where((c) => c.caseReference.toLowerCase().contains(_searchQuery.toLowerCase()) || c.title.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
+  }
+
+  Future<void> _loadPerformanceMetrics() async {
+    try {
+      final response = await caseService.getPerformanceMetrics(locationId: _selectedLocationId);
+      if (mounted && response.isSuccess && response.data != null) {
+        setState(() => _metrics = response.data);
+      }
+    } catch (e) {
+      debugPrint('Performance Metrics Error: $e');
+    }
+  }
+
+  void _handleUnitSelected(String unitId, String unitName) {
+    setState(() {
+      _drillHistory.add({'id': _selectedLocationId ?? 'root', 'name': _selectedLocationName ?? 'National'});
+      _selectedLocationId = unitId;
+      _selectedLocationName = unitName;
+    });
+    _loadDashboardData();
+  }
+
+  void _navigateBack() {
+    if (_drillHistory.isEmpty) return;
+    final last = _drillHistory.removeLast();
+    setState(() {
+      _selectedLocationId = last['id'] == 'root' ? null : last['id'];
+      _selectedLocationName = last['name'] == 'National' ? null : last['name'];
+    });
+    _loadDashboardData();
   }
 
   @override
@@ -306,23 +327,47 @@ class _DashboardHomeState extends State<_DashboardHome> {
                       // Right: Districts in Province with case counts
                       Expanded(
                         flex: 3,
-                        child: DistrictCasesWidget(
-                          subUnitStats: _metrics?.subUnitBreakdown ?? [],
-                          isDashboardLoading: _isLoading,
-                          currentLevel: widget.currentLevel ?? '',
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (_selectedLocationId != null)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 8.0),
+                                child: TextButton.icon(
+                                  onPressed: _navigateBack,
+                                  icon: const Icon(Icons.arrow_back, size: 16),
+                                  label: Text('Back to ${_drillHistory.isNotEmpty ? _drillHistory.last['name'] : 'National'}'),
+                                  style: TextButton.styleFrom(padding: EdgeInsets.zero),
+                                ),
+                              ),
+                            DistrictCasesWidget(
+                              subUnitStats: _metrics?.subUnitBreakdown ?? [],
+                              isDashboardLoading: _isLoading,
+                              currentLevel: widget.currentLevel ?? '',
+                              onUnitSelected: _handleUnitSelected,
+                            ),
+                          ],
                         ),
                       ),
                     ])
                   else ...[
+                   // Mobile Layout
                     RwandaMapWidget(
                       casesByDistrict: _casesByDistrict,
                       onDistrictSelected: (d) => debugPrint('Selected District: $d'),
                     ),
                     const SizedBox(height: 24),
+                    if (_selectedLocationId != null)
+                      TextButton.icon(
+                        onPressed: _navigateBack,
+                        icon: const Icon(Icons.arrow_back),
+                        label: Text('Back to ${_drillHistory.isNotEmpty ? _drillHistory.last['name'] : 'Overview'}'),
+                      ),
                     DistrictCasesWidget(
                       subUnitStats: _metrics?.subUnitBreakdown ?? [],
                       isDashboardLoading: _isLoading,
                       currentLevel: widget.currentLevel ?? '',
+                      onUnitSelected: _handleUnitSelected,
                     ),
                   ],
                   const SizedBox(height: 32),

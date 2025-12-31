@@ -585,7 +585,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
       final response = await caseService.getPerformanceMetrics(
         dateRange: _selectedDateRange,
         category: _categoryFilter,
-        location: _locationFilterId
+        locationId: _locationFilterId
       );
       
       if (mounted) {

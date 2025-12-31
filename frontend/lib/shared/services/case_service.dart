@@ -246,7 +246,7 @@ class CaseService {
   Future<ApiResponse<PerformanceMetrics>> getPerformanceMetrics({
     DateTimeRange? dateRange,
     String? category,
-    String? location,
+    String? locationId,
   }) async {
     final queryParams = <String, String>{};
     
@@ -259,8 +259,8 @@ class CaseService {
       queryParams['category'] = category;
     }
     
-    if (location != null && location != 'All Locations') {
-      queryParams['locationId'] = location;
+    if (locationId != null && locationId != 'All Locations') {
+      queryParams['locationId'] = locationId;
     }
 
     final uri = Uri(path: '/cases/metrics', queryParameters: queryParams);
