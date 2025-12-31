@@ -312,6 +312,9 @@ class AppLocalizations {
   String get priority => get('priority'); // Reusing urgency_title if appropriate, but priority is used for sorting
   String get submitted => get('submitted');
   String get categoryLabel => get('category_label');
+  
+  String get escalationIn => get('escalation_in');
+  String get overdue => get('overdue');
 
 }
 
@@ -586,6 +589,8 @@ const Map<String, Map<String, String>> _translations = {
     'save_tracking_hint': 'Bika iyi nimero kugirango ukurikirane ikibazo cyawe.',
     'ok': 'Sawa',
     'failed': 'Byanze',
+    'escalation_in': 'Kizazamurwa mu',
+    'overdue': 'Cyarengeje igihe',
   },
   'en': {
     'app_name': 'Imboni',
@@ -798,6 +803,8 @@ const Map<String, Map<String, String>> _translations = {
     'about': 'About',
     'phone': 'Phone',
     'logout': 'Logout',
+    'escalation_in': 'Escalates in',
+    'overdue': 'Overdue',
     'registered_on': 'Registered on',
     'residence_location': 'Residence Location',
     'edit_profile': 'Edit Profile',

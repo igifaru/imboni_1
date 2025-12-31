@@ -6,6 +6,7 @@ class CountdownTimer extends StatefulWidget {
   final DateTime deadline;
   final TextStyle? style;
   final bool showIcon;
+  final String? prefix;
   final VoidCallback? onExpired;
 
   const CountdownTimer({
@@ -13,6 +14,7 @@ class CountdownTimer extends StatefulWidget {
     required this.deadline,
     this.style,
     this.showIcon = true,
+    this.prefix,
     this.onExpired,
   });
 
@@ -78,13 +80,11 @@ class _CountdownTimerState extends State<CountdownTimer> {
     final seconds = d.inSeconds % 60;
 
     if (days > 0) {
-      return '${days}d ${hours}h';
+      return '${days}d ${hours}h ${minutes}m ${seconds}s';
     } else if (hours > 0) {
-      return '${hours}h ${minutes}m';
-    } else if (minutes > 0) {
-      return '${minutes}m ${seconds}s';
+      return '${hours}h ${minutes}m ${seconds}s';
     } else {
-      return '${seconds}s';
+      return '${minutes}m ${seconds}s';
     }
   }
 
@@ -124,6 +124,18 @@ class _CountdownTimerState extends State<CountdownTimer> {
             ),
             const SizedBox(width: 4),
           ],
+          if (widget.prefix != null) ...[
+            Text(
+              widget.prefix!,
+              style: widget.style?.copyWith(color: color) ??
+                  TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
+            ),
+            const SizedBox(width: 4),
+          ],
           Text(
             _formatDuration(_remaining),
             style: widget.style?.copyWith(color: color) ??
@@ -142,14 +154,16 @@ class _CountdownTimerState extends State<CountdownTimer> {
 /// Compact version for use in cards
 class CountdownChip extends StatelessWidget {
   final DateTime deadline;
+  final String? prefix;
 
-  const CountdownChip({super.key, required this.deadline});
+  const CountdownChip({super.key, required this.deadline, this.prefix});
 
   @override
   Widget build(BuildContext context) {
     return CountdownTimer(
       deadline: deadline,
       showIcon: true,
+      prefix: prefix,
       style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
     );
   }

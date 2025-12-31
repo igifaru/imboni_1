@@ -71,7 +71,10 @@ class ProfessionalCaseCard extends StatelessWidget {
                           const SizedBox(width: 8),
                           // Countdown Timer (if deadline exists)
                           if (caseData.deadline != null) ...[
-                            CountdownChip(deadline: caseData.deadline!),
+                            CountdownChip(
+                              deadline: caseData.deadline!,
+                              prefix: l10n.escalationIn,
+                            ),
                             const SizedBox(width: 6),
                           ],
                           _buildStatusChip(caseData.status, statusColor),

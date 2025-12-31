@@ -76,7 +76,7 @@ export class CaseRepository {
                         },
                     },
                 },
-                include: { evidence: true, administrativeUnit: true, submitter: true },
+                include: { evidence: true, administrativeUnit: true, submitter: true, assignments: true },
                 skip,
                 take: limit,
                 orderBy: { createdAt: 'desc' },

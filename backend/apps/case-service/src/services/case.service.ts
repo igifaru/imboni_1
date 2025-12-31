@@ -234,8 +234,15 @@ export class CaseService {
     async getLeaderCases(leaderId: string, page = 1, limit = 20) {
         const result = await this.repository.findByLeader(leaderId, page, limit);
 
+        const cases = result.cases.map((c) => {
+            // Find assignment for this leader
+            const assignment = (c as any).assignments?.find((a: any) => a.leaderId === leaderId && a.isActive);
+            const deadline = assignment?.deadlineAt ? assignment.deadlineAt.toISOString() : undefined;
+            return this.toResponseDto(c, deadline);
+        });
+
         return {
-            cases: result.cases.map((c) => this.toResponseDto(c)),
+            cases,
             total: result.total,
             page,
             limit,
@@ -1167,7 +1174,7 @@ export class CaseService {
     /**
      * Transform entity to response DTO
      */
-    private toResponseDto(entity: CaseEntity): CaseResponseDto {
+    private toResponseDto(entity: CaseEntity, deadline?: string): CaseResponseDto {
         return {
             id: entity.id,
             caseReference: entity.caseReference,
@@ -1182,7 +1189,7 @@ export class CaseService {
             citizenName: entity.submittedAnonymously ? null : (entity as any).submitter?.name,
             createdAt: entity.createdAt.toISOString(),
             resolvedAt: entity.resolvedAt?.toISOString() || null,
-            deadline: null, // Will be populated from assignment
+            deadline: deadline || null, // Populated from assignment if passed
             daysRemaining: null,
             evidence: entity.evidence?.map(e => ({
                 id: e.id,
