@@ -1,9 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/models.dart';
 import 'api_client.dart';
 
 /// Auth Service - Handles authentication
-class AuthService {
+class AuthService extends ChangeNotifier {
   static const String _tokenKey = 'auth_token';
   final ApiClient _client;
   UserModel? _currentUser;

@@ -318,6 +318,13 @@ class AppLocalizations {
   
   String get resolutionActionDesc => get('resolution_action_desc');
   String get statusChangedTo => get('status_changed_to');
+  
+  // Community
+  String get communityTitle => get('community_title');
+  String get channels => get('channels');
+  String get typeMessage => get('type_message');
+  String get members => get('members');
+  String get general => get('general');
 
 }
 
@@ -596,6 +603,12 @@ const Map<String, Map<String, String>> _translations = {
     'overdue': 'Cyarengeje igihe',
     'resolution_action_desc': 'Umuyobozi yagaragaje ko iki kibazo cyakemutse. Niba mwanyuzwe, muremeze. Niba bitara kemuka, mushobora kuregera.',
     'status_changed_to': 'Imiterere yahindutse ikaba',
+    // Community RW
+    'community_title': 'Ihuza ry\'Abaturage',
+    'channels': 'Imiyoboro',
+    'type_message': 'Andika ubutumwa...',
+    'members': 'Abanyamuryango',
+    'general': 'Rusange',
   },
   'en': {
     'app_name': 'Imboni',
@@ -812,6 +825,12 @@ const Map<String, Map<String, String>> _translations = {
     'overdue': 'Overdue',
     'resolution_action_desc': 'The leader has marked this case as resolved. Please confirm if you are satisfied with the resolution, or dispute it if the issue persists.',
     'status_changed_to': 'Status changed to',
+    // Community EN
+    'community_title': 'Civic Connect',
+    'channels': 'Channels',
+    'type_message': 'Type a message...',
+    'members': 'members',
+    'general': 'General',
     'registered_on': 'Registered on',
     'residence_location': 'Residence Location',
     'edit_profile': 'Edit Profile',
