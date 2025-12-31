@@ -86,14 +86,18 @@ class CommunityProvider extends ChangeNotifier {
   }
 
   Future<CommunityChannel?> joinCategoryChannel(String unitId, String category) async {
+    debugPrint('CommunityProvider: joinCategoryChannel called with unitId=$unitId, category=$category');
     try {
       final response = await _api.post('/community/join-category', {
         'unitId': unitId,
         'category': category,
       });
       
+      debugPrint('CommunityProvider: Response isSuccess=${response.isSuccess}, data=${response.data}');
+      
       if (response.isSuccess && response.data != null) {
         final channel = CommunityChannel.fromJson(response.data);
+        debugPrint('CommunityProvider: Parsed channel: ${channel.id} - ${channel.name}');
         // Add to local list if not present
         if (!_channels.any((c) => c.id == channel.id)) {
           _channels.add(channel);
@@ -101,9 +105,10 @@ class CommunityProvider extends ChangeNotifier {
         }
         return channel;
       }
+      debugPrint('CommunityProvider: Response failed or data is null');
       return null;
     } catch (e) {
-      debugPrint('Error joining category channel: $e');
+      debugPrint('CommunityProvider: Error joining category channel: $e');
       return null;
     }
   }

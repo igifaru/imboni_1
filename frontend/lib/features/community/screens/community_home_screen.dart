@@ -4,7 +4,6 @@ import 'package:imboni/shared/theme/colors.dart';
 import '../providers/community_provider.dart';
 import '../models/community_models.dart';
 import 'channel_chat_screen.dart';
-
 import 'unit_topic_selection_screen.dart';
 
 class CommunityHomeScreen extends StatefulWidget {
@@ -15,10 +14,12 @@ class CommunityHomeScreen extends StatefulWidget {
 }
 
 class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
+  CommunityChannel? _selectedChannel;
+  CommunityChannel? _parentChannel; // Track parent for topic channel back navigation
+
   @override
   void initState() {
     super.initState();
-    // Fetch channels on init
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<CommunityProvider>().fetchChannels();
     });
@@ -26,44 +27,114 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Civic Connect'),
-          centerTitle: false,
-          bottom: const TabBar(
-            labelColor: ImboniColors.primary,
-            unselectedLabelColor: Colors.grey,
-            indicatorColor: ImboniColors.primary,
-            tabs: [
-              Tab(text: 'My Units'), // Renamed from My Channels
-              Tab(text: 'Discover'),
-            ],
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Civic Connect'),
+        centerTitle: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () {},
           ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.search),
-              onPressed: () {},
-            ),
-          ],
-        ),
-        body: const TabBarView(
-          children: [
-            _MyChannelsTab(),
-            _DiscoverTab(),
-          ],
-        ),
+        ],
+      ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide = constraints.maxWidth > 800;
+
+          if (isWide) {
+            return _buildWideLayout(context);
+          } else {
+            return _buildMobileLayout(context);
+          }
+        },
       ),
     );
   }
-}
 
-class _MyChannelsTab extends StatelessWidget {
-  const _MyChannelsTab();
+  /// Wide screen layout with left panel (units) and right panel (content)
+  Widget _buildWideLayout(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
-  @override
-  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        // Left Panel - Unit List
+        Container(
+          width: 320,
+          decoration: BoxDecoration(
+            border: Border(
+              right: BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.3)),
+            ),
+          ),
+          child: Column(
+            children: [
+              // Header
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerLow,
+                  border: Border(
+                    bottom: BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.3)),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.location_on, color: ImboniColors.primary, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Aho Ntuye',
+                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+              // Unit List
+              Expanded(child: _buildUnitList(context, isWide: true)),
+            ],
+          ),
+        ),
+
+        // Right Panel - Content
+        Expanded(
+          child: _selectedChannel == null
+              ? _buildWelcomePanel(context)
+              : _buildContentPanel(context),
+        ),
+      ],
+    );
+  }
+
+  /// Mobile layout with full-screen navigation
+  Widget _buildMobileLayout(BuildContext context) {
+    return DefaultTabController(
+      length: 2,
+      child: Column(
+        children: [
+          const TabBar(
+            labelColor: ImboniColors.primary,
+            unselectedLabelColor: Colors.grey,
+            indicatorColor: ImboniColors.primary,
+            tabs: const [
+              Tab(text: 'My Units'),
+              Tab(text: 'Discover'),
+            ],
+          ),
+          Expanded(
+            child: TabBarView(
+              children: [
+                _buildUnitList(context, isWide: false),
+                const _DiscoverTab(),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build the unit list (used in both layouts)
+  Widget _buildUnitList(BuildContext context, {required bool isWide}) {
     return Consumer<CommunityProvider>(
       builder: (context, provider, child) {
         if (provider.isLoadingChannels && provider.channels.isEmpty) {
@@ -77,7 +148,7 @@ class _MyChannelsTab extends StatelessWidget {
               children: [
                 const Icon(Icons.error_outline, size: 48, color: Colors.orange),
                 const SizedBox(height: 16),
-                Text('Error loading channels: ${provider.error}'),
+                Text('Error: ${provider.error}', textAlign: TextAlign.center),
                 TextButton(
                   onPressed: () => provider.fetchChannels(),
                   child: const Text('Retry'),
@@ -87,47 +158,47 @@ class _MyChannelsTab extends StatelessWidget {
           );
         }
 
-        Widget content;
         if (provider.channels.isEmpty) {
-          content = SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: SizedBox(
-               height: MediaQuery.of(context).size.height * 0.7,
-               child: _buildEmptyState(context, provider)
+          return RefreshIndicator(
+            onRefresh: () => provider.fetchChannels(),
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: SizedBox(
+                height: MediaQuery.of(context).size.height * 0.5,
+                child: _buildEmptyState(context, provider),
+              ),
             ),
-          );
-        } else {
-          // Filter only GENERAL channels for the main list
-          final generalChannels = provider.channels.where((c) => c.category == null).toList();
-
-          // Sort
-          generalChannels.sort((a, b) {
-             const levelOrder = {
-              'VILLAGE': 0,
-              'CELL': 1,
-              'SECTOR': 2,
-              'DISTRICT': 3,
-              'PROVINCE': 4,
-              'NATIONAL': 5,
-            };
-            final levelA = levelOrder[a.unit?.level] ?? 99;
-            final levelB = levelOrder[b.unit?.level] ?? 99;
-            return levelA.compareTo(levelB);
-          });
-
-          content = ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: generalChannels.length,
-            itemBuilder: (context, index) {
-              final channel = generalChannels[index];
-              return _buildUnitCard(context, channel);
-            },
           );
         }
 
+        // Filter only GENERAL channels
+        final generalChannels = provider.channels.where((c) => c.category == null).toList();
+
+        // Sort by level
+        generalChannels.sort((a, b) {
+          const levelOrder = {
+            'VILLAGE': 0,
+            'CELL': 1,
+            'SECTOR': 2,
+            'DISTRICT': 3,
+            'PROVINCE': 4,
+            'NATIONAL': 5,
+          };
+          final levelA = levelOrder[a.unit?.level] ?? 99;
+          final levelB = levelOrder[b.unit?.level] ?? 99;
+          return levelA.compareTo(levelB);
+        });
+
         return RefreshIndicator(
           onRefresh: () => provider.fetchChannels(),
-          child: content,
+          child: ListView.builder(
+            padding: const EdgeInsets.all(12),
+            itemCount: generalChannels.length,
+            itemBuilder: (context, index) {
+              final channel = generalChannels[index];
+              return _buildUnitCard(context, channel, isWide: isWide);
+            },
+          ),
         );
       },
     );
@@ -136,41 +207,39 @@ class _MyChannelsTab extends StatelessWidget {
   Widget _buildEmptyState(BuildContext context, CommunityProvider provider) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32.0),
+        padding: const EdgeInsets.all(24.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: ImboniColors.primary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.groups_outlined, size: 64, color: ImboniColors.primary),
+              child: const Icon(Icons.groups_outlined, size: 48, color: ImboniColors.primary),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             const Text(
               'No channels yet',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Text(
-              'Connect with your local community. Join channels based on your location to start discussing issues.',
+              'Connect with your local community',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey[600]),
+              style: TextStyle(color: Colors.grey[600], fontSize: 14),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: () {
-                provider.fetchChannels();
-              },
-              icon: const Icon(Icons.explore),
-              label: const Text('Discover Local Channels'),
+              onPressed: () => provider.fetchChannels(),
+              icon: const Icon(Icons.refresh, size: 18),
+              label: const Text('Refresh'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: ImboniColors.primary,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               ),
             ),
           ],
@@ -179,11 +248,11 @@ class _MyChannelsTab extends StatelessWidget {
     );
   }
 
-  Widget _buildUnitCard(BuildContext context, CommunityChannel channel) {
-    final level = channel.unit?.level ?? 'UNIT'; 
+  Widget _buildUnitCard(BuildContext context, CommunityChannel channel, {required bool isWide}) {
+    final level = channel.unit?.level ?? 'UNIT';
     String levelTitle = 'Unit';
     IconData icon = Icons.public;
-    
+
     switch (level) {
       case 'VILLAGE':
         levelTitle = 'Umudugudu Wanjye';
@@ -212,52 +281,143 @@ class _MyChannelsTab extends StatelessWidget {
     }
 
     final displayName = channel.name.split(' - ').first;
+    final isSelected = _selectedChannel?.id == channel.id;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 8),
       elevation: 0,
+      color: isSelected ? ImboniColors.primary.withValues(alpha: 0.1) : null,
       shape: RoundedRectangleBorder(
-        side: BorderSide(color: Colors.grey.withValues(alpha: 0.2)),
-        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: isSelected ? ImboniColors.primary : colorScheme.outlineVariant.withValues(alpha: 0.3),
+          width: isSelected ? 2 : 1,
+        ),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         leading: Container(
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: ImboniColors.primary.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
-          child: Icon(icon, color: ImboniColors.primary),
+          child: Icon(icon, color: ImboniColors.primary, size: 20),
         ),
         title: Text(
           levelTitle,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+            color: isSelected ? ImboniColors.primary : null,
+          ),
         ),
         subtitle: Text(
           displayName,
-          style: TextStyle(color: Colors.grey[600], fontSize: 13),
+          style: TextStyle(color: Colors.grey[600], fontSize: 12),
         ),
-        trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+        trailing: Icon(
+          Icons.chevron_right,
+          color: isSelected ? ImboniColors.primary : Colors.grey,
+          size: 20,
+        ),
         onTap: () {
-          if (level == 'VILLAGE') {
-             Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ChannelChatScreen(channel: channel),
-              ),
-            );
+          if (isWide) {
+            // Wide: Update selected channel, show in right panel
+            setState(() {
+              _selectedChannel = channel;
+            });
           } else {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => UnitTopicSelectionScreen(generalChannel: channel),
-              ),
-            );
+            // Mobile: Navigate to full-screen
+            if (level == 'VILLAGE') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => ChannelChatScreen(channel: channel)),
+              );
+            } else {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => UnitTopicSelectionScreen(generalChannel: channel)),
+              );
+            }
           }
         },
       ),
     );
+  }
+
+  /// Welcome panel shown when no channel is selected
+  Widget _buildWelcomePanel(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      color: colorScheme.surfaceContainerLowest,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: ImboniColors.primary.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.forum_outlined, size: 64, color: ImboniColors.primary),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Hitamo Urwego',
+              style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Select a unit from the left to view discussions',
+              style: theme.textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Content panel showing chat or topic selection
+  Widget _buildContentPanel(BuildContext context) {
+    if (_selectedChannel == null) return _buildWelcomePanel(context);
+
+    final level = _selectedChannel!.unit?.level ?? 'UNIT';
+    final hasCategory = _selectedChannel!.category != null;
+
+    // If it's a topic channel (has category) OR a village, show the chat
+    if (hasCategory || level == 'VILLAGE') {
+      return ChannelChatScreen(
+        channel: _selectedChannel!,
+        embedded: true,
+        onBack: hasCategory && _parentChannel != null
+            ? () {
+                // Navigate back to parent's topic selection
+                setState(() {
+                  _selectedChannel = _parentChannel;
+                  _parentChannel = null;
+                });
+              }
+            : null,
+      );
+    } else {
+      // Show topic selection for higher-level units
+      return UnitTopicSelectionScreen(
+        generalChannel: _selectedChannel!,
+        embedded: true,
+        onChannelSelected: (channel) {
+          setState(() {
+            _parentChannel = _selectedChannel; // Save current as parent
+            _selectedChannel = channel;
+          });
+        },
+      );
+    }
   }
 }
 
@@ -266,10 +426,24 @@ class _DiscoverTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Coming Soon: Browse channels by interest'),
+    final theme = Theme.of(context);
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.explore_outlined, size: 64, color: Colors.grey[400]),
+          const SizedBox(height: 16),
+          Text(
+            'Birasohorera Vuba',
+            style: theme.textTheme.titleLarge?.copyWith(color: Colors.grey[600]),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Browse channels by interest coming soon',
+            style: TextStyle(color: Colors.grey[500]),
+          ),
+        ],
+      ),
     );
   }
 }
-
-
