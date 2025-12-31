@@ -909,12 +909,26 @@ export class CaseService {
 
         const total = cases.length;
 
+        // DEBUG: Log fetched cases
+        logger.info('[Metrics] Cases fetched', {
+            total,
+            whereClause: JSON.stringify(whereClause),
+            sampleCases: cases.slice(0, 3).map(c => ({
+                id: c.id,
+                status: c.status,
+                urgency: c.urgency,
+                unitCode: c.administrativeUnit.code
+            }))
+        });
+
         if (total === 0) {
+            logger.warn('[Metrics] No cases found - returning empty metrics');
             return {
                 totalCases: 0,
                 resolvedCases: 0,
                 pendingCases: 0,
                 escalatedCases: 0,
+                urgentCases: 0,
                 resolutionRate: 0,
                 avgResponseTimeHours: 0,
                 escalationRate: 0,
@@ -1059,6 +1073,10 @@ export class CaseService {
         // Calculate top-level breakdown for the current unit
         let topActive = 0;
         let topOpen = 0;
+        let topUrgent = 0; // New: Urgent (High/Emergency)
+
+        logger.info('[Metrics] Starting top-level metrics calculation', { totalCases: cases.length });
+
         // We can iterate 'cases' (which are all cases in this jurisdiction filtered by date/category)
         cases.forEach(c => {
             const status = c.status as any;
@@ -1067,14 +1085,32 @@ export class CaseService {
             } else if (status !== 'RESOLVED' && status !== 'CLOSED' && status !== 'PENDING_CONFIRMATION' && status !== 'ESCALATED') {
                 topOpen++;
             }
+            // Check for urgency
+            if (c.urgency === 'HIGH' || c.urgency === 'EMERGENCY') {
+                // Only count unresolved urgent cases? Usually dashboard shows "Urgent (+24h)" which implies active urgent cases.
+                // Assuming we want currently ACTIVE/OPEN urgent cases.
+                if (status !== 'RESOLVED' && status !== 'CLOSED' && status !== 'PENDING_CONFIRMATION') {
+                    topUrgent++;
+                }
+            }
+        });
+
+        logger.info('[Metrics] Final calculated metrics', {
+            topActive,
+            topOpen,
+            topUrgent,
+            totalCases: total,
+            resolvedCases: resolved,
+            escalatedCases: escalated
         });
 
         return {
             totalCases: total,
             resolvedCases: resolved,
             pendingCases: total - resolved,
-            openCases: topOpen, // New
-            activeCases: topActive, // New
+            openCases: topOpen,
+            activeCases: topActive,
+            urgentCases: topUrgent, // New field exposed to frontend
             escalatedCases: escalated,
             resolutionRate: total > 0 ? (resolved / total) * 100 : 0,
             avgResponseTimeHours: casesWithResponseTime > 0 ? (totalResponseTimeMinutes / casesWithResponseTime) / 60 : 0,

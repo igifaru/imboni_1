@@ -229,6 +229,7 @@ class PerformanceMetrics {
   final int resolvedCases;
   final int pendingCases;
   final int escalatedCases;
+  final int urgentCases; // New
   final double resolutionRate; // Changed to double for precision
   final double avgResponseTimeHours;
   final double escalationRate; // New
@@ -245,6 +246,7 @@ class PerformanceMetrics {
     required this.resolvedCases,
     required this.pendingCases,
     required this.escalatedCases,
+    required this.urgentCases,
     required this.resolutionRate,
     required this.avgResponseTimeHours,
     required this.escalationRate,
@@ -277,6 +279,7 @@ class PerformanceMetrics {
       resolvedCases: json['resolvedCases'] ?? 0,
       pendingCases: json['pendingCases'] ?? 0,
       escalatedCases: json['escalatedCases'] ?? 0,
+      urgentCases: json['urgentCases'] ?? 0, // New
       resolutionRate: (json['resolutionRate'] ?? 0).toDouble(),
       avgResponseTimeHours: (json['avgResponseTimeHours'] ?? 0).toDouble(),
       escalationRate: (json['escalationRate'] ?? 0).toDouble(),
@@ -296,6 +299,9 @@ class PerformanceMetrics {
       resolvedCases: 0,
       pendingCases: 0,
       escalatedCases: 0,
+      urgentCases: 0,
+      activeCases: 0,
+      openCases: 0,
       resolutionRate: 0,
       avgResponseTimeHours: 0,
       escalationRate: 0,

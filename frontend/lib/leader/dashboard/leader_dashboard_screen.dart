@@ -535,11 +535,10 @@ class _DashboardHomeState extends State<_DashboardHome> {
   }
 
   Widget _buildStatsRow(ThemeData theme, bool isDark) {
-    // Use metrics if available for "God View", otherwise local assigned counts
-    final urgentCount = _assignedCases.where((c) => c.urgency == 'EMERGENCY' || c.urgency == 'HIGH').length; // Metrics doesn't have urgent count yet, keep local or add to metrics later
-    
-    final activeCount = _metrics != null ? (_metrics!.pendingCases) : _assignedCases.length;
-    final escalatedCount = _metrics != null ? _metrics!.escalatedCases : _escalationAlerts.length;
+    // Use metrics from backend for accuracy across entire jurisdiction
+    final urgentCount = _metrics?.urgentCases ?? 0;
+    final activeCount = _metrics?.pendingCases ?? 0;
+    final escalatedCount = _metrics?.escalatedCases ?? 0;
 
     return Row(children: [
       Expanded(child: StatCard(icon: Icons.warning_amber_rounded, iconColor: ImboniColors.urgencyEmergency, label: 'Urgent (+24h):', value: '$urgentCount')),
