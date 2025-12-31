@@ -34,6 +34,7 @@ dependencies:
   url_launcher: ^6.3.2
   intl: ^0.20.2
 
+  provider: any
 dev_dependencies:
   flutter_test:
     sdk: flutter
