@@ -20,6 +20,27 @@ class CommunityProvider extends ChangeNotifier {
   List<ChannelMessage> getMessages(String channelId) => _messages[channelId] ?? [];
   bool isLoadingMessages(String channelId) => _isLoadingMessages[channelId] ?? false;
 
+  /// Get topic channels for a unit (returns from _channels)
+  List<CommunityChannel> getTopicChannelsForUnit(String unitId) {
+    return _channels.where((c) => 
+      c.administrativeUnitId == unitId && c.category != null
+    ).toList();
+  }
+
+  /// Get message count for a specific topic in a unit
+  int getTopicMessageCount(String unitId, String category) {
+    final topicChannel = _channels.firstWhere(
+      (c) => c.administrativeUnitId == unitId && c.category == category,
+      orElse: () => const CommunityChannel(
+        id: '', 
+        administrativeUnitId: '', 
+        name: '', 
+        type: ChannelType.community,
+      ),
+    );
+    return topicChannel.messageCount;
+  }
+
   Future<void> fetchChannels() async {
     _isLoadingChannels = true;
     _error = null;

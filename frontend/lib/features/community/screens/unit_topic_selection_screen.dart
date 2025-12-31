@@ -114,23 +114,28 @@ class UnitTopicSelectionScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    GridView.count(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisCount: crossAxisCount,
-                      mainAxisSpacing: 10,
-                      crossAxisSpacing: 10,
-                      childAspectRatio: aspectRatio,
-                      children: [
-                        _buildTopicCard(context, 'Ubuzima', 'HEALTH', Icons.medical_services_outlined, Colors.red),
-                        _buildTopicCard(context, 'Ubutaka', 'LAND', Icons.landscape_outlined, Colors.brown),
-                        _buildTopicCard(context, 'Ibikorwaremezo', 'INFRASTRUCTURE', Icons.add_road, Colors.blueGrey),
-                        _buildTopicCard(context, 'Umutekano', 'SECURITY', Icons.security, Colors.blue),
-                        _buildTopicCard(context, 'Ubutabera', 'JUSTICE', Icons.balance, Colors.indigo),
-                        _buildTopicCard(context, 'Imibereho', 'SOCIAL', Icons.people_outline, Colors.teal),
-                        _buildTopicCard(context, 'Uburezi', 'EDUCATION', Icons.school_outlined, Colors.orange),
-                        _buildTopicCard(context, 'Ibindi', 'OTHER', Icons.more_horiz, Colors.purple),
-                      ],
+                    Consumer<CommunityProvider>(
+                      builder: (context, provider, _) {
+                        final unitId = generalChannel.administrativeUnitId;
+                        return GridView.count(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          crossAxisCount: crossAxisCount,
+                          mainAxisSpacing: 10,
+                          crossAxisSpacing: 10,
+                          childAspectRatio: aspectRatio,
+                          children: [
+                            _buildTopicCard(context, 'Ubuzima', 'HEALTH', Icons.medical_services_outlined, Colors.red, provider.getTopicMessageCount(unitId, 'HEALTH')),
+                            _buildTopicCard(context, 'Ubutaka', 'LAND', Icons.landscape_outlined, Colors.brown, provider.getTopicMessageCount(unitId, 'LAND')),
+                            _buildTopicCard(context, 'Ibikorwaremezo', 'INFRASTRUCTURE', Icons.add_road, Colors.blueGrey, provider.getTopicMessageCount(unitId, 'INFRASTRUCTURE')),
+                            _buildTopicCard(context, 'Umutekano', 'SECURITY', Icons.security, Colors.blue, provider.getTopicMessageCount(unitId, 'SECURITY')),
+                            _buildTopicCard(context, 'Ubutabera', 'JUSTICE', Icons.balance, Colors.indigo, provider.getTopicMessageCount(unitId, 'JUSTICE')),
+                            _buildTopicCard(context, 'Imibereho', 'SOCIAL', Icons.people_outline, Colors.teal, provider.getTopicMessageCount(unitId, 'SOCIAL')),
+                            _buildTopicCard(context, 'Uburezi', 'EDUCATION', Icons.school_outlined, Colors.orange, provider.getTopicMessageCount(unitId, 'EDUCATION')),
+                            _buildTopicCard(context, 'Ibindi', 'OTHER', Icons.more_horiz, Colors.purple, provider.getTopicMessageCount(unitId, 'OTHER')),
+                          ],
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -157,7 +162,7 @@ class UnitTopicSelectionScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTopicCard(BuildContext context, String label, String category, IconData icon, Color color) {
+  Widget _buildTopicCard(BuildContext context, String label, String category, IconData icon, Color color, int messageCount) {
     return Card(
       elevation: 0,
       clipBehavior: Clip.antiAlias,
@@ -170,28 +175,55 @@ class UnitTopicSelectionScreen extends StatelessWidget {
           debugPrint('Topic tapped: $category');
           _handleTopicTap(context, category);
         },
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(icon, color: color, size: 22),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      label,
+                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
-                child: Icon(icon, color: color, size: 22),
               ),
-              const SizedBox(height: 6),
-              Text(
-                label,
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
+            ),
+            // Badge for message count
+            if (messageCount > 0)
+              Positioned(
+                top: 4,
+                right: 4,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    messageCount > 99 ? '99+' : messageCount.toString(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
               ),
-            ],
-          ),
+          ],
         ),
       ),
     );
