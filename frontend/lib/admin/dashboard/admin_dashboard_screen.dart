@@ -210,6 +210,7 @@ class _AdminHome extends StatefulWidget {
 
 class _AdminHomeState extends State<_AdminHome> {
   List<CaseModel> _assignedCases = [];
+  // ignore: unused_field
   List<CaseModel> _escalationAlerts = [];
   bool _isLoading = true;
   String _searchQuery = '';

@@ -101,7 +101,7 @@ class AdminService extends ChangeNotifier {
       }
       return [];
     } catch (e) {
-      print('Error fetching stats: $e');
+      debugPrint('Error loading stats: $e');
       return [];
     }
   }

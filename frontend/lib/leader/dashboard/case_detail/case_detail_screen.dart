@@ -126,7 +126,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Case Details'),
+        title: const Text('Case Details'),
         actions: [
           IconButton(
             icon: const Icon(Icons.share_outlined),

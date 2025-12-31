@@ -179,6 +179,7 @@ class _DashboardHome extends StatefulWidget {
 
 class _DashboardHomeState extends State<_DashboardHome> {
   List<CaseModel> _assignedCases = [];
+  // ignore: unused_field
   List<CaseModel> _escalationAlerts = [];
   PerformanceMetrics? _metrics;
   bool _isLoading = true;

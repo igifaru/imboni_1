@@ -179,7 +179,7 @@ class _ProvinceStatsWidgetState extends State<ProvinceStatsWidget> {
             ),
             child: Text(
               '$total',
-              style: TextStyle(
+              style: const TextStyle(
                 color: ImboniColors.primary,
                 fontWeight: FontWeight.bold,
                 fontSize: 14,

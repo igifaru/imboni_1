@@ -349,8 +349,8 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
             child: ExcludeSemantics( // SAFE MODE
               child: BarChart(
                 BarChartData(
-                  gridData: FlGridData(show: true, drawVerticalLine: false, horizontalInterval: 1),
-                  barTouchData: BarTouchData(enabled: false), // SAFE MODE
+                  gridData: const FlGridData(show: true, drawVerticalLine: false, horizontalInterval: 1),
+                  barTouchData: const BarTouchData(enabled: false), // SAFE MODE
                   titlesData: FlTitlesData(
                     leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 30, interval: 1, getTitlesWidget: (v, m) => Text(v.toInt().toString(), style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant)))),
                     bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, getTitlesWidget: (v, meta) {
@@ -362,8 +362,8 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                       }
                       return const Text('');
                     })),
-                    topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   ),
                   borderData: FlBorderData(show: false),
                   barGroups: trendData.asMap().entries.map((entry) {

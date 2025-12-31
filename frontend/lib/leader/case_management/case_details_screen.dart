@@ -3,7 +3,6 @@ import 'package:imboni/shared/models/models.dart';
 import 'package:imboni/shared/services/case_service.dart';
 import '../../shared/theme/colors.dart';
 import '../../shared/localization/app_localizations.dart';
-import '../../shared/widgets/loading_overlay.dart';
 import '../../shared/widgets/countdown_timer.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:imboni/shared/services/api_client.dart';
@@ -175,7 +174,7 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
     final isTablet = screenWidth > 600 && screenWidth <= 900;
     
     // SAFE CENTERING: Calculate horizontal padding manually
-    final contentMaxWidth = 1200.0;
+    const contentMaxWidth = 1200.0;
     double horizontalPadding = 16.0;
     
     if (screenWidth > contentMaxWidth) {
@@ -909,7 +908,7 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
           Expanded(
             child: Container(
               decoration: BoxDecoration(
-                gradient: LinearGradient(
+                gradient: const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [ImboniColors.primary, ImboniColors.primaryDark],
