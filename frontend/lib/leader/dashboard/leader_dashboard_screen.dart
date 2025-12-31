@@ -343,7 +343,7 @@ class _DashboardHomeState extends State<_DashboardHome> {
                             DistrictCasesWidget(
                               subUnitStats: _metrics?.subUnitBreakdown ?? [],
                               isDashboardLoading: _isLoading,
-                              currentLevel: widget.currentLevel ?? '',
+                              currentLevel: _metrics?.currentLevel ?? widget.currentLevel ?? '',
                               onUnitSelected: _handleUnitSelected,
                             ),
                           ],
@@ -366,7 +366,7 @@ class _DashboardHomeState extends State<_DashboardHome> {
                     DistrictCasesWidget(
                       subUnitStats: _metrics?.subUnitBreakdown ?? [],
                       isDashboardLoading: _isLoading,
-                      currentLevel: widget.currentLevel ?? '',
+                      currentLevel: _metrics?.currentLevel ?? widget.currentLevel ?? '',
                       onUnitSelected: _handleUnitSelected,
                     ),
                   ],

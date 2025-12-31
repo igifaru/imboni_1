@@ -236,6 +236,7 @@ class PerformanceMetrics {
   final Map<String, int> casesByCategory;
   final List<DailyTrend> weeklyTrends;
   final List<SubUnitPerformance> subUnitBreakdown; // New
+  final String currentLevel; // New
 
   PerformanceMetrics({
     required this.totalCases,
@@ -249,6 +250,7 @@ class PerformanceMetrics {
     required this.casesByCategory,
     required this.weeklyTrends,
     required this.subUnitBreakdown,
+    this.currentLevel = '',
   });
 
   factory PerformanceMetrics.fromJson(Map<String, dynamic> json) {
@@ -278,6 +280,7 @@ class PerformanceMetrics {
       casesByCategory: Map<String, int>.from(json['casesByCategory'] ?? {}),
       weeklyTrends: trends,
       subUnitBreakdown: breakdown,
+      currentLevel: json['currentLevel'] ?? 'Unknown',
     );
   }
 
@@ -294,6 +297,7 @@ class PerformanceMetrics {
       casesByCategory: {},
       weeklyTrends: [],
       subUnitBreakdown: [],
+      currentLevel: '',
     );
   }
 }

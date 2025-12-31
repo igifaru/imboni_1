@@ -180,15 +180,14 @@ class DistrictCasesWidget extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 4),
-                      Row(
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 4,
                         children: [
                           _buildMiniStat(context, 'Open', open, Colors.orange),
-                          const SizedBox(width: 12),
                           _buildMiniStat(context, 'Resolved', resolved, Colors.green),
-                          if (escalated > 0) ...[
-                            const SizedBox(width: 12),
+                          if (escalated > 0)
                             _buildMiniStat(context, 'Escalated', escalated, ImboniColors.error),
-                          ]
                         ],
                       ),
                     ],

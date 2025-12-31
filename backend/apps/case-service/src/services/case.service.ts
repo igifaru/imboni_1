@@ -1064,7 +1064,8 @@ export class CaseService {
             overdueCases: overdue,
             casesByCategory: byCategory,
             weeklyTrends,
-            subUnitBreakdown
+            subUnitBreakdown,
+            currentLevel: myUnit.level // Returning actual level for dynamic frontend headers
         };
     }
 
