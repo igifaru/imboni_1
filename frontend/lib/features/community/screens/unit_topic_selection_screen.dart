@@ -86,41 +86,56 @@ class UnitTopicSelectionScreen extends StatelessWidget {
             ),
           ),
 
-        // Topic Grid
+        // Topic Grid - Responsive layout
         Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Amatsinda y'Ibyiciro",
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey[600],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                GridView.count(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  childAspectRatio: 1.4,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              // Responsive columns: 4 on wide, 3 on medium, 2 on mobile
+              int crossAxisCount = 2;
+              double aspectRatio = 1.2;
+              if (constraints.maxWidth > 600) {
+                crossAxisCount = 4;
+                aspectRatio = 1.4;
+              } else if (constraints.maxWidth > 400) {
+                crossAxisCount = 3;
+                aspectRatio = 1.3;
+              }
+
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildTopicCard(context, 'Ubuzima', 'HEALTH', Icons.medical_services_outlined, Colors.red),
-                    _buildTopicCard(context, 'Ubutaka', 'LAND', Icons.landscape_outlined, Colors.brown),
-                    _buildTopicCard(context, 'Ibikorwaremezo', 'INFRASTRUCTURE', Icons.add_road, Colors.blueGrey),
-                    _buildTopicCard(context, 'Umutekano', 'SECURITY', Icons.security, Colors.blue),
-                    _buildTopicCard(context, 'Ubutabera', 'JUSTICE', Icons.balance, Colors.indigo),
-                    _buildTopicCard(context, 'Imibereho', 'SOCIAL', Icons.people_outline, Colors.teal),
-                    _buildTopicCard(context, 'Uburezi', 'EDUCATION', Icons.school_outlined, Colors.orange),
-                    _buildTopicCard(context, 'Ibindi', 'OTHER', Icons.more_horiz, Colors.purple),
+                    Text(
+                      "Amatsinda y'Ibyiciro",
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    GridView.count(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      crossAxisCount: crossAxisCount,
+                      mainAxisSpacing: 10,
+                      crossAxisSpacing: 10,
+                      childAspectRatio: aspectRatio,
+                      children: [
+                        _buildTopicCard(context, 'Ubuzima', 'HEALTH', Icons.medical_services_outlined, Colors.red),
+                        _buildTopicCard(context, 'Ubutaka', 'LAND', Icons.landscape_outlined, Colors.brown),
+                        _buildTopicCard(context, 'Ibikorwaremezo', 'INFRASTRUCTURE', Icons.add_road, Colors.blueGrey),
+                        _buildTopicCard(context, 'Umutekano', 'SECURITY', Icons.security, Colors.blue),
+                        _buildTopicCard(context, 'Ubutabera', 'JUSTICE', Icons.balance, Colors.indigo),
+                        _buildTopicCard(context, 'Imibereho', 'SOCIAL', Icons.people_outline, Colors.teal),
+                        _buildTopicCard(context, 'Uburezi', 'EDUCATION', Icons.school_outlined, Colors.orange),
+                        _buildTopicCard(context, 'Ibindi', 'OTHER', Icons.more_horiz, Colors.purple),
+                      ],
+                    ),
                   ],
                 ),
-              ],
-            ),
+              );
+            },
           ),
         ),
       ],
@@ -147,7 +162,7 @@ class UnitTopicSelectionScreen extends StatelessWidget {
       elevation: 0,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         side: BorderSide(color: Colors.grey.withValues(alpha: 0.2)),
       ),
       child: InkWell(
@@ -155,23 +170,28 @@ class UnitTopicSelectionScreen extends StatelessWidget {
           debugPrint('Topic tapped: $category');
           _handleTopicTap(context, category);
         },
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color, size: 22),
               ),
-              child: Icon(icon, color: color, size: 28),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-          ],
+              const SizedBox(height: 6),
+              Text(
+                label,
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
         ),
       ),
     );
