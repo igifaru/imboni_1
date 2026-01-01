@@ -347,6 +347,70 @@ export class CaseService {
         return this.toResponseDto(updatedCase as unknown as CaseEntity);
     }
 
+    /**
+     * Manual Case Assignment by Head/Peer
+     */
+    async assignCaseManually(caseId: string, targetLeaderId: string, deadline: Date, assignerId: string): Promise<CaseResponseDto> {
+        const existingCase = await this.repository.findById(caseId);
+        if (!existingCase) throw new Error('Case not found');
+
+        // 1. Verify Target Leader is assigned to the SAME administrative unit
+        const targetAssignment = await prisma.leaderAssignment.findFirst({
+            where: {
+                userId: targetLeaderId,
+                administrativeUnitId: existingCase.administrativeUnitId,
+                isActive: true
+            }
+        });
+
+        if (!targetAssignment) {
+            throw new Error('Target leader is not active in this administrative unit.');
+        }
+
+        // 2. Deactivate previous assignments for this unit
+        await prisma.caseAssignment.updateMany({
+            where: {
+                caseId,
+                administrativeUnitId: existingCase.administrativeUnitId,
+                isActive: true
+            },
+            data: { isActive: false, completedAt: new Date() }
+        });
+
+        // 3. Create New Assignment
+        await prisma.caseAssignment.create({
+            data: {
+                caseId,
+                administrativeUnitId: existingCase.administrativeUnitId,
+                leaderId: targetLeaderId,
+                assignedAt: new Date(),
+                deadlineAt: deadline,
+                isActive: true
+            }
+        });
+
+        // 4. Log Action
+        await prisma.caseAction.create({
+            data: {
+                caseId,
+                performedBy: assignerId,
+                actionType: 'ASSIGNMENT', // Ensure Prisma Enum has this or log as STATUS_UPDATE with note? Assuming flexible.
+                notes: `Manually assigned to specific leader. Deadline: ${deadline.toISOString()}`
+            }
+        });
+
+        // 5. Notify Target
+        await publishEvent(CHANNELS.NOTIFICATION_SEND, {
+            userId: targetLeaderId,
+            caseId,
+            channel: 'PUSH',
+            message: `New manual assignment: ${existingCase.title}`
+        });
+
+        const updated = await this.repository.findById(caseId);
+        return this.toResponseDto(updated!);
+    }
+
     async updateCase(caseId: string, dto: UpdateCaseDto, userId: string): Promise<CaseResponseDto> {
         const existingCase = await this.repository.findById(caseId);
 
@@ -1192,6 +1256,7 @@ export class CaseService {
             resolvedAt: entity.resolvedAt?.toISOString() || null,
             deadline: deadline || null, // Populated from assignment if passed
             daysRemaining: null,
+            administrativeUnitId: entity.administrativeUnitId,
             evidence: entity.evidence?.map(e => ({
                 id: e.id,
                 type: e.type,

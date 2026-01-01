@@ -54,6 +54,7 @@ export interface CaseResponseDto {
         url: string;
         fileName: string;
     }[];
+    administrativeUnitId?: string;
     administrativeUnit?: {
         id: string;
         name: string;

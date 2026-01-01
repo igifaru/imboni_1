@@ -19,6 +19,7 @@ class CaseModel {
   final List<EvidenceModel>? evidence;
   final String? locationName;
   final String? administrativeUnitCode;
+  final String administrativeUnitId; // Added for assignment logic
 
   const CaseModel({
     required this.id,
@@ -39,6 +40,7 @@ class CaseModel {
     this.evidence,
     this.locationName,
     this.administrativeUnitCode,
+    required this.administrativeUnitId,
   });
 
   factory CaseModel.fromJson(Map<String, dynamic> json) {
@@ -63,6 +65,8 @@ class CaseModel {
           : null,
       locationName: json['locationName'] as String?,
       administrativeUnitCode: json['administrativeUnit']?['code'] as String?,
+      administrativeUnitId: (json['administrativeUnitId'] as String?) ?? 
+                           (json['administrativeUnit']?['id'] as String?) ?? '',
     );
   }
 
@@ -82,6 +86,7 @@ class CaseModel {
     'audioUrl': audioUrl,
     'imageUrl': imageUrl,
     'citizenName': citizenName,
+    'administrativeUnitId': administrativeUnitId,
   };
 }
 
@@ -131,6 +136,8 @@ class UserModel {
   final String? sector;
   final String? cell;
   final String? village;
+  final String? positionTitle; // Specific role title (e.g. Health Officer)
+  final String? assignedUnitName; // Name of unit they lead
 
   const UserModel({
     required this.id,
@@ -148,6 +155,8 @@ class UserModel {
     this.sector,
     this.cell,
     this.village,
+    this.positionTitle,
+    this.assignedUnitName,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -167,6 +176,8 @@ class UserModel {
       sector: json['sector'] as String?,
       cell: json['cell'] as String?,
       village: json['village'] as String?,
+      positionTitle: json['positionTitle'] as String?,
+      assignedUnitName: json['assignedUnitName'] as String?,
     );
   }
 
