@@ -384,6 +384,42 @@ router.post('/:id/resolve', async (req: Request, res: Response, next: NextFuncti
 });
 
 
+
+/**
+ * POST /cases/:id/assign - Manual assignment
+ */
+router.post('/:id/assign', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { id } = req.params;
+        const { leaderId, deadline } = req.body;
+        const userId = (req as any).user?.userId;
+
+        if (!leaderId || !deadline) {
+            return res.status(400).json({ error: 'Leader ID and Deadline are required' });
+        }
+
+        const deadlineDate = new Date(deadline);
+        if (isNaN(deadlineDate.getTime())) {
+            return res.status(400).json({ error: 'Invalid deadline date format' });
+        }
+
+        if (deadlineDate <= new Date()) {
+            return res.status(400).json({ error: 'Deadline must be in the future' });
+        }
+
+        const result = await caseService.assignCaseManually(id, leaderId, deadlineDate, userId);
+
+        res.json({
+            success: true,
+            data: result,
+            message: 'Case assigned successfully'
+        });
+    } catch (error) {
+        logger.error('Failed to assign case', error);
+        next(error);
+    }
+});
+
 /**
  * POST /cases/:id/escalate - Escalate case to next level
  */
