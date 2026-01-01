@@ -8,6 +8,7 @@ import { authMiddleware, roleMiddleware } from '../auth/jwt.middleware';
 
 const logger = createServiceLogger('admin-routes');
 const router = Router();
+console.log("--- ADMIN ROUTES LOADED (Version: Fix Province Mapping) ---");
 
 /**
  * Hierarchy mapping: Registrar Level -> Subordinate Level
@@ -25,10 +26,15 @@ const HIERARCHY: Record<string, AdministrativeLevel> = {
  */
 const provinceMapping: Record<string, string> = {
     'Kigali': 'Kigali',
+    'Kigali City': 'Kigali',
     'Amajyaruguru': 'North',
+    'Northern Province': 'North',
     'Amajyepfo': 'South',
+    'Southern Province': 'South',
     'Iburasirazuba': 'East',
+    'Eastern Province': 'East',
     'Iburengerazuba': 'West',
+    'Western Province': 'West',
 };
 
 // Validation schema for registering a subordinate
@@ -40,6 +46,7 @@ const RegisterSubordinateSchema = z.object({
     administrativeUnitId: z.string().optional(),
     level: z.nativeEnum(AdministrativeLevel),
     jurisdictionName: z.string(), // e.g. "Kigali", "Gasabo", etc.
+    positionTitle: z.string().optional(), // Added specific role title
 });
 
 /**
@@ -65,11 +72,23 @@ function getDataAtUnitPath(path: any[], data: any) {
 
     // Follow the path
     for (const unit of path) {
-        const key = provinceMapping[unit.name] || unit.name;
+        let key = provinceMapping[unit.name] || unit.name;
+
         if (current[key]) {
             current = current[key];
         } else {
-            return null; // Path not found in JSON
+            // Robust fallback: Case-insensitive & trimmed match
+            const keys = Object.keys(current);
+            const foundKey = keys.find(k =>
+                k.trim().toLowerCase() === key.trim().toLowerCase() ||
+                k.trim().toLowerCase() === unit.name.trim().toLowerCase() // Check original name too
+            );
+
+            if (foundKey) {
+                current = current[foundKey];
+            } else {
+                return null; // Path not found in JSON
+            }
         }
     }
     return current;
@@ -102,7 +121,7 @@ router.post('/register-subordinate', authMiddleware, async (req: Request, res: R
             return res.status(400).json({ error: 'Validation failed', details: validation.error.errors });
         }
 
-        const { name, email, password, role, level, jurisdictionName } = validation.data;
+        const { name, email, password, role, level, jurisdictionName, positionTitle } = validation.data;
 
         // Load Rwanda administrative data
         const rwandaData = await import('../data/rwanda-admin.json');
@@ -127,37 +146,52 @@ router.post('/register-subordinate', authMiddleware, async (req: Request, res: R
             registrarPath = await getUnitFullPath(parentUnitId);
         }
 
-        // 1. Enforce strict hierarchy
-        const allowedChildLevel = HIERARCHY[registrarLevel];
-        if (allowedChildLevel !== level) {
-            return res.status(403).json({
-                error: `A ${registrarLevel} leader can only register a ${allowedChildLevel} leader.`
-            });
-        }
+        let targetUnit;
 
-        // 2. Validate jurisdiction existence in JSON
-        const validChildren = getChildrenFromJson(registrarPath, adminJson);
-        if (!validChildren.includes(jurisdictionName)) {
-            return res.status(400).json({
-                error: `Jurisdiction "${jurisdictionName}" is not a valid child of your current assignment.`
-            });
-        }
+        // 1. Peer Registration (Same Level) - Adding staff to current unit
+        // Excluding ADMIN because they don't have a 'unit' in the same way (National is virtual-ish here)
+        if (level === registrarLevel && registrarRole !== 'ADMIN') {
+            // We simply attach the new user to the Registrar's current unit
+            targetUnit = await prisma.administrativeUnit.findUnique({ where: { id: parentUnitId! } });
 
-        // 3. Check or Create the Administrative Unit
-        const parentCodes = registrarPath.map(u => u.name.toUpperCase().replace(/\s+/g, '_'));
-        const unitNameCode = jurisdictionName.toUpperCase().replace(/\s+/g, '_');
-        const code = [...parentCodes, unitNameCode].join(':');
-
-        const targetUnit = await prisma.administrativeUnit.upsert({
-            where: { code },
-            update: {},
-            create: {
-                name: jurisdictionName,
-                level: level,
-                code: code,
-                parentId: parentUnitId,
+            if (!targetUnit) {
+                return res.status(404).json({ error: 'Registrar administrative unit not found.' });
             }
-        });
+        }
+        // 2. Child Registration (Next Level Down) - Creating/finding sub-unit
+        else {
+            const allowedChildLevel = HIERARCHY[registrarLevel];
+
+            if (allowedChildLevel !== level) {
+                return res.status(403).json({
+                    error: `A ${registrarLevel} leader can only register a ${allowedChildLevel} subordinate or a ${registrarLevel} staff member.`
+                });
+            }
+
+            // Validate jurisdiction in JSON
+            const validChildren = getChildrenFromJson(registrarPath, adminJson);
+            if (!validChildren.includes(jurisdictionName)) {
+                return res.status(400).json({
+                    error: `Jurisdiction "${jurisdictionName}" is not a valid child of your current assignment.`
+                });
+            }
+
+            // Check or Create the Administrative Unit
+            const parentCodes = registrarPath.map(u => u.name.toUpperCase().replace(/\s+/g, '_'));
+            const unitNameCode = jurisdictionName.toUpperCase().replace(/\s+/g, '_');
+            const code = [...parentCodes, unitNameCode].join(':');
+
+            targetUnit = await prisma.administrativeUnit.upsert({
+                where: { code },
+                update: {},
+                create: {
+                    name: jurisdictionName,
+                    level: level,
+                    code: code,
+                    parentId: parentUnitId,
+                }
+            });
+        }
 
         // 4. Create the User (Subordinate)
         const hashedPassword = await hashPassword(password);
@@ -181,7 +215,7 @@ router.post('/register-subordinate', authMiddleware, async (req: Request, res: R
             data: {
                 userId: newUser.id,
                 administrativeUnitId: targetUnit.id,
-                positionTitle: `Head of ${jurisdictionName}`,
+                positionTitle: positionTitle || `Head of ${jurisdictionName}`, // Use provided title or default
                 startDate: new Date(),
                 isActive: true
             }
@@ -212,7 +246,7 @@ router.post('/register-subordinate', authMiddleware, async (req: Request, res: R
  */
 router.get('/users', authMiddleware, async (req: Request, res: Response) => {
     try {
-        const { role, status, search, page = '1', limit = '50' } = req.query;
+        const { role, status, search, unitId, page = '1', limit = '50' } = req.query;
 
         const where: any = {};
         if (role) {
@@ -220,6 +254,14 @@ router.get('/users', authMiddleware, async (req: Request, res: Response) => {
             where.role = roles.length > 1 ? { in: roles } : role;
         }
         if (status) where.status = status;
+        if (unitId) {
+            where.leaderAssignments = {
+                some: {
+                    administrativeUnitId: String(unitId),
+                    isActive: true
+                }
+            };
+        }
         if (search) {
             where.OR = [
                 { name: { contains: String(search), mode: 'insensitive' } },
@@ -232,7 +274,20 @@ router.get('/users', authMiddleware, async (req: Request, res: Response) => {
         const [users, total] = await Promise.all([
             prisma.user.findMany({
                 where,
-                select: { id: true, name: true, email: true, phone: true, role: true, status: true, createdAt: true },
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    phone: true,
+                    role: true,
+                    status: true,
+                    createdAt: true,
+                    leaderAssignments: {
+                        where: { isActive: true },
+                        select: { positionTitle: true, administrativeUnit: { select: { name: true } } },
+                        take: 1
+                    }
+                },
                 skip,
                 take: Number(limit),
                 orderBy: { createdAt: 'desc' }
@@ -240,8 +295,14 @@ router.get('/users', authMiddleware, async (req: Request, res: Response) => {
             prisma.user.count({ where })
         ]);
 
+        const mappedUsers = users.map(u => ({
+            ...u,
+            positionTitle: u.leaderAssignments[0]?.positionTitle,
+            assignedUnitName: u.leaderAssignments[0]?.administrativeUnit?.name
+        }));
+
         res.json({
-            data: users,
+            data: mappedUsers,
             meta: {
                 total,
                 page: Number(page),
