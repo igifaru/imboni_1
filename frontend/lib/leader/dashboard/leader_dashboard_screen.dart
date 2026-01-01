@@ -62,7 +62,7 @@ class _LeaderDashboardScreenState extends State<LeaderDashboardScreen> {
 
     final theme = Theme.of(context);
     final isDesktop = Responsive.isDesktop(context);
-    final showRegister = _currentLevel != 'VILLAGE';
+    final showRegister = true; // Enabled for all levels including VILLAGE (for staff)
 
     final screens = [
       _DashboardHome(currentLevel: _currentLevel),
