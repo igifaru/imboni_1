@@ -1,0 +1,242 @@
+import 'package:flutter/material.dart';
+import '../../../admin/services/admin_service.dart';
+import '../../../shared/services/case_service.dart';
+import '../../../shared/models/models.dart';
+import '../../../shared/theme/colors.dart';
+import '../../../shared/localization/app_localizations.dart';
+
+class ManualAssignmentDialog extends StatefulWidget {
+  final String caseId;
+  final String administrativeUnitId;
+
+  const ManualAssignmentDialog({
+    super.key,
+    required this.caseId,
+    required this.administrativeUnitId,
+  });
+
+  @override
+  State<ManualAssignmentDialog> createState() => _ManualAssignmentDialogState();
+}
+
+class _ManualAssignmentDialogState extends State<ManualAssignmentDialog> {
+  final _formKey = GlobalKey<FormState>();
+  
+  List<UserModel> _leaders = [];
+  bool _isLoadingLeaders = true;
+  String? _leaderError;
+  
+  String? _selectedLeaderId;
+  DateTime? _selectedDeadline;
+  bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchLeaders();
+    // Default deadline to 48 hours
+    _selectedDeadline = DateTime.now().add(const Duration(hours: 48));
+  }
+
+  Future<void> _fetchLeaders() async {
+    try {
+      // Fetch leaders for this specific unit
+      // Note: This relies on adminService.getUsers supporting unitId filter
+      final response = await adminService.getUsers(
+        role: 'LEADER',
+        unitId: widget.administrativeUnitId,
+        limit: 100, // Fetch all reasonable leaders for the unit
+      );
+      
+      if (mounted) {
+        setState(() {
+          _leaders = response.data;
+          _isLoadingLeaders = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _leaderError = 'Failed to load leaders';
+          _isLoadingLeaders = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_selectedLeaderId == null || _selectedDeadline == null) return;
+
+    setState(() => _isSubmitting = true);
+
+    final result = await caseService.assignCase(
+      widget.caseId,
+      _selectedLeaderId!,
+      _selectedDeadline!,
+    );
+
+    if (mounted) {
+      setState(() => _isSubmitting = false);
+      if (result.isSuccess) {
+        Navigator.pop(context, true); // Return true to refresh parent
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.error ?? 'Assignment failed'),
+            backgroundColor: ImboniColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDeadline ?? now.add(const Duration(days: 1)),
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 30)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+               primary: ImboniColors.primary,
+               onPrimary: Colors.white,
+               surface: ImboniColors.surfaceDark,
+               onSurface: Colors.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    
+    if (picked != null) {
+      // Pick time
+      if (!mounted) return;
+      final time = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.fromDateTime(_selectedDeadline ?? now),
+      );
+      
+      if (time != null && mounted) {
+        setState(() {
+          _selectedDeadline = DateTime(
+            picked.year, picked.month, picked.day,
+            time.hour, time.minute
+          );
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context); // Note: Assuming standard l10n context available
+    final theme = Theme.of(context);
+
+    // Hardcoded strings for now for speed, ideally localized ("Assign Case", "Select Leader", etc.)
+    
+    return AlertDialog(
+      title: Text('Assign Case', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+      content: SizedBox(
+        width: 400,
+        child: _isLoadingLeaders 
+           ? const Center(child: CircularProgressIndicator())
+           : _leaderError != null
+               ? Center(child: Text(_leaderError!, style: TextStyle(color: ImboniColors.error)))
+               : Form(
+                 key: _formKey,
+                 child: Column(
+                   mainAxisSize: MainAxisSize.min,
+                   crossAxisAlignment: CrossAxisAlignment.start,
+                   children: [
+                     Text('Select Leader', style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
+                     const SizedBox(height: 8),
+                     DropdownButtonFormField<String>(
+                       value: _selectedLeaderId,
+                       decoration: const InputDecoration(
+                         hintText: 'Choose a leader from this unit',
+                         prefixIcon: Icon(Icons.person_outline),
+                       ),
+                       items: _leaders.map((user) {
+                         String label = user.name ?? user.email ?? 'Unknown Leader';
+                         if (user.positionTitle != null && user.positionTitle!.isNotEmpty) {
+                           label += ' — ${user.positionTitle}';
+                         }
+                         return DropdownMenuItem(
+                           value: user.id,
+                           child: Text(label, overflow: TextOverflow.ellipsis),
+                         );
+                       }).toList(),
+                       onChanged: (val) => setState(() => _selectedLeaderId = val),
+                       validator: (val) => val == null ? 'Please select a leader' : null,
+                     ),
+                     
+                     const SizedBox(height: 24),
+                     
+                     Text('Set Deadline', style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
+                     const SizedBox(height: 8),
+                     InkWell(
+                       onTap: _pickDate,
+                       child: Container(
+                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                         decoration: BoxDecoration(
+                           border: Border.all(color: theme.dividerColor),
+                           borderRadius: BorderRadius.circular(8),
+                         ),
+                         child: Row(
+                           children: [
+                             const Icon(Icons.calendar_today_outlined, size: 20),
+                             const SizedBox(width: 12),
+                             Text(
+                               _selectedDeadline != null 
+                                 ? '${_selectedDeadline!.year}-${_selectedDeadline!.month}-${_selectedDeadline!.day} ${_selectedDeadline!.hour}:${_selectedDeadline!.minute.toString().padLeft(2,'0')}' 
+                                 : 'Select Date & Time',
+                               style: theme.textTheme.bodyMedium,
+                             ),
+                           ],
+                         ),
+                       ),
+                     ),
+                     
+                     if (_leaders.isEmpty)
+                       Padding(
+                         padding: const EdgeInsets.only(top: 16.0),
+                         child: Container(
+                           padding: const EdgeInsets.all(12),
+                           decoration: BoxDecoration(color: ImboniColors.warning.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                           child: Row(
+                             children: [
+                               const Icon(Icons.warning_amber_rounded, color: ImboniColors.warning),
+                               const SizedBox(width: 12),
+                               const Expanded(child: Text('No active leaders found in this unit.', style: TextStyle(fontSize: 12))),
+                             ],
+                           ),
+                         ),
+                       ),
+                   ],
+                 ),
+               ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: (_isSubmitting || _leaders.isEmpty) ? null : _submit,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: ImboniColors.primary,
+            foregroundColor: Colors.white,
+          ),
+          child: _isSubmitting 
+            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+            : const Text('Assign'),
+        ),
+      ],
+    );
+  }
+}

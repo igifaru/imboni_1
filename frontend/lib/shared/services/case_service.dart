@@ -141,6 +141,18 @@ class CaseService {
     return ApiResponse.error(response.error ?? 'Failed to escalate case');
   }
 
+  /// Manually assign case to a leader
+  Future<ApiResponse<CaseModel>> assignCase(String caseId, String leaderId, DateTime deadline) async {
+    final response = await apiClient.post('/cases/$caseId/assign', {
+      'leaderId': leaderId,
+      'deadline': deadline.toIso8601String(),
+    });
+    if (response.isSuccess && response.data != null) {
+      return ApiResponse.success(CaseModel.fromJson(response.data));
+    }
+    return ApiResponse.error(response.error ?? 'Failed to assign case');
+  }
+
   /// Confirm resolution (for citizens) - marks case as CLOSED
   Future<ApiResponse<CaseModel>> confirmResolution(String caseId) async {
     final response = await apiClient.post('/cases/$caseId/confirm', {});

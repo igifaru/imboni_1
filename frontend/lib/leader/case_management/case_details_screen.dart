@@ -7,6 +7,7 @@ import '../../shared/widgets/countdown_timer.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:imboni/shared/services/api_client.dart';
 import 'resolution_dialog.dart';
+import 'manual_assignment_dialog.dart';
 import 'package:intl/intl.dart';
 import 'widgets/case_detail_card.dart';
 
@@ -146,6 +147,27 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
         }
       } finally {
         if (mounted) setState(() => _isLoading = false);
+      }
+    }
+
+  }
+
+  Future<void> _assignCase() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => ManualAssignmentDialog(
+         caseId: _case.id,
+         administrativeUnitId: _case.administrativeUnitId,
+      ),
+    );
+
+    if (result == true) {
+      if (mounted) {
+        _refreshCaseDetails();
+        _fetchActions();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context).actionSuccess), backgroundColor: ImboniColors.success),
+        );
       }
     }
   }
@@ -903,87 +925,122 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
     
     return CaseDetailCard(
       backgroundColor: cardColor,
-      child: Row(
+      child: Column(
         children: [
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [ImboniColors.primary, ImboniColors.primaryDark],
-                ),
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: ImboniColors.primary.withAlpha(100),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [ImboniColors.primary, ImboniColors.primaryDark],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: ImboniColors.primary.withAlpha(100),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
-                ],
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: canTakeCase
+                          ? () => _performAction('ACCEPT')
+                          : (_case.status == 'IN_PROGRESS') ? _resolveCase : null,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              canTakeCase ? Icons.pan_tool_alt : Icons.check_circle_outline,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              canTakeCase ? l10n.takeCase : l10n.resolveCase,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: canTakeCase
-                      ? () => _performAction('ACCEPT')
-                      : (_case.status == 'IN_PROGRESS') ? _resolveCase : null,
-                  borderRadius: BorderRadius.circular(12),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+              if (_case.status == 'IN_PROGRESS') ...[
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _escalateCase,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: ImboniColors.error,
+                      side: const BorderSide(color: ImboniColors.error, width: 1.5),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          canTakeCase ? Icons.pan_tool_alt : Icons.check_circle_outline,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 10),
+                        const Icon(Icons.arrow_upward, size: 18, color: ImboniColors.error),
+                        const SizedBox(width: 8),
                         Text(
-                          canTakeCase ? l10n.takeCase : l10n.resolveCase,
+                          l10n.escalate,
                           style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            color: ImboniColors.error,
                           ),
                         ),
                       ],
                     ),
                   ),
                 ),
-              ),
-            ),
+              ],
+            ],
           ),
-          if (_case.status == 'IN_PROGRESS') ...[
-            const SizedBox(width: 12),
-            Expanded(
-              child: OutlinedButton(
-                onPressed: _escalateCase,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: ImboniColors.error,
-                  side: const BorderSide(color: ImboniColors.error, width: 1.5),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.arrow_upward, size: 18, color: ImboniColors.error),
-                    const SizedBox(width: 8),
-                    Text(
-                      l10n.escalate,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                        color: ImboniColors.error,
-                      ),
+          
+          // Row 2: Assign Button (Available for OPEN, IN_PROGRESS, ESCALATED)
+          if (canTakeCase || _case.status == 'IN_PROGRESS')
+             Padding(
+               padding: const EdgeInsets.only(top: 12.0),
+               child: OutlinedButton(
+                    onPressed: _assignCase,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: ImboniColors.secondary,
+                      side: const BorderSide(color: ImboniColors.secondary, width: 1.5),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                      minimumSize: const Size(double.infinity, 50)
                     ),
-                  ],
-                ),
-              ),
-            ),
-          ],
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.person_add_outlined, size: 18, color: ImboniColors.secondary),
+                        SizedBox(width: 8),
+                        Text(
+                          'Assign to Staff',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            color: ImboniColors.secondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+             ),
         ],
       ),
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../shared/theme/colors.dart';
 import '../../../../shared/models/models.dart';
 import '../../../../shared/services/case_service.dart';
+import '../../case_management/manual_assignment_dialog.dart';
 
 class CaseDetailScreen extends StatefulWidget {
   final CaseModel caseModel;
@@ -116,6 +117,23 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
           SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
+    }
+  }
+
+  Future<void> _handleAssign() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => ManualAssignmentDialog(
+         caseId: widget.caseModel.id,
+         administrativeUnitId: widget.caseModel.administrativeUnitId,
+      ),
+    );
+
+    if (result == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Case manually assigned'), backgroundColor: Colors.green),
+      );
+      Navigator.pop(context, true);
     }
   }
 
@@ -463,6 +481,15 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
+          OutlinedButton.icon(
+            onPressed: _handleAssign,
+            icon: const Icon(Icons.assignment_ind_outlined),
+            label: const Text('Assign'),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            ),
+          ),
+          const SizedBox(width: 16),
           OutlinedButton.icon(
             onPressed: _handleEscalate,
             icon: const Icon(Icons.arrow_upward),
