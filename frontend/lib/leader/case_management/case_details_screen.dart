@@ -925,122 +925,164 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
     
     return CaseDetailCard(
       backgroundColor: cardColor,
-      child: Column(
-        children: [
-          Row(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isBigScreen = constraints.maxWidth > 600;
+          
+          final resolveButton = _buildResolveButton(l10n, canTakeCase);
+          final escalateButton = _case.status == 'IN_PROGRESS' 
+              ? _buildEscalateButton(l10n) 
+              : null;
+          final assignButton = (canTakeCase || _case.status == 'IN_PROGRESS')
+              ? _buildAssignButton(l10n, theme)
+              : null;
+              
+          if (isBigScreen) {
+            return Row(
+              children: [
+                Expanded(child: resolveButton),
+                if (escalateButton != null) ...[
+                  const SizedBox(width: 16),
+                  Expanded(child: escalateButton),
+                ],
+                if (assignButton != null) ...[
+                   const SizedBox(width: 16),
+                   Expanded(child: assignButton),
+                ],
+              ],
+            );
+          }
+          
+          // Small screen: Stacked rows
+          return Column(
             children: [
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [ImboniColors.primary, ImboniColors.primaryDark],
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: ImboniColors.primary.withAlpha(100),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: canTakeCase
-                          ? () => _performAction('ACCEPT')
-                          : (_case.status == 'IN_PROGRESS') ? _resolveCase : null,
-                      borderRadius: BorderRadius.circular(12),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              canTakeCase ? Icons.pan_tool_alt : Icons.check_circle_outline,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              canTakeCase ? l10n.takeCase : l10n.resolveCase,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+              Row(
+                children: [
+                  Expanded(child: resolveButton),
+                  if (escalateButton != null) ...[
+                    const SizedBox(width: 12),
+                    Expanded(child: escalateButton),
+                  ],
+                ],
+              ),
+              if (assignButton != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12.0),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: assignButton,
                   ),
                 ),
-              ),
-              if (_case.status == 'IN_PROGRESS') ...[
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: _escalateCase,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: ImboniColors.error,
-                      side: const BorderSide(color: ImboniColors.error, width: 1.5),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.arrow_upward, size: 18, color: ImboniColors.error),
-                        const SizedBox(width: 8),
-                        Text(
-                          l10n.escalate,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                            color: ImboniColors.error,
-                          ),
-                        ),
-                      ],
-                    ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildResolveButton(AppLocalizations l10n, bool canTakeCase) {
+     return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [ImboniColors.primary, ImboniColors.primaryDark],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: ImboniColors.primary.withAlpha(100),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: canTakeCase
+              ? () => _performAction('ACCEPT')
+              : (_case.status == 'IN_PROGRESS') ? _resolveCase : null,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  canTakeCase ? Icons.pan_tool_alt : Icons.check_circle_outline,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  canTakeCase ? l10n.takeCase : l10n.resolveCase,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
                   ),
                 ),
               ],
-            ],
+            ),
           ),
-          
-          // Row 2: Assign Button (Available for OPEN, IN_PROGRESS, ESCALATED)
-          if (canTakeCase || _case.status == 'IN_PROGRESS')
-             Padding(
-               padding: const EdgeInsets.only(top: 12.0),
-               child: OutlinedButton(
-                    onPressed: _assignCase,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: ImboniColors.secondary,
-                      side: const BorderSide(color: ImboniColors.secondary, width: 1.5),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                      minimumSize: const Size(double.infinity, 50)
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.person_add_outlined, size: 18, color: ImboniColors.secondary),
-                        SizedBox(width: 8),
-                        Text(
-                          'Assign to Staff',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                            color: ImboniColors.secondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-             ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEscalateButton(AppLocalizations l10n) {
+    return OutlinedButton(
+        onPressed: _escalateCase,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: ImboniColors.error,
+          side: const BorderSide(color: ImboniColors.error, width: 1.5),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          padding: const EdgeInsets.symmetric(vertical: 16),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.arrow_upward, size: 18, color: ImboniColors.error),
+            const SizedBox(width: 8),
+            Text(
+              l10n.escalate,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                color: ImboniColors.error,
+              ),
+            ),
+          ],
+        ),
+      );
+  }
+
+  Widget _buildAssignButton(AppLocalizations l10n, ThemeData theme) {
+    // Respects theme: uses theme color scheme secondary
+    final color = theme.colorScheme.secondary;
+    
+    return OutlinedButton(
+      onPressed: _assignCase,
+      style: OutlinedButton.styleFrom(
+        foregroundColor: color,
+        side: BorderSide(color: color, width: 1.5),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.person_add_outlined, size: 18, color: color),
+          const SizedBox(width: 8),
+          Text(
+            'Assign to Staff', // Could use l10n.assign if available, defaulting to string to avoid break
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              color: color,
+            ),
+          ),
         ],
       ),
     );

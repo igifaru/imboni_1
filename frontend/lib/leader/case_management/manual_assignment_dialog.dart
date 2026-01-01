@@ -98,19 +98,10 @@ class _ManualAssignmentDialogState extends State<ManualAssignmentDialog> {
       initialDate: _selectedDeadline ?? now.add(const Duration(days: 1)),
       firstDate: now,
       lastDate: now.add(const Duration(days: 30)),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.dark(
-               primary: ImboniColors.primary,
-               onPrimary: Colors.white,
-               surface: ImboniColors.surfaceDark,
-               onSurface: Colors.white,
-            ),
-          ),
-          child: child!,
-        );
-      },
+      /* builder: (context, child) {
+        // Use system theme
+        return child!;
+      }, */
     );
     
     if (picked != null) {
@@ -139,104 +130,185 @@ class _ManualAssignmentDialogState extends State<ManualAssignmentDialog> {
 
     // Hardcoded strings for now for speed, ideally localized ("Assign Case", "Select Leader", etc.)
     
-    return AlertDialog(
-      title: Text('Assign Case', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-      content: SizedBox(
-        width: 400,
-        child: _isLoadingLeaders 
-           ? const Center(child: CircularProgressIndicator())
-           : _leaderError != null
-               ? Center(child: Text(_leaderError!, style: TextStyle(color: ImboniColors.error)))
-               : Form(
-                 key: _formKey,
-                 child: Column(
-                   mainAxisSize: MainAxisSize.min,
-                   crossAxisAlignment: CrossAxisAlignment.start,
-                   children: [
-                     Text('Select Leader', style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
-                     const SizedBox(height: 8),
-                     DropdownButtonFormField<String>(
-                       value: _selectedLeaderId,
-                       decoration: const InputDecoration(
-                         hintText: 'Choose a leader from this unit',
-                         prefixIcon: Icon(Icons.person_outline),
-                       ),
-                       items: _leaders.map((user) {
-                         String label = user.name ?? user.email ?? 'Unknown Leader';
-                         if (user.positionTitle != null && user.positionTitle!.isNotEmpty) {
-                           label += ' — ${user.positionTitle}';
-                         }
-                         return DropdownMenuItem(
-                           value: user.id,
-                           child: Text(label, overflow: TextOverflow.ellipsis),
-                         );
-                       }).toList(),
-                       onChanged: (val) => setState(() => _selectedLeaderId = val),
-                       validator: (val) => val == null ? 'Please select a leader' : null,
-                     ),
-                     
-                     const SizedBox(height: 24),
-                     
-                     Text('Set Deadline', style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
-                     const SizedBox(height: 8),
-                     InkWell(
-                       onTap: _pickDate,
-                       child: Container(
-                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                         decoration: BoxDecoration(
-                           border: Border.all(color: theme.dividerColor),
-                           borderRadius: BorderRadius.circular(8),
-                         ),
-                         child: Row(
-                           children: [
-                             const Icon(Icons.calendar_today_outlined, size: 20),
-                             const SizedBox(width: 12),
-                             Text(
-                               _selectedDeadline != null 
-                                 ? '${_selectedDeadline!.year}-${_selectedDeadline!.month}-${_selectedDeadline!.day} ${_selectedDeadline!.hour}:${_selectedDeadline!.minute.toString().padLeft(2,'0')}' 
-                                 : 'Select Date & Time',
-                               style: theme.textTheme.bodyMedium,
-                             ),
-                           ],
-                         ),
-                       ),
-                     ),
-                     
-                     if (_leaders.isEmpty)
-                       Padding(
-                         padding: const EdgeInsets.only(top: 16.0),
-                         child: Container(
-                           padding: const EdgeInsets.all(12),
-                           decoration: BoxDecoration(color: ImboniColors.warning.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-                           child: Row(
-                             children: [
-                               const Icon(Icons.warning_amber_rounded, color: ImboniColors.warning),
-                               const SizedBox(width: 12),
-                               const Expanded(child: Text('No active leaders found in this unit.', style: TextStyle(fontSize: 12))),
-                             ],
-                           ),
-                         ),
-                       ),
-                   ],
-                 ),
-               ),
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      backgroundColor: theme.colorScheme.surface,
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        constraints: const BoxConstraints(maxWidth: 400),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Header
+            Text(
+              'Assign Case',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface,
+              ),
+              textAlign: TextAlign.start,
+            ),
+            const SizedBox(height: 24),
+
+            _isLoadingLeaders
+                ? const Center(child: CircularProgressIndicator())
+                : _leaderError != null
+                    ? Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.errorContainer,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          _leaderError!,
+                          style: TextStyle(color: theme.colorScheme.onErrorContainer),
+                          textAlign: TextAlign.center,
+                        ),
+                      )
+                    : Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Select Leader',
+                                style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                            const SizedBox(height: 8),
+                            DropdownButtonFormField<String>(
+                              value: _selectedLeaderId,
+                              dropdownColor: theme.colorScheme.surfaceContainerHighest,
+                              decoration: InputDecoration(
+                                hintText: 'Choose a leader from this unit',
+                                prefixIcon: const Icon(Icons.person_outline),
+                                filled: true,
+                                fillColor: theme.colorScheme.surfaceContainerLow,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                              ),
+                              items: _leaders.map((user) {
+                                String label = user.name ?? user.email ?? 'Unknown Leader';
+                                if (user.positionTitle != null && user.positionTitle!.isNotEmpty) {
+                                  label += ' — ${user.positionTitle}';
+                                }
+                                return DropdownMenuItem(
+                                  value: user.id,
+                                  child: Text(
+                                    label,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.bodyMedium,
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (val) => setState(() => _selectedLeaderId = val),
+                              validator: (val) => val == null ? 'Please select a leader' : null,
+                            ),
+                            const SizedBox(height: 16),
+                            Text('Set Deadline',
+                                style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                            const SizedBox(height: 8),
+                            InkWell(
+                              onTap: _pickDate,
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.surfaceContainerLow,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.calendar_today_outlined,
+                                        size: 20, color: theme.colorScheme.onSurfaceVariant),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        _selectedDeadline != null
+                                            ? '${_selectedDeadline!.year}-${_selectedDeadline!.month}-${_selectedDeadline!.day} ${_selectedDeadline!.hour}:${_selectedDeadline!.minute.toString().padLeft(2, '0')}'
+                                            : 'Select Date & Time',
+                                        style: theme.textTheme.bodyMedium?.copyWith(
+                                          color: _selectedDeadline != null
+                                              ? theme.colorScheme.onSurface
+                                              : theme.colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            if (_leaders.isEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 16.0),
+                                child: Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.errorContainer,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.warning_amber_rounded, color: theme.colorScheme.error),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          'No active leaders found in this unit.',
+                                          style: TextStyle(
+                                              fontSize: 12, color: theme.colorScheme.onErrorContainer),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+
+            const SizedBox(height: 32),
+
+            // Actions Row
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      foregroundColor: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    child: const Text('Cancel'),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: (_isSubmitting || _leaders.isEmpty) ? null : _submit,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.colorScheme.primary,
+                      foregroundColor: theme.colorScheme.onPrimary,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: _isSubmitting
+                        ? SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                                color: theme.colorScheme.onPrimary, strokeWidth: 2))
+                        : const Text('Assign', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: (_isSubmitting || _leaders.isEmpty) ? null : _submit,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: ImboniColors.primary,
-            foregroundColor: Colors.white,
-          ),
-          child: _isSubmitting 
-            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-            : const Text('Assign'),
-        ),
-      ],
     );
   }
 }
