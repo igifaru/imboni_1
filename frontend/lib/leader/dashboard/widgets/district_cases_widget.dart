@@ -75,19 +75,23 @@ class DistrictCasesWidget extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: ImboniColors.primary.withAlpha(isDark ? 50 : 25),
-                borderRadius: BorderRadius.circular(8),
+        Expanded(
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: ImboniColors.primary.withAlpha(isDark ? 50 : 25),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.cases_outlined, color: ImboniColors.primary, size: 20),
               ),
-              child: const Icon(Icons.cases_outlined, color: ImboniColors.primary, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Text(title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-          ],
+              const SizedBox(width: 12),
+              Flexible(
+                child: Text(title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
+              ),
+            ],
+          ),
         ),
         if (!isDashboardLoading && totalCases > 0)
           Container(
@@ -210,7 +214,9 @@ class DistrictCasesWidget extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          Text(stat.unitName, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+                          Flexible(
+                            child: Text(stat.unitName, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis),
+                          ),
                           const SizedBox(width: 8),
                           Icon(Icons.chevron_right, size: 16, color: theme.disabledColor),
                         ],

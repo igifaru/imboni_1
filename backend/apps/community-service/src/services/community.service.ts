@@ -106,6 +106,28 @@ export class CommunityService {
     }
 
     /**
+     * Auto-enroll a leader based on their confirmed jurisdiction assignments.
+     */
+    async enrollLeaderByAssignment(userId: string) {
+        logger.info(`Attempting to enroll leader ${userId} based on assignments`);
+
+        const assignments = await prisma.leaderAssignment.findMany({
+            where: { userId, isActive: true },
+            include: { administrativeUnit: true }
+        });
+
+        if (assignments.length === 0) {
+            logger.warn(`No active leader assignments found for ${userId}`);
+            return;
+        }
+
+        for (const assignment of assignments) {
+            logger.info(`Enrolling leader in jurisdiction: ${assignment.administrativeUnit.name}`);
+            await this.enrollInLineage(userId, assignment.administrativeUnitId);
+        }
+    }
+
+    /**
      * Finds the most specific administrative unit matching the user's profile hierarchy.
      * Starts from Village and walks up to verify the parent chain matches.
      */

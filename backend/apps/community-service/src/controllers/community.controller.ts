@@ -19,21 +19,25 @@ router.get('/channels', async (req: Request, res: Response) => {
 
         let channels = await communityService.getUserChannels(userId);
 
-        // Auto-enrollment logic: Enroll based on full profile
+        // Auto-enrollment logic: Enroll based on full profile or leader assignment
         if (channels.length === 0) {
             try {
-                // 1. Get profile
-                const profile = await prisma.citizenProfile.findUnique({
-                    where: { userId },
-                });
+                // 1. Try Leader Assignment Enrollment first (for Leaders)
+                await communityService.enrollLeaderByAssignment(userId);
 
-                if (profile) {
-                    // 2. Robust Enrollment based on ALL profile fields
-                    // This handles partial profiles (e.g. only District) and ensures all units are linked
-                    await communityService.enrollUserByProfile(userId, profile);
+                // Refresh list
+                channels = await communityService.getUserChannels(userId);
 
-                    // 3. Refresh channels list immediately so user sees them
-                    channels = await communityService.getUserChannels(userId);
+                // 2. If still empty, try Citizen Profile Enrollment (fallback for Citizens)
+                if (channels.length === 0) {
+                    const profile = await prisma.citizenProfile.findUnique({
+                        where: { userId },
+                    });
+
+                    if (profile) {
+                        await communityService.enrollUserByProfile(userId, profile);
+                        channels = await communityService.getUserChannels(userId);
+                    }
                 }
             } catch (e) {
                 logger.warn('Failed to auto-enroll user', e);

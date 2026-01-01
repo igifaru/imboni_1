@@ -31,10 +31,20 @@ class StatCard extends StatelessWidget {
           Row(children: [
             Icon(icon, color: iconColor, size: 12),
             const SizedBox(width: 8),
-            Text(label, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+            Expanded(
+              child: Text(
+                label, 
+                style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+            ),
           ]),
           const SizedBox(height: 8),
-          Text(value, style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(value, style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+          ),
         ],
       ),
     );
