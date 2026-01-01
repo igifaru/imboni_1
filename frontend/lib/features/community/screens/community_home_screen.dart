@@ -105,31 +105,37 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
     );
   }
 
-  /// Mobile layout with full-screen navigation
+  /// Mobile layout - just shows unit list (no tabs)
   Widget _buildMobileLayout(BuildContext context) {
-    return DefaultTabController(
-      length: 2,
-      child: Column(
-        children: [
-          const TabBar(
-            labelColor: ImboniColors.primary,
-            unselectedLabelColor: Colors.grey,
-            indicatorColor: ImboniColors.primary,
-            tabs: const [
-              Tab(text: 'My Units'),
-              Tab(text: 'Discover'),
-            ],
-          ),
-          Expanded(
-            child: TabBarView(
-              children: [
-                _buildUnitList(context, isWide: false),
-                const _DiscoverTab(),
-              ],
+    final theme = Theme.of(context);
+    
+    return Column(
+      children: [
+        // Header
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerLow,
+            border: Border(
+              bottom: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3)),
             ),
           ),
-        ],
-      ),
+          child: Row(
+            children: [
+              const Icon(Icons.location_on, color: ImboniColors.primary, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Aho Ntuye',
+                style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+        ),
+        // Unit list
+        Expanded(
+          child: _buildUnitList(context, isWide: false),
+        ),
+      ],
     );
   }
 
