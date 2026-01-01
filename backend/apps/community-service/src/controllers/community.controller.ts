@@ -1,7 +1,7 @@
 /**
  * Community Controller - REST API Endpoints
  */
-import { Router, Request, Response, NextFunction } from 'express';
+import { Router, Request, Response } from 'express';
 import { communityService } from '../services/community.service';
 import { CreateMessageSchema } from '../dto/community.dto';
 import { createServiceLogger } from '../../../../libs/logging/logger.service';
