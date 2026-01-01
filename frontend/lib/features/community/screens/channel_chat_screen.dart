@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:imboni/shared/theme/colors.dart';
 import '../providers/community_provider.dart';
 import '../models/community_models.dart';
+import '../widgets/message_actions_widget.dart';
 import 'package:intl/intl.dart';
 
 class ChannelChatScreen extends StatefulWidget {
@@ -292,11 +294,37 @@ class _ChannelChatScreenState extends State<ChannelChatScreen> {
     );
   }
 
+  // Helper handling methods for message actions
+  void _handleMessageAction(MessageAction action, ChannelMessage message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Action selected: ${action.name} for message: ${message.content}')),
+    );
+     
+    switch (action) {
+      case MessageAction.copy:
+        Clipboard.setData(ClipboardData(text: message.content));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Message copied to clipboard')),
+        );
+        break;
+      case MessageAction.reply:
+        // TODO: Implement reply logic
+        break;
+      case MessageAction.pin:
+        // TODO: Implement pin logic (API call)
+        break;
+      // Other cases...
+      default:
+        break;
+    }
+  }
+
+
   Widget _buildMessageBubble(BuildContext context, ChannelMessage message) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     
-    // Get current user ID from shared preferences or auth service
+    // Get current user ID
     final currentUserId = context.read<CommunityProvider>().getCurrentUserId();
     final isOwnMessage = message.authorId == currentUserId;
     final isOfficial = message.isOfficial;
@@ -328,106 +356,111 @@ class _ChannelChatScreenState extends State<ChannelChatScreen> {
             const SizedBox(width: 8),
           ],
 
-          // Message bubble
+          // Message bubble wrapped in Actions Widget
           Flexible(
-            child: Container(
-              constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width * 0.7,
-              ),
-              child: Column(
-                crossAxisAlignment: isOwnMessage 
-                    ? CrossAxisAlignment.end 
-                    : CrossAxisAlignment.start,
-                children: [
-                  // Author name for group messages (only for others)
-                  if (!isOwnMessage)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 12, bottom: 2),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            message.author?.displayName ?? 'Unknown',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 12,
-                              color: isOfficial 
-                                  ? ImboniColors.primary 
-                                  : _getAvatarColor(message.author?.name ?? 'U'),
-                            ),
-                          ),
-                          if (isOfficial) ...[
-                            const SizedBox(width: 4),
-                            const Icon(Icons.verified, size: 12, color: ImboniColors.primary),
-                          ],
-                        ],
-                      ),
-                    ),
-
-                  // Bubble
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: isOwnMessage 
-                          ? ImboniColors.primary
-                          : colorScheme.brightness == Brightness.dark
-                              ? colorScheme.surfaceContainerHigh
-                              : Colors.white,
-                      borderRadius: BorderRadius.only(
-                        topLeft: const Radius.circular(16),
-                        topRight: const Radius.circular(16),
-                        bottomLeft: Radius.circular(isOwnMessage ? 16 : 4),
-                        bottomRight: Radius.circular(isOwnMessage ? 4 : 16),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                      border: isOfficial && !isOwnMessage
-                          ? Border.all(color: ImboniColors.primary.withValues(alpha: 0.3))
-                          : null,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          message.content,
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: isOwnMessage ? Colors.white : colorScheme.onSurface,
-                            height: 1.4,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
+            child: MessageActionsWidget(
+              message: message,
+              isOwnMessage: isOwnMessage,
+              onAction: (action) => _handleMessageAction(action, message),
+              child: Container(
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width * 0.7,
+                ),
+                child: Column(
+                  crossAxisAlignment: isOwnMessage 
+                      ? CrossAxisAlignment.end 
+                      : CrossAxisAlignment.start,
+                  children: [
+                    // Author name for group messages (only for others)
+                    if (!isOwnMessage)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 12, bottom: 2),
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              DateFormat('HH:mm').format(message.createdAt),
+                              message.author?.displayName ?? 'Unknown',
                               style: TextStyle(
-                                color: isOwnMessage 
-                                    ? Colors.white.withValues(alpha: 0.7) 
-                                    : Colors.grey[500],
-                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                                color: isOfficial 
+                                    ? ImboniColors.primary 
+                                    : _getAvatarColor(message.author?.name ?? 'U'),
                               ),
                             ),
-                            if (isOwnMessage) ...[
+                            if (isOfficial) ...[
                               const SizedBox(width: 4),
-                              Icon(
-                                Icons.done_all,
-                                size: 14,
-                                color: Colors.white.withValues(alpha: 0.7),
-                              ),
+                              const Icon(Icons.verified, size: 12, color: ImboniColors.primary),
                             ],
                           ],
                         ),
-                      ],
+                      ),
+
+                    // Bubble
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: isOwnMessage 
+                            ? ImboniColors.primary
+                            : colorScheme.brightness == Brightness.dark
+                                ? colorScheme.surfaceContainerHigh
+                                : Colors.white,
+                        borderRadius: BorderRadius.only(
+                          topLeft: const Radius.circular(16),
+                          topRight: const Radius.circular(16),
+                          bottomLeft: Radius.circular(isOwnMessage ? 16 : 4),
+                          bottomRight: Radius.circular(isOwnMessage ? 4 : 16),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.05),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                        border: isOfficial && !isOwnMessage
+                            ? Border.all(color: ImboniColors.primary.withValues(alpha: 0.3))
+                            : null,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            message.content,
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: isOwnMessage ? Colors.white : colorScheme.onSurface,
+                              height: 1.4,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                DateFormat('HH:mm').format(message.createdAt),
+                                style: TextStyle(
+                                  color: isOwnMessage 
+                                      ? Colors.white.withValues(alpha: 0.7) 
+                                      : Colors.grey[500],
+                                  fontSize: 10,
+                                ),
+                              ),
+                              if (isOwnMessage) ...[
+                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.done_all,
+                                  size: 14,
+                                  color: Colors.white.withValues(alpha: 0.7),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

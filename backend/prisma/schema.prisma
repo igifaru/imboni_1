@@ -43,6 +43,8 @@ model User {
   profile            CitizenProfile?
   leaderAssignments  LeaderAssignment[]
   notifications      Notification[]
+  messageReactions   MessageReaction[]
+  messageReadReceipts MessageReadReceipt[]
 
   @@map("users")
 }
@@ -82,13 +84,45 @@ model ChannelMessage {
   authorId    String           @map("author_id")
   channelId   String           @map("channel_id")
   isOfficial  Boolean          @default(false) @map("is_official")
+  isPinned    Boolean          @default(false) @map("is_pinned")
+  replyToId   String?          @map("reply_to_id")
   createdAt   DateTime         @default(now()) @map("created_at")
   attachments Json?
   author      User             @relation(fields: [authorId], references: [id])
   channel     CommunityChannel @relation(fields: [channelId], references: [id])
+  replyTo     ChannelMessage?  @relation("MessageReplies", fields: [replyToId], references: [id])
+  replies     ChannelMessage[] @relation("MessageReplies")
+  reactions   MessageReaction[]
+  readReceipts MessageReadReceipt[]
 
   @@map("channel_messages")
 }
+
+model MessageReaction {
+  id        String         @id @default(cuid())
+  emoji     String
+  userId    String         @map("user_id")
+  messageId String         @map("message_id")
+  createdAt DateTime       @default(now()) @map("created_at")
+  user      User           @relation(fields: [userId], references: [id])
+  message   ChannelMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, messageId, emoji])
+  @@map("message_reactions")
+}
+
+model MessageReadReceipt {
+  id        String         @id @default(cuid())
+  userId    String         @map("user_id")
+  messageId String         @map("message_id")
+  readAt    DateTime       @default(now()) @map("read_at")
+  user      User           @relation(fields: [userId], references: [id])
+  message   ChannelMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, messageId])
+  @@map("message_read_receipts")
+}
+
 
 model LeaderAssignment {
   id                   String             @id @default(cuid())
