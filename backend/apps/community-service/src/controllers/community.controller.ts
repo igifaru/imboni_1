@@ -102,4 +102,22 @@ router.post('/join-category', async (req: Request, res: Response) => {
     }
 });
 
+// POST /api/community/messages/:messageId/react
+router.post('/messages/:messageId/react', async (req: Request, res: Response) => {
+    try {
+        const { messageId } = req.params;
+        const { emoji } = req.body;
+        const userId = (req as any).user?.userId;
+
+        if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+        if (!emoji) return res.status(400).json({ error: 'Emoji is required' });
+
+        const updatedMessage = await communityService.toggleReaction(userId, messageId, emoji);
+        res.json(updatedMessage);
+    } catch (error) {
+        logger.error('Error toggling reaction', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
 export const communityController = router;

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../../../../shared/models/models.dart';
 import '../../../../shared/services/api_client.dart';
 import '../../../../shared/services/auth_service.dart';
 import '../models/community_models.dart';
@@ -144,5 +145,82 @@ class CommunityProvider extends ChangeNotifier {
       debugPrint('CommunityProvider: Error joining category channel: $e');
       return null;
     }
+  }
+  Future<bool> toggleReaction(String channelId, String messageId, String emoji) async {
+    // 1. Optimistic Update
+    final currentMessages = _messages[channelId] ?? [];
+    final msgIndex = currentMessages.indexWhere((m) => m.id == messageId);
+    
+    if (msgIndex != -1) {
+      final msg = currentMessages[msgIndex];
+      final currentUserId = getCurrentUserId();
+      
+      if (currentUserId != null) {
+        List<MessageReaction> newReactions = List.from(msg.reactions);
+        final existingIndex = newReactions.indexWhere((r) => r.userId == currentUserId && r.emoji == emoji);
+        
+        if (existingIndex != -1) {
+          // Remove
+          newReactions.removeAt(existingIndex);
+        } else {
+          // Add
+          newReactions.add(MessageReaction(emoji: emoji, userId: currentUserId));
+        }
+        
+        currentMessages[msgIndex] = msg.copyWith(reactions: newReactions);
+        _messages[channelId] = List.from(currentMessages); // Trigger update
+        notifyListeners();
+      }
+    }
+
+    try {
+      // 2. API Call
+      final response = await _api.post('/community/messages/$messageId/react', {
+        'emoji': emoji,
+      });
+
+      if (response.isSuccess && response.data != null) {
+        // 3. Update with server truth
+        final updatedMsg = ChannelMessage.fromJson(response.data);
+        if (msgIndex != -1) {
+          final msgs = _messages[channelId] ?? [];
+          if (msgs.length > msgIndex) {
+            msgs[msgIndex] = updatedMsg;
+            notifyListeners();
+          }
+        }
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('Error toggling reaction: $e');
+      // TODO: Revert optimistic update on failure?
+      return false;
+    }
+  }
+
+  /// Search members in a channel (Simple client-side search for now)
+  List<UserModel> searchChannelMembers(String channelId, String query) {
+    // if (query.isEmpty) return []; // Allow empty query to return all members
+    
+    final lowerQuery = query.toLowerCase();
+    
+    // For now, we collect diverse authors from loaded messages as we don't have a members API
+    // This is a "good enough" heuristic for active members
+    final messages = _messages[channelId] ?? [];
+    final Map<String, UserModel> knownMembers = {};
+    
+    for (var m in messages) {
+      if (m.author != null) {
+        knownMembers[m.authorId] = m.author!;
+      }
+    }
+    
+    return knownMembers.values
+        .where((u) => 
+            (u.name?.toLowerCase().contains(lowerQuery) ?? false) ||
+            (u.email?.toLowerCase().contains(lowerQuery) ?? false) 
+        )
+        .toList();
   }
 }

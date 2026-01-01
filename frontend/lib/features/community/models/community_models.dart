@@ -59,6 +59,23 @@ class AdministrativeUnitSummary {
   }
 }
 
+class MessageReaction {
+  final String emoji;
+  final String userId;
+
+  const MessageReaction({
+    required this.emoji,
+    required this.userId,
+  });
+
+  factory MessageReaction.fromJson(Map<String, dynamic> json) {
+    return MessageReaction(
+      emoji: json['emoji'] as String,
+      userId: json['userId'] as String,
+    );
+  }
+}
+
 class ChannelMessage {
   final String id;
   final String content;
@@ -68,6 +85,9 @@ class ChannelMessage {
   final bool isOfficial;
   final DateTime createdAt;
   final dynamic attachments;
+  final List<MessageReaction> reactions;
+  final String? replyToId;
+  final bool isPinned;
 
   const ChannelMessage({
     required this.id,
@@ -78,6 +98,9 @@ class ChannelMessage {
     this.isOfficial = false,
     required this.createdAt,
     this.attachments,
+    this.reactions = const [],
+    this.replyToId,
+    this.isPinned = false,
   });
 
   factory ChannelMessage.fromJson(Map<String, dynamic> json) {
@@ -90,6 +113,30 @@ class ChannelMessage {
       isOfficial: json['isOfficial'] as bool? ?? false,
       createdAt: DateTime.parse(json['createdAt'] as String),
       attachments: json['attachments'],
+      reactions: (json['reactions'] as List<dynamic>?)
+          ?.map((e) => MessageReaction.fromJson(e))
+          .toList() ?? [],
+      replyToId: json['replyToId'] as String?,
+      isPinned: json['isPinned'] as bool? ?? false,
+    );
+  }
+  
+  // Create a copyWith method for optimistic updates
+  ChannelMessage copyWith({
+    List<MessageReaction>? reactions,
+  }) {
+    return ChannelMessage(
+      id: id,
+      content: content,
+      channelId: channelId,
+      authorId: authorId,
+      author: author,
+      isOfficial: isOfficial,
+      createdAt: createdAt,
+      attachments: attachments,
+      reactions: reactions ?? this.reactions,
+      replyToId: replyToId,
+      isPinned: isPinned,
     );
   }
 }

@@ -46,6 +46,9 @@ export class CommunityService {
                         role: true,
                         profilePicture: true,
                     }
+                },
+                reactions: {
+                    select: { emoji: true, userId: true }
                 }
             }
         });
@@ -322,6 +325,51 @@ export class CommunityService {
         } catch (e) {
             logger.error(`Failed to join channel`, e);
         }
+    }
+
+    /**
+     * Toggle a reaction on a message
+     */
+    async toggleReaction(userId: string, messageId: string, emoji: string) {
+        // Check if reaction exists
+        const existing = await prisma.messageReaction.findUnique({
+            where: {
+                userId_messageId_emoji: {
+                    userId,
+                    messageId,
+                    emoji
+                }
+            }
+        });
+
+        if (existing) {
+            // Remove reaction
+            await prisma.messageReaction.delete({
+                where: { id: existing.id }
+            });
+        } else {
+            // Add reaction
+            await prisma.messageReaction.create({
+                data: {
+                    userId,
+                    messageId,
+                    emoji
+                }
+            });
+        }
+
+        // Return updated message with all reactions specifically for UI updates
+        return prisma.channelMessage.findUnique({
+            where: { id: messageId },
+            include: {
+                author: {
+                    select: { id: true, name: true, role: true, profilePicture: true }
+                },
+                reactions: {
+                    select: { emoji: true, userId: true }
+                }
+            }
+        });
     }
 
     // Traverse up the tree

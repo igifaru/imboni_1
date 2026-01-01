@@ -17,6 +17,7 @@ class MessageActionsWidget extends StatefulWidget {
   final ChannelMessage message;
   final bool isOwnMessage;
   final Function(MessageAction) onAction;
+  final Function(String) onReact;
 
   const MessageActionsWidget({
     super.key,
@@ -24,6 +25,7 @@ class MessageActionsWidget extends StatefulWidget {
     required this.message,
     required this.isOwnMessage,
     required this.onAction,
+    required this.onReact,
   });
 
   @override
@@ -31,6 +33,7 @@ class MessageActionsWidget extends StatefulWidget {
 }
 
 class _MessageActionsWidgetState extends State<MessageActionsWidget> {
+  // ... existing state ...
   bool _isHovering = false;
   final LayerLink _layerLink = LayerLink();
   OverlayEntry? _overlayEntry;
@@ -42,7 +45,6 @@ class _MessageActionsWidgetState extends State<MessageActionsWidget> {
       child: MouseRegion(
         onEnter: (_) => setState(() => _isHovering = true),
         onExit: (_) {
-          // Add a small delay for smoother exit if moving to button
           Future.delayed(const Duration(milliseconds: 200), () {
             if (mounted && _overlayEntry == null) {
                setState(() => _isHovering = false);
@@ -58,7 +60,6 @@ class _MessageActionsWidgetState extends State<MessageActionsWidget> {
             clipBehavior: Clip.none,
             children: [
               widget.child,
-              // Only show hover button for mouse users
               if (_isHovering && !_isMobilePlatform())
                 Positioned(
                   top: -8,
@@ -74,7 +75,7 @@ class _MessageActionsWidgetState extends State<MessageActionsWidget> {
                         child: Container(
                           padding: const EdgeInsets.all(4),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
@@ -106,7 +107,6 @@ class _MessageActionsWidgetState extends State<MessageActionsWidget> {
            Theme.of(context).platform == TargetPlatform.iOS;
   }
 
-  /// Show appropriate menu based on platform
   void _showActionMenu() {
     if (_isMobilePlatform()) {
       _showMobileActionSheet();
@@ -116,15 +116,17 @@ class _MessageActionsWidgetState extends State<MessageActionsWidget> {
   }
 
   void _showMobileActionSheet() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
     showModalBottomSheet(
-      // ... same implementation ...
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         padding: const EdgeInsets.all(16),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -138,11 +140,24 @@ class _MessageActionsWidgetState extends State<MessageActionsWidget> {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            _buildActionItem(Icons.content_copy, 'Copy Text', MessageAction.copy, Colors.black87),
-            _buildActionItem(Icons.reply, 'Reply', MessageAction.reply, Colors.black87),
-            _buildActionItem(Icons.add_reaction_outlined, 'React', MessageAction.react, Colors.blue),
-            if (!widget.isOwnMessage)
-              _buildActionItem(Icons.alternate_email, 'Mention', MessageAction.mention, Colors.purple),
+            // Emoji Quick Actions
+            Padding(
+              padding: const EdgeInsets.only(bottom: 24),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                   _buildEmojiOption('👍'),
+                   _buildEmojiOption('❤️'),
+                   _buildEmojiOption('😂'),
+                   _buildEmojiOption('😮'),
+                   _buildEmojiOption('😢'),
+                   _buildEmojiOption('😡'),
+                ],
+              ),
+            ),
+            const Divider(),
+            _buildActionItem(Icons.content_copy, 'Copy Text', MessageAction.copy, colorScheme.onSurface),
+            _buildActionItem(Icons.reply, 'Reply', MessageAction.reply, colorScheme.onSurface),
             _buildActionItem(Icons.push_pin_outlined, 'Pin Message', MessageAction.pin, Colors.orange),
             _buildActionItem(Icons.info_outline, 'Info', MessageAction.info, Colors.grey),
           ],
@@ -151,59 +166,121 @@ class _MessageActionsWidgetState extends State<MessageActionsWidget> {
     );
   }
 
+  Widget _buildEmojiOption(String emoji) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.pop(context);
+        widget.onReact(emoji);
+      },
+      child: Text(emoji, style: const TextStyle(fontSize: 28)),
+    );
+  }
+
   void _showDesktopMenu({Offset? position}) {
-    final RelativeRect menuPosition;
+    final RelativeRect menuPosition = _calculateMenuPosition(position);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = colorScheme.brightness == Brightness.dark;
 
-    if (position != null) {
-      // Use cursor position
-      menuPosition = RelativeRect.fromLTRB(
-        position.dx,
-        position.dy,
-        position.dx + 1,
-        position.dy + 1,
-      );
-    } else {
-      // Use calculated position relative to widget
-      final RenderBox renderBox = context.findRenderObject() as RenderBox;
-      final size = renderBox.size;
-      final offset = renderBox.localToGlobal(Offset.zero);
-
-      menuPosition = RelativeRect.fromLTRB(
-        widget.isOwnMessage ? offset.dx - 150 : offset.dx + size.width,
-        offset.dy,
-        widget.isOwnMessage ? offset.dx : offset.dx + size.width + 150,
-        offset.dy + size.height,
-      );
-    }
-
-    showMenu<MessageAction>(
+    showMenu<dynamic>( 
       context: context,
       position: menuPosition,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 8,
+      shadowColor: Colors.black.withOpacity(0.2),
+      surfaceTintColor: colorScheme.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       items: [
+        // Professional Reaction Bar
+        PopupMenuItem(
+          enabled: false,
+          padding: EdgeInsets.zero,
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            decoration: BoxDecoration(
+              color: isDark ? colorScheme.surfaceContainerHigh : Colors.grey[50],
+              borderRadius: BorderRadius.circular(50),
+              border: Border.all(
+                color: isDark ? colorScheme.outline.withValues(alpha: 0.2) : Colors.grey[200]!
+              ),
+            ),
+            child: Row(
+               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+               children: [
+                 _buildDesktopReactionBtn(Icons.thumb_up, '👍', Colors.blue),
+                 _buildDesktopReactionBtn(Icons.favorite, '❤️', Colors.red),
+                 _buildDesktopReactionBtn(Icons.sentiment_very_satisfied, '😂', Colors.amber),
+                 _buildDesktopReactionBtn(Icons.sentiment_satisfied_alt, '😮', Colors.orange),
+                 _buildDesktopReactionBtn(Icons.sentiment_dissatisfied, '😢', Colors.amber[700]!),
+                 _buildDesktopReactionBtn(Icons.sentiment_very_dissatisfied, '😡', Colors.red[900]!),
+               ],
+            ),
+          ),
+        ),
+        const PopupMenuDivider(height: 1),
         _buildPopupMenuItem(Icons.content_copy, 'Copy', MessageAction.copy),
         _buildPopupMenuItem(Icons.reply, 'Reply', MessageAction.reply),
-        _buildPopupMenuItem(Icons.add_reaction_outlined, 'React', MessageAction.react),
-        if (!widget.isOwnMessage)
-          _buildPopupMenuItem(Icons.alternate_email, 'Mention', MessageAction.mention),
         _buildPopupMenuItem(Icons.push_pin_outlined, 'Pin', MessageAction.pin),
         _buildPopupMenuItem(Icons.info_outline, 'Info', MessageAction.info),
       ],
     ).then((value) {
-      if (value != null) {
+      if (value != null && value is MessageAction) {
         widget.onAction(value);
       }
       setState(() => _isHovering = false);
     });
   }
+  
+  RelativeRect _calculateMenuPosition(Offset? position) {
+      if (position != null) {
+        return RelativeRect.fromLTRB(position.dx, position.dy, position.dx + 1, position.dy + 1);
+      }
+      
+      final RenderBox renderBox = context.findRenderObject() as RenderBox;
+      final size = renderBox.size;
+      final offset = renderBox.localToGlobal(Offset.zero);
+
+      // Width of the menu is approximately 250px (icons + padding)
+      const menuWidth = 260.0;
+      
+      // Position to the side of the message
+      // Own message (Right side): Menu appears to the LEFT of the bubble
+      // Other message (Left side): Menu appears to the RIGHT of the bubble
+      final dx = widget.isOwnMessage 
+          ? offset.dx - menuWidth - 8 
+          : offset.dx + size.width + 8;
+          
+      final dy = offset.dy; // Align with top of message bubble
+
+      return RelativeRect.fromLTRB(
+        dx,
+        dy,
+        dx + menuWidth,
+        dy + 240, // Height assumption
+      );
+  }
+
+  // ... existing code ...
+
+  // Uses Icons instead of Emojis for professional look
+  Widget _buildDesktopReactionBtn(IconData icon, String emoji, Color color) {
+    return HoverableReactionIcon(
+      icon: icon, 
+      color: color,
+      onTap: () {
+        Navigator.pop(context);
+        widget.onReact(emoji);
+      }
+    );
+  }
 
   PopupMenuItem<MessageAction> _buildPopupMenuItem(IconData icon, String label, MessageAction action) {
+    final colorScheme = Theme.of(context).colorScheme;
     return PopupMenuItem<MessageAction>(
       value: action,
       height: 40,
       child: Row(
         children: [
-          Icon(icon, size: 18, color: Colors.grey[700]),
+          Icon(icon, size: 18, color: colorScheme.onSurface.withValues(alpha: 0.7)),
           const SizedBox(width: 12),
           Text(label, style: const TextStyle(fontSize: 14)),
         ],
@@ -235,6 +312,52 @@ class _MessageActionsWidgetState extends State<MessageActionsWidget> {
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// New helper widget for hover effect on emojis
+// New helper widget for hover effect on reaction icons
+class HoverableReactionIcon extends StatefulWidget {
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const HoverableReactionIcon({
+    super.key, 
+    required this.icon, 
+    required this.color,
+    required this.onTap
+  });
+
+  @override
+  State<HoverableReactionIcon> createState() => _HoverableReactionIconState();
+}
+
+class _HoverableReactionIconState extends State<HoverableReactionIcon> {
+  bool _isHovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovering = true),
+      onExit: (_) => setState(() => _isHovering = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.all(8),
+          transform: _isHovering 
+            ? Matrix4.diagonal3Values(1.2, 1.2, 1.0) 
+            : Matrix4.identity(),
+          child: Icon(
+            widget.icon, 
+            color: _isHovering ? widget.color : Colors.grey.withOpacity(0.7),
+            size: 22,
+          ),
         ),
       ),
     );
