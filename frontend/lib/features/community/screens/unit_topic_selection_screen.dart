@@ -5,7 +5,7 @@ import '../models/community_models.dart';
 import '../providers/community_provider.dart';
 import 'channel_chat_screen.dart';
 
-class UnitTopicSelectionScreen extends StatelessWidget {
+class UnitTopicSelectionScreen extends StatefulWidget {
   final CommunityChannel generalChannel;
   final bool embedded;
   final void Function(CommunityChannel)? onChannelSelected;
@@ -18,11 +18,18 @@ class UnitTopicSelectionScreen extends StatelessWidget {
   });
 
   @override
+  State<UnitTopicSelectionScreen> createState() => _UnitTopicSelectionScreenState();
+}
+
+class _UnitTopicSelectionScreenState extends State<UnitTopicSelectionScreen> {
+  String? _loadingCategory;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final unitName = generalChannel.unit?.name ?? generalChannel.name.split(' - ').first;
-    final level = generalChannel.unit?.level ?? 'UNIT';
+    final unitName = widget.generalChannel.unit?.name ?? widget.generalChannel.name.split(' - ').first;
+    final level = widget.generalChannel.unit?.level ?? 'UNIT';
 
     String levelTitle = 'Urwego';
     switch (level) {
@@ -47,7 +54,7 @@ class UnitTopicSelectionScreen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Header for embedded mode
-        if (embedded)
+        if (widget.embedded)
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -116,7 +123,7 @@ class UnitTopicSelectionScreen extends StatelessWidget {
                     const SizedBox(height: 12),
                     Consumer<CommunityProvider>(
                       builder: (context, provider, _) {
-                        final unitId = generalChannel.administrativeUnitId;
+                        final unitId = widget.generalChannel.administrativeUnitId;
                         return GridView.count(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
@@ -146,7 +153,7 @@ class UnitTopicSelectionScreen extends StatelessWidget {
       ],
     );
 
-    if (embedded) {
+    if (widget.embedded) {
       return content;
     }
 
@@ -163,6 +170,8 @@ class UnitTopicSelectionScreen extends StatelessWidget {
   }
 
   Widget _buildTopicCard(BuildContext context, String label, String category, IconData icon, Color color, int messageCount) {
+    final isLoading = _loadingCategory == category;
+
     return Card(
       elevation: 0,
       clipBehavior: Clip.antiAlias,
@@ -171,7 +180,7 @@ class UnitTopicSelectionScreen extends StatelessWidget {
         side: BorderSide(color: Colors.grey.withValues(alpha: 0.2)),
       ),
       child: InkWell(
-        onTap: () {
+        onTap: _loadingCategory != null ? null : () { // Disable if any category is loading
           debugPrint('Topic tapped: $category');
           _handleTopicTap(context, category);
         },
@@ -180,30 +189,36 @@ class UnitTopicSelectionScreen extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
               child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
+                child: isLoading 
+                    ? SizedBox(
+                        width: 24, 
+                        height: 24, 
+                        child: CircularProgressIndicator(strokeWidth: 2.5, color: color)
+                      )
+                    : Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(icon, color: color, size: 22),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            label,
+                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                            textAlign: TextAlign.center,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
-                      child: Icon(icon, color: color, size: 22),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      label,
-                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
-                      textAlign: TextAlign.center,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
               ),
             ),
             // Badge for message count
-            if (messageCount > 0)
+            if (messageCount > 0 && !isLoading)
               Positioned(
                 top: 4,
                 right: 4,
@@ -230,24 +245,29 @@ class UnitTopicSelectionScreen extends StatelessWidget {
   }
 
   Future<void> _handleTopicTap(BuildContext context, String category) async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
-    );
+    setState(() {
+      _loadingCategory = category;
+    });
 
     try {
       final provider = context.read<CommunityProvider>();
-      final unitId = generalChannel.administrativeUnitId;
+      final unitId = widget.generalChannel.administrativeUnitId;
 
-      final channel = await provider.joinCategoryChannel(unitId, category);
+      // Add a timeout to prevent infinite hanging
+      final channel = await provider.joinCategoryChannel(unitId, category).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () => null,
+      );
 
-      if (context.mounted) {
-        Navigator.pop(context); // Dismiss loading
+      if (mounted) {
+        setState(() {
+          _loadingCategory = null;
+        });
+
         if (channel != null) {
           // If embedded and callback provided, use callback instead of navigation
-          if (embedded && onChannelSelected != null) {
-            onChannelSelected!(channel);
+          if (widget.embedded && widget.onChannelSelected != null) {
+            widget.onChannelSelected!(channel);
           } else {
             Navigator.push(
               context,
@@ -256,12 +276,19 @@ class UnitTopicSelectionScreen extends StatelessWidget {
           }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to join channel')),
+            const SnackBar(content: Text('Failed to join channel. Please try again.')),
           );
         }
       }
     } catch (e) {
-      if (context.mounted) Navigator.pop(context);
+      if (mounted) {
+        setState(() {
+          _loadingCategory = null;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
     }
   }
 }
