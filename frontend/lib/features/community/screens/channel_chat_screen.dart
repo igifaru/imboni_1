@@ -727,7 +727,13 @@ class _ChannelChatScreenState extends State<ChannelChatScreen> {
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Text(emoji, style: const TextStyle(fontSize: 14)),
+                                      Text(
+                                        emoji, 
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontFamilyFallback: ['Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', 'EmojiOne Color'],
+                                        ),
+                                      ),
                                       const SizedBox(width: 4),
                                       Text(
                                         count.toString(), 

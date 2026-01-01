@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:imboni/shared/theme/colors.dart';
 import '../models/community_models.dart';
+import 'professional_emoji_picker.dart';
 
 enum MessageAction {
   copy,
@@ -206,12 +207,28 @@ class _MessageActionsWidgetState extends State<MessageActionsWidget> {
             child: Row(
                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                children: [
-                 _buildDesktopReactionBtn(Icons.thumb_up, '👍', Colors.blue),
-                 _buildDesktopReactionBtn(Icons.favorite, '❤️', Colors.red),
-                 _buildDesktopReactionBtn(Icons.sentiment_very_satisfied, '😂', Colors.amber),
-                 _buildDesktopReactionBtn(Icons.sentiment_satisfied_alt, '😮', Colors.orange),
-                 _buildDesktopReactionBtn(Icons.sentiment_dissatisfied, '😢', Colors.amber[700]!),
-                 _buildDesktopReactionBtn(Icons.sentiment_very_dissatisfied, '😡', Colors.red[900]!),
+                 _buildDesktopEmojiBtn('👍'),
+                 _buildDesktopEmojiBtn('❤️'),
+                 _buildDesktopEmojiBtn('😂'),
+                 _buildDesktopEmojiBtn('😮'),
+                 _buildDesktopEmojiBtn('😢'),
+                 _buildDesktopEmojiBtn('😡'),
+                 // Add Button for Full Picker
+                 InkWell(
+                   onTap: () {
+                     Navigator.pop(context); // Close menu
+                     _showFullEmojiPicker(); 
+                   },
+                   borderRadius: BorderRadius.circular(20),
+                   child: Container(
+                     padding: const EdgeInsets.all(6),
+                     decoration: BoxDecoration(
+                       color: isDark ? Colors.grey[800] : Colors.grey[200],
+                       shape: BoxShape.circle,
+                     ),
+                     child: Icon(Icons.add, size: 18, color: isDark ? Colors.white : Colors.black),
+                   ),
+                 ),
                ],
             ),
           ),
@@ -230,6 +247,22 @@ class _MessageActionsWidgetState extends State<MessageActionsWidget> {
     });
   }
   
+  void _showFullEmojiPicker() {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(16),
+        child: ProfessionalEmojiPicker(
+          onEmojiSelected: (emoji) {
+            Navigator.pop(context);
+            widget.onReact(emoji);
+          },
+        ),
+      ),
+    );
+  }
+  
   RelativeRect _calculateMenuPosition(Offset? position) {
       if (position != null) {
         return RelativeRect.fromLTRB(position.dx, position.dy, position.dx + 1, position.dy + 1);
@@ -239,33 +272,28 @@ class _MessageActionsWidgetState extends State<MessageActionsWidget> {
       final size = renderBox.size;
       final offset = renderBox.localToGlobal(Offset.zero);
 
-      // Width of the menu is approximately 250px (icons + padding)
-      const menuWidth = 260.0;
+      // Width of the menu is approximately 340px (icons + padding + add button)
+      const menuWidth = 340.0;
       
-      // Position to the side of the message
-      // Own message (Right side): Menu appears to the LEFT of the bubble
-      // Other message (Left side): Menu appears to the RIGHT of the bubble
       final dx = widget.isOwnMessage 
           ? offset.dx - menuWidth - 8 
           : offset.dx + size.width + 8;
           
-      final dy = offset.dy; // Align with top of message bubble
+      final dy = offset.dy; 
 
       return RelativeRect.fromLTRB(
         dx,
         dy,
         dx + menuWidth,
-        dy + 240, // Height assumption
+        dy + 240, 
       );
   }
 
   // ... existing code ...
 
-  // Uses Icons instead of Emojis for professional look
-  Widget _buildDesktopReactionBtn(IconData icon, String emoji, Color color) {
-    return HoverableReactionIcon(
-      icon: icon, 
-      color: color,
+  Widget _buildDesktopEmojiBtn(String emoji) {
+    return HoverableEmoji(
+      emoji: emoji, 
       onTap: () {
         Navigator.pop(context);
         widget.onReact(emoji);
@@ -318,25 +346,18 @@ class _MessageActionsWidgetState extends State<MessageActionsWidget> {
   }
 }
 
-// New helper widget for hover effect on emojis
-// New helper widget for hover effect on reaction icons
-class HoverableReactionIcon extends StatefulWidget {
-  final IconData icon;
-  final Color color;
+// Helper widget for hover effect on emojis (Yellow Faces)
+class HoverableEmoji extends StatefulWidget {
+  final String emoji;
   final VoidCallback onTap;
 
-  const HoverableReactionIcon({
-    super.key, 
-    required this.icon, 
-    required this.color,
-    required this.onTap
-  });
+  const HoverableEmoji({super.key, required this.emoji, required this.onTap});
 
   @override
-  State<HoverableReactionIcon> createState() => _HoverableReactionIconState();
+  State<HoverableEmoji> createState() => _HoverableEmojiState();
 }
 
-class _HoverableReactionIconState extends State<HoverableReactionIcon> {
+class _HoverableEmojiState extends State<HoverableEmoji> {
   bool _isHovering = false;
 
   @override
@@ -349,14 +370,17 @@ class _HoverableReactionIconState extends State<HoverableReactionIcon> {
         onTap: widget.onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
           transform: _isHovering 
-            ? Matrix4.diagonal3Values(1.2, 1.2, 1.0) 
+            ? Matrix4.diagonal3Values(1.3, 1.3, 1.0) 
             : Matrix4.identity(),
-          child: Icon(
-            widget.icon, 
-            color: _isHovering ? widget.color : Colors.grey.withOpacity(0.7),
-            size: 22,
+          child: Text(
+            widget.emoji, 
+            style: TextStyle(
+              fontSize: 24,
+              color: Theme.of(context).colorScheme.onSurface, // Enforce solid color to prevent "cloudy" look
+              fontFamilyFallback: const ['Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', 'EmojiOne Color'],
+            )
           ),
         ),
       ),
