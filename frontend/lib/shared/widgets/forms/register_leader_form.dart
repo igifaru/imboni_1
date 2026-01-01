@@ -20,13 +20,18 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _startDateController = TextEditingController();
+  final _positionTitleController = TextEditingController(); // Added for staff titles
   
   String? _selectedUnitName;
   String? _selectedRole;
   String? _generatedPassword;
   List<String> _availableChildren = [];
+  List<String> _originalChildren = []; // Store children to restore when switching back to child mode
   String _targetLevel = 'PROVINCE';
   String _parentJurisdiction = 'Rwanda';
+  String? _myLevel;
+  String? _myJurisdictionName;
+  bool _isPeerRegistration = false;
   
   bool _isLoading = false;
   bool _isInitializing = true;
@@ -89,13 +94,33 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
 
     try {
       final context = await adminService.getMyJurisdiction();
+      debugPrint('[DEBUG] My Jurisdiction Response: $context');
       if (context != null && context['success'] == true) {
         if (mounted) {
           setState(() {
             _targetLevel = context['targetLevel'] ?? 'PROVINCE';
             _parentJurisdiction = context['jurisdiction'] ?? 'Rwanda';
             _availableChildren = List<String>.from(context['children'] ?? []);
+            
+            _originalChildren = List<String>.from(_availableChildren); // Backup for child mode
+            _myLevel = context['level'];
+            _myJurisdictionName = context['jurisdiction'];
             _isInitializing = false;
+            
+            // Auto-select role if only one option (e.g. Village Level -> Peer/Staff Only)
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+                 final validRoles = _getValidRoles();
+                 if (validRoles.length == 1) {
+                    final roleKey = validRoles.keys.first;
+                    final roleValue = validRoles.values.first;
+                    if (mounted) {
+                         setState(() {
+                              _selectedRole = roleValue;
+                         });
+                         _onRoleChanged(roleKey);
+                    }
+                 }
+            });
           });
         }
       } else {
@@ -127,6 +152,7 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
       password: _passwordController.text,
       level: _targetLevel,
       jurisdictionName: _selectedUnitName!,
+      positionTitle: _positionTitleController.text.trim().isNotEmpty ? _positionTitleController.text.trim() : null, // Pass title
     );
 
     if (mounted) {
@@ -143,6 +169,7 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
         _emailController.clear();
         _nationalIdController.clear();
         _phoneController.clear();
+        _positionTitleController.clear(); // Clear
         _generatePassword();
         setState(() => _selectedUnitName = null);
       } else {
@@ -160,7 +187,9 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
     _passwordController.dispose();
     _nationalIdController.dispose();
     _phoneController.dispose();
+    _phoneController.dispose();
     _startDateController.dispose();
+    _positionTitleController.dispose(); // Dispose
     super.dispose();
   }
 
@@ -359,19 +388,13 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
 
   Widget _buildRoleLocationSection(ThemeData theme, AppLocalizations l10n) {
     // Map roles to localized strings
-    final Map<String, String> roleDisplayNames = {
-      'VILLAGE': 'Umuyobozi w\'Umudugudu (Village Leader)',
-      'CELL': 'Umunyamabanga Nshingwabikorwa w\'Akagari',
-      'SECTOR': 'Umunyamabanga Nshingwabikorwa w\'Umurenge',
-      'DISTRICT': 'Umuyobozi w\'Akarere (Mayor)',
-    };
+    // Logic moved to _getValidRoles for dynamic filtering
+    final Map<String, String> validRoles = _getValidRoles();
+    final List<String> roleItems = validRoles.values.toList();
     
-    // Reverse map for logic
+    // Reverse map for lookup (build dynamically to ensure consistency)
     final Map<String, String> displayToKey = {
-      'Umuyobozi w\'Umudugudu (Village Leader)': 'VILLAGE',
-      'Umunyamabanga Nshingwabikorwa w\'Akagari': 'CELL',
-      'Umunyamabanga Nshingwabikorwa w\'Umurenge': 'SECTOR',
-      'Umuyobozi w\'Akarere (Mayor)': 'DISTRICT',
+      for (var entry in validRoles.entries) entry.value: entry.key
     };
 
     return Column(
@@ -393,7 +416,7 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
                 value: _selectedRole, // This stores the Display Name
                 hint: l10n.selectRole,
                 icon: Icons.work_outline,
-                items: roleDisplayNames.values.toList(),
+                items: roleItems,
                 onChanged: (val) {
                    final key = displayToKey[val];
                    _onRoleChanged(key); // Pass internal key logic
@@ -402,6 +425,18 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
                 theme: theme,
               ),
               Text(l10n.hintRoleSelect, style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey)),
+              
+              if (_isPeerRegistration) ...[
+                 const SizedBox(height: 16),
+                 _buildLabel('Position Title (Optional)'),
+                 _buildTextField(
+                    hint: 'e.g. Social Affairs Officer', 
+                    controller: _positionTitleController,
+                    icon: Icons.badge_outlined,
+                    theme: theme,
+                 ),
+                 Text('Leave empty to use default "Head of..." title', style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey)),
+              ],
 
               const SizedBox(height: 16),
               _buildLabel(l10n.workLocation),
@@ -610,17 +645,22 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
     // HOWEVER, correct labels should come from `_targetLevel` Logic.
     
     String parentLabel = 'Urwego rw\'Ibanze (Parent Level)';
-    if (_targetLevel == 'VILLAGE') {
-      parentLabel = 'Akagari (Cell)';
-    } else if (_targetLevel == 'CELL') {
-      parentLabel = 'Umurenge (Sector)';
-    } else if (_targetLevel == 'SECTOR') {
-      parentLabel = 'Akarere (District)';
+    if (_targetLevel == 'PROVINCE') {
+       parentLabel = 'Igihugu (National)';
     } else if (_targetLevel == 'DISTRICT') {
-      parentLabel = 'Intara (Province)';
+       parentLabel = 'Intara (Province)';
+    } else if (_targetLevel == 'SECTOR') {
+       parentLabel = 'Akarere (District)';
+    } else if (_targetLevel == 'CELL') {
+       parentLabel = 'Umurenge (Sector)';
+    } else if (_targetLevel == 'VILLAGE') {
+       parentLabel = 'Akagari (Cell)';
     }
     
     String targetLabel = _formatLevel(_targetLevel);
+    if (_isPeerRegistration) {
+      targetLabel += ' (Staff/Peer)';
+    }
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -676,8 +716,46 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
     if (roleKey == null) return;
     setState(() {
       _targetLevel = roleKey;
-      _selectedUnitName = null; // Reset selection when role changes
+      
+      // Horizontal Registration Check
+      if (_myLevel != null && roleKey == _myLevel) {
+        _isPeerRegistration = true;
+        _availableChildren = [_myJurisdictionName ?? 'My Unit'];
+        _selectedUnitName = _myJurisdictionName;
+      } else {
+        _isPeerRegistration = false;
+        _availableChildren = List.from(_originalChildren); // Restore child list
+        _selectedUnitName = null; // Reset selection
+      }
     });
+  }
+
+  Map<String, String> _getValidRoles() {
+    final allRoles = {
+      'PROVINCE': 'Guverineri w\'Intara (Governor)',
+      'DISTRICT': 'Umuyobozi w\'Akarere (Mayor)',
+      'SECTOR': 'Umunyamabanga Nshingwabikorwa w\'Umurenge',
+      'CELL': 'Umunyamabanga Nshingwabikorwa w\'Akagari',
+      'VILLAGE': 'Umuyobozi w\'Umudugudu (Village Leader)',
+    };
+
+    if (_myLevel == null) return allRoles;
+
+    // Filter based on strict hierarchy: Allow Peer (My Level) + Direct Child (Next Level)
+    final levels = ['PROVINCE', 'DISTRICT', 'SECTOR', 'CELL', 'VILLAGE'];
+    final myIndex = levels.indexOf(_myLevel!);
+    
+    if (myIndex == -1) return allRoles; // Fallback
+
+    final validKeys = <String>{};
+    validKeys.add(_myLevel!); // Peer
+    if (myIndex + 1 < levels.length) {
+      validKeys.add(levels[myIndex + 1]); // Child
+    }
+
+    return Map.fromEntries(
+      allRoles.entries.where((e) => validKeys.contains(e.key))
+    );
   }
 
   String _formatLevel(String level) {
