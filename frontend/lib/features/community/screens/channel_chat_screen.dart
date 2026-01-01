@@ -51,14 +51,18 @@ class _ChannelChatScreenState extends State<ChannelChatScreen> {
 
     if (success) {
       _controller.clear();
-      // Scroll to bottom (actually top since list is reversed usually, but here I implemented prepend...)
-      // Standard chat usually fills from bottom. 
+      // Scroll to bottom to show newest message
       if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          0,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
+        // Use a small delay to ensure the new message is rendered
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (_scrollController.hasClients) {
+            _scrollController.animateTo(
+              _scrollController.position.maxScrollExtent,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+            );
+          }
+        });
       }
     }
   }
@@ -190,15 +194,25 @@ class _ChannelChatScreenState extends State<ChannelChatScreen> {
                 );
               }
 
-              return ListView.builder(
-                controller: _scrollController,
-                reverse: true,
-                itemCount: messages.length,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                itemBuilder: (context, index) {
-                  final message = messages[index];
-                  return _buildMessageBubble(context, message);
-                },
+              // Use a reversed list to show newest messages at bottom like chat apps
+              // But wrap in Align to start from top when few messages
+              return Column(
+                children: [
+                  Expanded(
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      reverse: false, // Start from top
+                      itemCount: messages.length,
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                      itemBuilder: (context, index) {
+                        // Messages are already sorted newest first from API, 
+                        // so reverse the index to show oldest first (top)
+                        final message = messages[messages.length - 1 - index];
+                        return _buildMessageBubble(context, message);
+                      },
+                    ),
+                  ),
+                ],
               );
             },
           ),
@@ -279,74 +293,166 @@ class _ChannelChatScreenState extends State<ChannelChatScreen> {
   }
 
   Widget _buildMessageBubble(BuildContext context, ChannelMessage message) {
-    // Current user check (Normally from AuthProvider)
-    // Assuming for now hardcoded check or we need current user ID in provider
-    // Let's assume right-aligned for "Self" logic is pending.
-    // For MVP, just left align all with author name.
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     
+    // Get current user ID from shared preferences or auth service
+    final currentUserId = context.read<CommunityProvider>().getCurrentUserId();
+    final isOwnMessage = message.authorId == currentUserId;
     final isOfficial = message.isOfficial;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: isOwnMessage ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          CircleAvatar(
-            radius: 16,
-            backgroundColor: isOfficial ? ImboniColors.primary : Colors.grey[300],
-            child: Text(
-              message.author?.initials ?? 'U',
-              style: TextStyle(
-                color: isOfficial ? Colors.white : Colors.black87,
-                fontSize: 12,
-                fontWeight: FontWeight.bold
+          // Avatar for others' messages (left side)
+          if (!isOwnMessage) ...[
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: isOfficial 
+                  ? ImboniColors.primary 
+                  : _getAvatarColor(message.author?.name ?? 'U'),
+              child: message.author?.profilePicture != null 
+                  ? null 
+                  : Text(
+                      message.author?.initials ?? 'U',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+            ),
+            const SizedBox(width: 8),
+          ],
+
+          // Message bubble
+          Flexible(
+            child: Container(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.7,
+              ),
+              child: Column(
+                crossAxisAlignment: isOwnMessage 
+                    ? CrossAxisAlignment.end 
+                    : CrossAxisAlignment.start,
+                children: [
+                  // Author name for group messages (only for others)
+                  if (!isOwnMessage)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 12, bottom: 2),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            message.author?.displayName ?? 'Unknown',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                              color: isOfficial 
+                                  ? ImboniColors.primary 
+                                  : _getAvatarColor(message.author?.name ?? 'U'),
+                            ),
+                          ),
+                          if (isOfficial) ...[
+                            const SizedBox(width: 4),
+                            const Icon(Icons.verified, size: 12, color: ImboniColors.primary),
+                          ],
+                        ],
+                      ),
+                    ),
+
+                  // Bubble
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: isOwnMessage 
+                          ? ImboniColors.primary
+                          : colorScheme.brightness == Brightness.dark
+                              ? colorScheme.surfaceContainerHigh
+                              : Colors.white,
+                      borderRadius: BorderRadius.only(
+                        topLeft: const Radius.circular(16),
+                        topRight: const Radius.circular(16),
+                        bottomLeft: Radius.circular(isOwnMessage ? 16 : 4),
+                        bottomRight: Radius.circular(isOwnMessage ? 4 : 16),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                      border: isOfficial && !isOwnMessage
+                          ? Border.all(color: ImboniColors.primary.withValues(alpha: 0.3))
+                          : null,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          message.content,
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: isOwnMessage ? Colors.white : colorScheme.onSurface,
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              DateFormat('HH:mm').format(message.createdAt),
+                              style: TextStyle(
+                                color: isOwnMessage 
+                                    ? Colors.white.withValues(alpha: 0.7) 
+                                    : Colors.grey[500],
+                                fontSize: 10,
+                              ),
+                            ),
+                            if (isOwnMessage) ...[
+                              const SizedBox(width: 4),
+                              Icon(
+                                Icons.done_all,
+                                size: 14,
+                                color: Colors.white.withValues(alpha: 0.7),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      message.author?.displayName ?? 'Unknown',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                        color: isOfficial ? ImboniColors.primary : Colors.black87
-                      ),
-                    ),
-                    if (isOfficial) ...[
-                      const SizedBox(width: 4),
-                      const Icon(Icons.verified, size: 14, color: ImboniColors.primary),
-                    ],
-                    const SizedBox(width: 8),
-                    Text(
-                      DateFormat('HH:mm').format(message.createdAt),
-                      style: TextStyle(color: Colors.grey[500], fontSize: 11),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: isOfficial ? ImboniColors.primary.withValues(alpha: 0.05) : Colors.grey[100],
-                    borderRadius: BorderRadius.circular(12),
-                    border: isOfficial ? Border.all(color: ImboniColors.primary.withValues(alpha: 0.2)) : null,
-                  ),
-                  child: Text(
-                    message.content,
-                    style: const TextStyle(fontSize: 15),
-                  ),
-                ),
-              ],
-            ),
-          ),
+
+          // Spacing for own messages (no avatar on right)
+          if (isOwnMessage)
+            const SizedBox(width: 4),
         ],
       ),
     );
+  }
+
+  /// Generate a consistent color based on the user's name
+  Color _getAvatarColor(String name) {
+    final colors = [
+      Colors.blue,
+      Colors.purple,
+      Colors.orange,
+      Colors.teal,
+      Colors.pink,
+      Colors.indigo,
+      Colors.amber[700]!,
+      Colors.cyan,
+    ];
+    final index = name.hashCode.abs() % colors.length;
+    return colors[index];
   }
 }

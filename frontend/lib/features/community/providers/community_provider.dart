@@ -1,10 +1,13 @@
 import 'package:flutter/foundation.dart';
 import '../../../../shared/services/api_client.dart';
+import '../../../../shared/services/auth_service.dart';
 import '../models/community_models.dart';
 
 class CommunityProvider extends ChangeNotifier {
   final ApiClient _api = apiClient;
   
+  /// Get the current authenticated user's ID
+  String? getCurrentUserId() => authService.currentUser?.id;
   List<CommunityChannel> _channels = [];
   bool _isLoadingChannels = false;
   String? _error;
@@ -87,21 +90,30 @@ class CommunityProvider extends ChangeNotifier {
   }
 
   Future<bool> sendMessage(String channelId, String content) async {
+    debugPrint('CommunityProvider: sendMessage called for channel=$channelId');
     try {
       final response = await _api.post('/community/messages', {
         'channelId': channelId,
         'content': content,
       });
       
-      final newMessage = ChannelMessage.fromJson(response.data);
+      debugPrint('CommunityProvider: sendMessage response isSuccess=${response.isSuccess}, data=${response.data}');
       
-      // Optimistic update
+      if (!response.isSuccess || response.data == null) {
+        debugPrint('CommunityProvider: sendMessage failed - ${response.error ?? "No data returned"}');
+        return false;
+      }
+
+      final newMessage = ChannelMessage.fromJson(response.data as Map<String, dynamic>);
+      
+      // Optimistic update - prepend to list
       final currentList = _messages[channelId] ?? [];
-      _messages[channelId] = [newMessage, ...currentList]; // Prepend
+      _messages[channelId] = [newMessage, ...currentList];
       notifyListeners();
       return true;
-    } catch (e) {
-      debugPrint('Error sending message: $e');
+    } catch (e, stackTrace) {
+      debugPrint('CommunityProvider: Error sending message: $e');
+      debugPrint('CommunityProvider: Stack trace: $stackTrace');
       return false;
     }
   }
