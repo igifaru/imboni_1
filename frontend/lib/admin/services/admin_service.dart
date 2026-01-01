@@ -41,8 +41,9 @@ class AdminService extends ChangeNotifier {
     String? role,
     String? status,
     String? query,
+    String? unitId,
     int page = 1,
-    int limit = 10, // Match design (10 per page)
+    int limit = 10,
   }) async {
     _isLoading = true;
     _error = null;
@@ -55,6 +56,7 @@ class AdminService extends ChangeNotifier {
       };
       if (role != null) queryParams['role'] = role;
       if (status != null) queryParams['status'] = status;
+      if (unitId != null) queryParams['unitId'] = unitId;
       if (query != null && query.isNotEmpty) queryParams['search'] = query;
 
       final response = await _apiClient.get('/admin/users', queryParameters: queryParams);
@@ -113,6 +115,7 @@ class AdminService extends ChangeNotifier {
     required String password,
     required String level, // 'PROVINCE', 'DISTRICT', etc.
     required String jurisdictionName, // Name of the unit (e.g. 'Kigali')
+    String? positionTitle, // Optional title for staff
   }) async {
     _isLoading = true;
     _error = null;
@@ -126,6 +129,7 @@ class AdminService extends ChangeNotifier {
         'level': level,
         'jurisdictionName': jurisdictionName,
         'role': 'LEADER', // Always LEADER for subordinates in this flow
+        'positionTitle': positionTitle,
       });
 
       if (response.isSuccess) {
