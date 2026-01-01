@@ -48,7 +48,18 @@ export class CommunityService {
                     }
                 },
                 reactions: {
-                    select: { emoji: true, userId: true }
+                    select: {
+                        emoji: true,
+                        userId: true,
+                        user: {
+                            select: {
+                                id: true,
+                                name: true,
+                                profilePicture: true,
+                                role: true
+                            }
+                        }
+                    }
                 }
             }
         });
@@ -366,7 +377,18 @@ export class CommunityService {
                     select: { id: true, name: true, role: true, profilePicture: true }
                 },
                 reactions: {
-                    select: { emoji: true, userId: true }
+                    select: {
+                        emoji: true,
+                        userId: true,
+                        user: {
+                            select: {
+                                id: true,
+                                name: true,
+                                profilePicture: true,
+                                role: true
+                            }
+                        }
+                    }
                 }
             }
         });

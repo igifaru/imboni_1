@@ -62,16 +62,19 @@ class AdministrativeUnitSummary {
 class MessageReaction {
   final String emoji;
   final String userId;
+  final UserModel? user; // Added user details
 
   const MessageReaction({
     required this.emoji,
     required this.userId,
+    this.user,
   });
 
   factory MessageReaction.fromJson(Map<String, dynamic> json) {
     return MessageReaction(
       emoji: json['emoji'] as String,
       userId: json['userId'] as String,
+      user: json['user'] != null ? UserModel.fromJson(json['user']) : null,
     );
   }
 }

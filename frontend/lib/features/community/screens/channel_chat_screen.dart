@@ -6,6 +6,7 @@ import 'package:imboni/shared/models/models.dart';
 import '../providers/community_provider.dart';
 import '../models/community_models.dart';
 import '../widgets/message_actions_widget.dart';
+import '../widgets/reaction_details_dialog.dart';
 import 'package:intl/intl.dart';
 
 class ChannelChatScreen extends StatefulWidget {
@@ -711,8 +712,11 @@ class _ChannelChatScreenState extends State<ChannelChatScreen> {
                               final isMe = myReactions.contains(emoji);
                               
                               return GestureDetector(
-                                onTap: () => context.read<CommunityProvider>()
-                                    .toggleReaction(widget.channel.id, message.id, emoji),
+                                onTapDown: (details) => _showReactionDetails(
+                                  context, 
+                                  details.globalPosition, 
+                                  message
+                                ),
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                                   decoration: BoxDecoration(
@@ -779,5 +783,65 @@ class _ChannelChatScreenState extends State<ChannelChatScreen> {
     ];
     final index = name.hashCode.abs() % colors.length;
     return colors[index];
+  }
+
+  void _showReactionDetails(BuildContext context, Offset tapPosition, ChannelMessage message) {
+    final screenSize = MediaQuery.of(context).size;
+    const dialogWidth = 360.0;
+    const dialogHeight = 400.0; // Approximate
+
+    // Calculate Left position (centered horizontally on tap, clamped to screen edges)
+    double left = tapPosition.dx - (dialogWidth / 2);
+    if (left < 10) left = 10;
+    if (left + dialogWidth > screenSize.width - 10) left = screenSize.width - dialogWidth - 10;
+
+    // Calculate Top position (below the tap)
+    double top = tapPosition.dy + 20;
+    // If it goes off screen bottom, show above instead? 
+    // For now, user asked for "under", so we prioritize that unless it's completely unusable.
+    if (top + 200 > screenSize.height) {
+       top = tapPosition.dy - dialogHeight - 10; // Show above if really tight
+    }
+
+    final currentUserId = context.read<CommunityProvider>().getCurrentUserId();
+
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Dismiss',
+      barrierColor: Colors.black54,
+      transitionDuration: const Duration(milliseconds: 200),
+      pageBuilder: (context, anim1, anim2) {
+        return Stack(
+          children: [
+            Positioned(
+              top: top,
+              left: left,
+              child: Material(
+                color: Colors.transparent,
+                child: ReactionDetailsDialog(
+                  message: message,
+                  channelId: widget.channel.id,
+                  currentUserId: currentUserId ?? '',
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+      transitionBuilder: (context, anim1, anim2, child) {
+        return FadeTransition(
+          opacity: anim1,
+          child: ScaleTransition(
+            scale: CurvedAnimation(parent: anim1, curve: Curves.easeOutBack),
+            alignment: Alignment (
+                ((tapPosition.dx / screenSize.width) * 2) - 1, // Align scale origin to tap X
+                -1.0 // Top
+            ),
+            child: child,
+          ),
+        );
+      },
+    );
   }
 }
