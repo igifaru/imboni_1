@@ -3,20 +3,41 @@ import '../models/location_selection.dart';
 import 'components/hierarchical_map_view.dart';
 
 class RwandaAdministrativeMap extends StatefulWidget {
-  final Map<String, int> casesByProvince;
-  final Map<String, int> casesByDistrict;
+  final Map<String, int>? casesByProvince;
+  final Map<String, int>? casesByDistrict;
+  final Map<String, int>? casesBySector;
+  final Map<String, int>? casesByCell;
+  final Map<String, int>? casesByVillage;
+  
+  /// Initial selection based on user's scope
+  final LocationSelection? initialSelection;
+  
+  /// User's scope level (determines how far up they can navigate)
+  final AdministrativeLevel? scopeLevel;
+  
+  /// Whether this user can toggle to view full map (typically Citizens)
+  final bool canViewFullMap;
+  
   final String? selectedProvince;
   final ValueChanged<String>? onProvinceSelected;
   final ValueChanged<String>? onDistrictSelected;
+  final ValueChanged<LocationSelection>? onSelectionChanged;
   final bool showAIInsights;
 
   const RwandaAdministrativeMap({
     super.key,
-    required this.casesByProvince,
-    required this.casesByDistrict,
+    this.casesByProvince,
+    this.casesByDistrict,
+    this.casesBySector,
+    this.casesByCell,
+    this.casesByVillage,
+    this.initialSelection,
+    this.scopeLevel,
+    this.canViewFullMap = false,
     this.selectedProvince,
     this.onProvinceSelected,
     this.onDistrictSelected,
+    this.onSelectionChanged,
     this.showAIInsights = false,
   });
 
@@ -25,16 +46,32 @@ class RwandaAdministrativeMap extends StatefulWidget {
 }
 
 class _RwandaAdministrativeMapState extends State<RwandaAdministrativeMap> {
-  LocationSelection _selection = const LocationSelection();
+  late LocationSelection _selection;
+  bool _isFullMapMode = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _selection = widget.initialSelection ?? const LocationSelection();
+  }
 
   @override
   void didUpdateWidget(covariant RwandaAdministrativeMap oldWidget) {
     super.didUpdateWidget(oldWidget);
+    
+    // Handle external province selection
     if (widget.selectedProvince != oldWidget.selectedProvince) {
       if (widget.selectedProvince != null && widget.selectedProvince!.isNotEmpty) {
         _selection = _selection.copyWith(province: widget.selectedProvince);
-      } else {
+      } else if (_isFullMapMode) {
         _selection = const LocationSelection();
+      }
+    }
+    
+    // Handle initial selection changes
+    if (widget.initialSelection != oldWidget.initialSelection && widget.initialSelection != null) {
+      if (!_isFullMapMode) {
+        _selection = widget.initialSelection!;
       }
     }
   }
@@ -43,6 +80,8 @@ class _RwandaAdministrativeMapState extends State<RwandaAdministrativeMap> {
     setState(() => _selection = newSelection);
     
     // Notify parents
+    widget.onSelectionChanged?.call(newSelection);
+    
     if (newSelection.province != widget.selectedProvince) {
       widget.onProvinceSelected?.call(newSelection.province ?? '');
     }
@@ -51,13 +90,26 @@ class _RwandaAdministrativeMapState extends State<RwandaAdministrativeMap> {
     }
   }
 
+  void _toggleFullMap() {
+    setState(() {
+      _isFullMapMode = !_isFullMapMode;
+      if (_isFullMapMode) {
+        // Full map mode - start from provinces
+        _selection = const LocationSelection();
+      } else {
+        // Return to user's scoped view
+        _selection = widget.initialSelection ?? const LocationSelection();
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
     return Container(
-      height: 500, // Augmented height for nested views
+      height: 500,
       decoration: BoxDecoration(
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
@@ -72,15 +124,23 @@ class _RwandaAdministrativeMapState extends State<RwandaAdministrativeMap> {
       ),
       child: Column(
         children: [
+          // Header with scope indicator and toggle
+          _buildHeader(theme, isDark),
+          
           Expanded(
             child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              borderRadius: BorderRadius.circular(8),
               child: HierarchicalMapView(
                 selection: _selection,
                 onSelectionChanged: _handleSelectionChanged,
                 casesByProvince: widget.casesByProvince,
                 casesByDistrict: widget.casesByDistrict,
+                casesBySector: widget.casesBySector,
+                casesByCell: widget.casesByCell,
+                casesByVillage: widget.casesByVillage,
                 isDark: isDark,
+                scopeLevel: _isFullMapMode ? null : widget.scopeLevel,
+                isFullMapMode: _isFullMapMode,
               ),
             ),
           ),
@@ -101,6 +161,54 @@ class _RwandaAdministrativeMapState extends State<RwandaAdministrativeMap> {
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(ThemeData theme, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: theme.dividerColor)),
+      ),
+      child: Row(
+        children: [
+          // Current location indicator
+          Icon(
+            Icons.location_on,
+            size: 20,
+            color: theme.colorScheme.primary,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              _selection.fullPath.isNotEmpty 
+                  ? _selection.fullPath 
+                  : 'Rwanda',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          
+          // Full map toggle (for citizens)
+          if (widget.canViewFullMap)
+            TextButton.icon(
+              onPressed: _toggleFullMap,
+              icon: Icon(
+                _isFullMapMode ? Icons.my_location : Icons.public,
+                size: 18,
+              ),
+              label: Text(
+                _isFullMapMode ? 'My Location' : 'Full Map',
+                style: const TextStyle(fontSize: 13),
+              ),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              ),
+            ),
         ],
       ),
     );
