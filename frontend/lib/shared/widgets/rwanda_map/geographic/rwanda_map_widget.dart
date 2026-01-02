@@ -11,16 +11,33 @@ import 'package:imboni/shared/utils/highcharts_parser.dart';
 /// - Accurate District Polygons (Stroked)
 /// - District Name Labels
 /// - Data Bubbles (heatmap) at Accurate Centroids
+/// - Scope-based zoom and centering (NEW)
 class RwandaMapWidget extends StatefulWidget {
   final Map<String, int> casesByDistrict;
   final Function(String) onDistrictSelected;
-  final String? mapTitle; // New: Dynamic title for map header
+  final String? mapTitle; // Dynamic title for map header
+  
+  /// Focus parameters for scope-based centering
+  final String? focusProvince;
+  final String? focusDistrict;
+  final String? focusSector;
+  final String? focusCell;
+  final String? focusVillage;
+  
+  /// Whether to allow toggle between focused view and full map
+  final bool allowFullMapToggle;
 
   const RwandaMapWidget({
     super.key,
     required this.casesByDistrict,
     required this.onDistrictSelected,
     this.mapTitle,
+    this.focusProvince,
+    this.focusDistrict,
+    this.focusSector,
+    this.focusCell,
+    this.focusVillage,
+    this.allowFullMapToggle = false,
   });
 
   @override
@@ -36,8 +53,41 @@ class _RwandaMapWidgetState extends State<RwandaMapWidget> {
   
   final MapController _mapController = MapController();
   double _currentZoom = 9.0;
+  
+  /// Whether showing full Rwanda map or focused on user's scope
+  bool _isFullMapMode = false;
+  
+  /// Stores loaded regions for lookups
+  List<MapRegion> _loadedProvinces = [];
+  List<MapRegion> _loadedDistricts = [];
+  List<MapRegion> _loadedSectors = [];
+  List<MapRegion> _loadedCells = [];
+  List<MapRegion> _loadedVillages = [];
+  
+  /// Whether the map has been initially centered
+  bool _hasInitiallyCentered = false;
 
+  /// Get the deepest focus level and name
+  (String level, String name)? get _focusTarget {
+    if (widget.focusVillage != null) return ('village', widget.focusVillage!);
+    if (widget.focusCell != null) return ('cell', widget.focusCell!);
+    if (widget.focusSector != null) return ('sector', widget.focusSector!);
+    if (widget.focusDistrict != null) return ('district', widget.focusDistrict!);
+    if (widget.focusProvince != null) return ('province', widget.focusProvince!);
+    return null;
+  }
 
+  /// Get appropriate zoom level for each administrative level
+  double _getZoomForLevel(String level) {
+    switch (level) {
+      case 'province': return 10.0;
+      case 'district': return 11.0;
+      case 'sector': return 12.5;
+      case 'cell': return 14.5;
+      case 'village': return 16.5; // Deeper zoom for "real visible" accuracy
+      default: return 9.2;
+    }
+  }
 
   @override
   void initState() {
@@ -49,8 +99,264 @@ class _RwandaMapWidgetState extends State<RwandaMapWidget> {
     _villagesFuture = GeoJsonParser.parseRwandaVillages();
   }
 
+  @override
+  void didUpdateWidget(covariant RwandaMapWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    
+    // Check if focus parameters changed
+    final focusChanged = 
+        widget.focusProvince != oldWidget.focusProvince ||
+        widget.focusDistrict != oldWidget.focusDistrict ||
+        widget.focusSector != oldWidget.focusSector ||
+        widget.focusCell != oldWidget.focusCell ||
+        widget.focusVillage != oldWidget.focusVillage;
+        
+    // Check if map mode or toggle ability changed
+    if (widget.allowFullMapToggle != oldWidget.allowFullMapToggle) {
+       // Reset if capability changes
+       if (!widget.allowFullMapToggle) {
+         _isFullMapMode = false;
+       }
+    }
+
+    // Trigger re-centering if focus changed and we're not in full map mode
+    if (focusChanged) {
+      debugPrint('MAP: Focus parameters updated. Centering on $_focusTarget');
+      // Force re-centering even if user moved map (for initial dashboard load experience)
+      if (!_isFullMapMode) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _centerOnFocusRegion();
+        });
+      }
+    }
+  }
+
+  /// Find a region by name with robust matching and optional parent context
+  MapRegion? _findRegion(String level, String name, {String? parentName}) {
+    if (name.isEmpty) return null;
+    final normalizedTarget = name.toLowerCase().trim()
+        .replaceAll(' iii', ' 3')
+        .replaceAll(' ii', ' 2')
+        .replaceAll(' i', ' 1'); // Normalize numerals
+    
+    // Cleanup parent name if provided
+    final normalizedParent = parentName?.toLowerCase().trim();
+    
+    List<MapRegion> regions;
+    switch (level) {
+      case 'province': regions = _loadedProvinces; break;
+      case 'district': regions = _loadedDistricts; break;
+      case 'sector': regions = _loadedSectors; break;
+      case 'cell': regions = _loadedCells; break;
+      case 'village': regions = _loadedVillages; break;
+      default: return null;
+    }
+    
+    // Filter candidates by parent context FIRST if available
+    var candidates = regions;
+    if (normalizedParent != null) {
+      debugPrint('MAP FILTER: Filtering ${regions.length} regions by parent "$normalizedParent"');
+      
+      // Filter/Score candidates
+      // Strategy: 
+      // 1. Text Filter (Parent Name) - if metadata exists
+      // 2. Proximity Score (Parent Centroid) - if parent metadata is missing but Parent Region is loaded
+      
+      MapRegion? parentRegion;
+      
+      // Attempt to find parent region object for spatial context
+      if (parentName != null) {
+          String? pLevel;
+          // Determine parent level
+          if (level == 'village') pLevel = 'cell';
+          else if (level == 'cell') pLevel = 'sector';
+          else if (level == 'sector') pLevel = 'district';
+          else if (level == 'district') pLevel = 'province';
+          
+          if (pLevel != null) {
+             // Recursive lookup for parent (without parent context to avoid infinite loop)
+             parentRegion = _findRegion(pLevel, parentName);
+          }
+      }
+
+      // Very strict parent matching: candidate.parentName must contain/be contained by normalizedParent
+      final filtered = regions.where((r) {
+         if (r.parentName == null) return true; // Keep if no parent info (don't discard yet)
+         final pName = r.parentName!.toLowerCase().trim();
+         return pName.contains(normalizedParent) || normalizedParent.contains(pName);
+      }).toList();
+      
+      // Sort to prioritize:
+      // 1. Explicit Parent Name Match
+      // 2. Proximity to Parent Centroid (if Parent Region found)
+      filtered.sort((a, b) {
+         // Score A
+         bool aNameMatch = a.parentName != null && (a.parentName!.toLowerCase().contains(normalizedParent) || normalizedParent.contains(a.parentName!.toLowerCase()));
+         double aDist = double.maxFinite;
+         if (parentRegion != null) {
+            // Calculate distanceDeg (simple Euclidean is enough for sorting logic on small scale)
+            double dx = a.centroid.longitude - parentRegion.centroid.longitude;
+            double dy = a.centroid.latitude - parentRegion.centroid.latitude;
+            aDist = dx*dx + dy*dy;
+         }
+
+         // Score B
+         bool bNameMatch = b.parentName != null && (b.parentName!.toLowerCase().contains(normalizedParent) || normalizedParent.contains(b.parentName!.toLowerCase()));
+         double bDist = double.maxFinite;
+         if (parentRegion != null) {
+            double dx = b.centroid.longitude - parentRegion.centroid.longitude;
+            double dy = b.centroid.latitude - parentRegion.centroid.latitude;
+            bDist = dx*dx + dy*dy;
+         }
+         
+         // 1. Name Match Wins
+         if (aNameMatch && !bNameMatch) return -1;
+         if (!aNameMatch && bNameMatch) return 1;
+         
+         // 2. If both (or neither) match name, use Proximity
+         if (parentRegion != null) {
+            return aDist.compareTo(bDist);
+         }
+         
+         return 0;
+      });
+      
+      // Only apply filter if it doesn't eliminate everyone (safety fallback)
+      if (filtered.isNotEmpty) {
+        if (parentRegion != null) {
+           debugPrint('MAP CONTEXT: Using Spatial Context from parent "${parentRegion.name}"');
+        }
+        debugPrint('MAP FILTER SUCCESS: Reduced to ${filtered.length} candidates (Matched parent/proximity)');
+        candidates = filtered;
+      }
+    }
+    
+    // Debug region loading
+    if (regions.isEmpty) {
+       debugPrint('MAP DEBUG: No loaded regions for level $level.');
+    } 
+
+    // Pass 1: EXACT MATCH (Highest Priority)
+    for (var region in candidates) {
+      if (region.name.toLowerCase().trim() == name.toLowerCase().trim()) {
+        return region;
+      }
+    }
+    
+    // Pass 2: NORMALIZED EXACT MATCH (Handle III vs 3)
+    for (var region in candidates) {
+      final normalizedRegion = region.name.toLowerCase().trim()
+          .replaceAll(' iii', ' 3')
+          .replaceAll(' ii', ' 2')
+          .replaceAll(' i', ' 1');
+      if (normalizedRegion == normalizedTarget) {
+        return region;
+      }
+    }
+
+    // Pass 3: TOKEN-BASED FUZZY MATCH (Robust)
+    final targetTokens = normalizedTarget.split(' ').where((t) => t.isNotEmpty).toSet();
+    MapRegion? bestTokenCandidate;
+    int maxIntersect = 0;
+    
+    for (var region in candidates) {
+      final rName = region.name.toLowerCase().trim()
+          .replaceAll(' iii', ' 3')
+          .replaceAll(' ii', ' 2')
+          .replaceAll(' i', ' 1');
+          
+      final rTokens = rName.split(' ').where((t) => t.isNotEmpty).toSet();
+      final intersection = targetTokens.intersection(rTokens).length;
+      
+      if (intersection > maxIntersect) {
+        maxIntersect = intersection;
+        bestTokenCandidate = region;
+      }
+    }
+    
+    if (bestTokenCandidate != null && maxIntersect > 0) {
+       // Only accept token match if intersection is significant
+       if (maxIntersect >= 1) { 
+          debugPrint('MAP MATCH: Found token match for "$name" -> "${bestTokenCandidate.name}" (Intersection: $maxIntersect)');
+          return bestTokenCandidate;
+       }
+    }
+
+    // Debug failure to find
+    if (level == 'village' || level == 'cell') {
+       debugPrint('MAP MATCH FAIL: Could not find "$name" in $level regions (Total Candidates: ${candidates.length}). Parent Context: $parentName');
+    }
+    
+    return null;
+  }
+
+  /// Center map on the focus region with fallback
+  void _centerOnFocusRegion() {
+    if (_isFullMapMode) {
+      _centerOnFullMap();
+      return;
+    }
+    
+    // Try to find region, falling back to parents if not found
+    MapRegion? region;
+    String? level;
+    String? name;
+    
+    // 1. Try Village (Context: Cell)
+    if (widget.focusVillage != null) {
+       level = 'village';
+       name = widget.focusVillage!;
+       region = _findRegion(level, name, parentName: widget.focusCell);
+    }
+    
+    // 2. Try Cell (Fallback) (Context: Sector)
+    if (region == null && widget.focusCell != null) {
+       level = 'cell';
+       name = widget.focusCell!;
+       region = _findRegion(level, name, parentName: widget.focusSector);
+    }
+    
+    // 3. Try Sector (Fallback) (Context: District)
+    if (region == null && widget.focusSector != null) {
+       level = 'sector';
+       name = widget.focusSector!;
+       region = _findRegion(level, name, parentName: widget.focusDistrict);
+    }
+    
+    // 4. Try District (Fallback) (Context: Province)
+    if (region == null && widget.focusDistrict != null) {
+       level = 'district';
+       name = widget.focusDistrict!;
+       region = _findRegion(level, name, parentName: widget.focusProvince);
+    }
+    
+    if (region != null && level != null) {
+      final zoom = _getZoomForLevel(level);
+      _mapController.move(region.centroid, zoom);
+      _currentZoom = zoom;
+    } else {
+       // If absolutely nothing found, center on default
+       _centerOnFullMap();
+       debugPrint('MAP ERROR: Could not find any focus target in hierarchy.');
+    }
+  }
+
+  void _centerOnFullMap() {
+    _mapController.move(const LatLng(-1.9403, 30.05), 9.2);
+    _currentZoom = 9.2;
+  }
+
+  /// Toggle between full map and focused view
+  void _toggleFullMapMode() {
+    setState(() {
+      _isFullMapMode = !_isFullMapMode;
+    });
+    _centerOnFocusRegion();
+  }
+
   // Colors matching the reference map style (Official / Figma)
   Color _getProvinceColor(String id) {
+
     switch (id) {
       case 'RW.K': return Colors.pinkAccent.withValues(alpha: 0.4);
       case 'RW.N': return Colors.amber.withValues(alpha: 0.4);
@@ -63,6 +369,11 @@ class _RwandaMapWidgetState extends State<RwandaMapWidget> {
 
   @override
   Widget build(BuildContext context) {
+    // DEBUG: Confirm data arrival
+    if (widget.focusVillage != null) {
+      debugPrint('MAP BUILD: FocusVillage = "${widget.focusVillage}"');
+    }
+    
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
     return Container(
@@ -91,13 +402,27 @@ class _RwandaMapWidgetState extends State<RwandaMapWidget> {
                 
                 final provinces = (snapshot.data != null && snapshot.data!.isNotEmpty) ? (snapshot.data![0] as List<MapRegion>) : <MapRegion>[];
                 final districts = (snapshot.data != null && snapshot.data!.length > 1) ? (snapshot.data![1] as List<MapRegion>) : <MapRegion>[];
-                // Check if loaded (might be processing in isolate)
                 final sectors = (snapshot.data != null && snapshot.data!.length > 2) ? (snapshot.data![2] as List<MapRegion>) : <MapRegion>[];
                 final cells = (snapshot.data != null && snapshot.data!.length > 3) ? (snapshot.data![3] as List<MapRegion>) : <MapRegion>[];
                 final villages = (snapshot.data != null && snapshot.data!.length > 4) ? (snapshot.data![4] as List<MapRegion>) : <MapRegion>[];
                 
-                if (snapshot.connectionState == ConnectionState.done && villages.isEmpty) {
-                   // Optional warning if empty?
+                // Store loaded regions for lookup methods
+                if (snapshot.connectionState == ConnectionState.done && !_hasInitiallyCentered) {
+                  _loadedProvinces = provinces;
+                  _loadedDistricts = districts;
+                  _loadedSectors = sectors;
+                  _loadedCells = cells;
+                  _loadedVillages = villages;
+                  
+                  // Trigger initial centering after frame renders
+                  if (_focusTarget != null) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted && !_hasInitiallyCentered) {
+                        _hasInitiallyCentered = true;
+                        _centerOnFocusRegion();
+                      }
+                    });
+                  }
                 }
 
                 // LAYERS VISIBILITY LOGIC
@@ -177,23 +502,23 @@ class _RwandaMapWidgetState extends State<RwandaMapWidget> {
                    }
                 }
 
-                // 5. Village Layers (Visible > 13.5) - Lowered threshold
+                // 5. Village Layers (Visible > 13.0) - More aggressive visibility
                 final villagePolygons = <Polygon>[];
-                if (_currentZoom > 13.5) {
+                if (_currentZoom > 13.0) {
                    for (var region in villages) {
                       for (var ring in region.polygons) {
                         villagePolygons.add(
                           Polygon(
                             points: ring,
-                            color: Colors.transparent, 
-                            borderColor: Colors.greenAccent.withValues(alpha: 0.4),
-                            borderStrokeWidth: 0.5,
+                            color: Colors.greenAccent.withValues(alpha: 0.1), // Real visible fill
+                            borderColor: Colors.greenAccent.withValues(alpha: 0.5),
+                            borderStrokeWidth: 1.0, // Thicker border
                             label: region.name,
                             labelStyle: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 9, 
-                              fontWeight: FontWeight.normal,
-                              shadows: [Shadow(blurRadius: 1, color: Colors.black)]
+                              color: Colors.white,
+                              fontSize: 11, // Larger font
+                              fontWeight: FontWeight.w600,
+                              shadows: [Shadow(blurRadius: 2, color: Colors.black)]
                             ),
                           ),
                         );
@@ -275,7 +600,7 @@ class _RwandaMapWidgetState extends State<RwandaMapWidget> {
                     initialCenter: const LatLng(-1.9403, 30.05),
                     initialZoom: 9.2,
                     minZoom: 8.0,
-                    maxZoom: 18.0, // Increased max zoom for villages
+                    maxZoom: 19.0, // Allow deeper zoom for field level accuracy
                     onPositionChanged: (pos, hasGesture) {
                        if ((pos.zoom - _currentZoom).abs() > 0.1) {
                          final oldZ = _currentZoom;
@@ -334,7 +659,54 @@ class _RwandaMapWidgetState extends State<RwandaMapWidget> {
             right: 16,
             child: _buildLegend(isDark),
           ),
+          
+          // Full Map Toggle Button (Floating Bottom Left) - Only if allowed and has focus
+          if (widget.allowFullMapToggle && _focusTarget != null)
+            Positioned(
+              bottom: 16,
+              left: 16,
+              child: _buildFullMapToggle(isDark),
+            ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildFullMapToggle(bool isDark) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.8),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: _toggleFullMapMode,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  _isFullMapMode ? Icons.my_location : Icons.public,
+                  color: Colors.white,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  _isFullMapMode ? 'My Location' : 'View Full Map',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
