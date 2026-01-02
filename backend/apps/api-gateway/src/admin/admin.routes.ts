@@ -420,7 +420,13 @@ router.get('/my-jurisdiction', authMiddleware, async (req: Request, res: Respons
             children: children,
             districts: children, // Backward compatibility for DistrictCasesWidget
             hierarchyData: nodeData, // Raw data for nested counting (Renamed from 'data' to avoid ApiClient unwrap)
-            assignment: { province: unit.name } // Backward compatibility
+            assignment: { province: unit.name }, // Backward compatibility
+            // NEW: Full path for map scoping (e.g. [{level: 'PROVINCE', name: 'North'}, ...])
+            path: unitPath.map((u: any) => ({
+                level: u.level,
+                name: u.name,
+                id: u.id
+            }))
         });
 
     } catch (error) {
