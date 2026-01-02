@@ -197,6 +197,13 @@ class _DashboardHomeState extends State<_DashboardHome> {
   
   String? _currentLevel;
   
+  // Map focus scope (from user's jurisdiction path)
+  String? _focusProvince;
+  String? _focusDistrict;
+  String? _focusSector;
+  String? _focusCell;
+  String? _focusVillage;
+  
   @override
   void initState() {
     super.initState();
@@ -209,17 +216,42 @@ class _DashboardHomeState extends State<_DashboardHome> {
       try {
         final context = await adminService.getMyJurisdiction();
         
-        if (mounted) {
-           if (context != null) {
-              _currentLevel = context['level'];
-              // If level is NATIONAL, default to 'National', else use jurisdiction name
-              // Backend returns 'jurisdiction' field for the unit name
-              final name = context['jurisdiction'];
-              _rootLocationName = (_currentLevel == 'NATIONAL') ? 'National' : (name ?? 'National');
-           }
+        if (mounted && context != null) {
+          _currentLevel = context['level'];
+          final name = context['jurisdiction'];
+          _rootLocationName = (_currentLevel == 'NATIONAL') ? 'National' : (name ?? 'National');
+          
+          // Extract path hierarchy for map focus
+          final path = context['path'] as List<dynamic>?;
+          if (path != null) {
+            for (final item in path) {
+              final itemMap = item as Map<String, dynamic>;
+              final level = itemMap['level'] as String?;
+              final unitName = itemMap['name'] as String?;
+              
+              switch (level?.toUpperCase()) {
+                case 'PROVINCE':
+                  _focusProvince = unitName;
+                  break;
+                case 'DISTRICT':
+                  _focusDistrict = unitName;
+                  break;
+                case 'SECTOR':
+                  _focusSector = unitName;
+                  break;
+                case 'CELL':
+                  _focusCell = unitName;
+                  break;
+                case 'VILLAGE':
+                  _focusVillage = unitName;
+                  break;
+              }
+            }
+          }
+          debugPrint('MAP SCOPE: province=$_focusProvince, district=$_focusDistrict, sector=$_focusSector, cell=$_focusCell, village=$_focusVillage');
         }
       } catch (e) {
-        // Ignore error
+        debugPrint('Fetch level error: $e');
       }
   }
 
@@ -446,6 +478,12 @@ class _DashboardHomeState extends State<_DashboardHome> {
                           casesByDistrict: _casesByDistrict,
                           onDistrictSelected: (d) => debugPrint('Selected District: $d'),
                           mapTitle: _selectedLocationName ?? _rootLocationName ?? 'National "God View" Dashboard',
+                          focusProvince: _focusProvince,
+                          focusDistrict: _focusDistrict,
+                          focusSector: _focusSector,
+                          focusCell: _focusCell,
+                          focusVillage: _focusVillage,
+                          allowFullMapToggle: _currentLevel != 'NATIONAL' && _currentLevel != 'PROVINCE',
                         ),
                       ),
                       const SizedBox(width: 24),
@@ -476,6 +514,12 @@ class _DashboardHomeState extends State<_DashboardHome> {
                       casesByDistrict: _casesByDistrict,
                       onDistrictSelected: (d) => debugPrint('Selected District: $d'),
                       mapTitle: _selectedLocationName ?? _rootLocationName ?? 'National "God View" Dashboard',
+                      focusProvince: _focusProvince,
+                      focusDistrict: _focusDistrict,
+                      focusSector: _focusSector,
+                      focusCell: _focusCell,
+                      focusVillage: _focusVillage,
+                      allowFullMapToggle: _currentLevel != 'NATIONAL' && _currentLevel != 'PROVINCE',
                     ),
                     const SizedBox(height: 24),
                     Padding(

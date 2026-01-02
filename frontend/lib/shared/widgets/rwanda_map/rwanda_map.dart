@@ -3,3 +3,4 @@ export 'geographic/rwanda_map_painter.dart';
 export 'administrative/rwanda_administrative_map.dart';
 export 'models/location_selection.dart';
 export 'services/location_service.dart';
+export 'services/scoped_map_controller.dart';
