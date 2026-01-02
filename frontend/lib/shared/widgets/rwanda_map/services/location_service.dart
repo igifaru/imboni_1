@@ -106,10 +106,28 @@ class LocationService {
     final districtData = provinceData?[district] as Map<String, dynamic>?;
     final sectorData = districtData?[sector];
     
-    if (sectorData is List) {
-      final list = List<String>.from(sectorData);
+    if (sectorData is Map) {
+      // Cells are keys of the sector map
+      final list = sectorData.keys.toList().cast<String>();
       list.sort();
       return list;
+    }
+    return [];
+  }
+
+  List<String> getVillages(String province, String district, String sector, String cell) {
+    if (_data == null) return [];
+    final provinceData = _data![province] as Map<String, dynamic>?;
+    final districtData = provinceData?[district] as Map<String, dynamic>?;
+    final sectorData = districtData?[sector];
+    
+    if (sectorData is Map) {
+      final cellData = sectorData[cell];
+      if (cellData is List) {
+        final list = List<String>.from(cellData);
+        list.sort();
+        return list;
+      }
     }
     return [];
   }
