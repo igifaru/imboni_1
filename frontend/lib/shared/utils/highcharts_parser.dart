@@ -6,12 +6,14 @@ import 'package:flutter/foundation.dart';
 class MapRegion {
   final String id;
   final String name;
+  final String? parentName; // Added for disambiguation
   final List<List<LatLng>> polygons;
   final LatLng centroid;
 
   MapRegion({
     required this.id,
     required this.name,
+    this.parentName,
     required this.polygons,
     required this.centroid,
   });
@@ -25,35 +27,35 @@ class GeoJsonParser {
 
   /// Parses standard GeoJSON for Rwanda Districts (ADM2)
   static Future<List<MapRegion>> parseRwandaDistricts() async {
-    return parse('assets/rwanda_adm2.geojson', isProvince: false);
+    return parse('assets/rwanda_adm2.geojson', isProvince: false, parentKeys: ['ADM1_EN', 'ADM1_RW', 'Province', 'PROVINCE']);
   }
   
   /// Parses standard GeoJSON for Rwanda Sectors (ADM3)
   static Future<List<MapRegion>> parseRwandaSectors() async {
-    return parse('assets/rwanda_adm3.geojson');
+    return parse('assets/rwanda_adm3.geojson', parentKeys: ['ADM2_EN', 'ADM2_RW', 'District', 'DISTRICT']);
   }
 
   /// Parses standard GeoJSON for Rwanda Cells (ADM4)
   static Future<List<MapRegion>> parseRwandaCells() async {
-    return parse('assets/rwanda_adm4.geojson');
+    return parse('assets/rwanda_adm4.geojson', parentKeys: ['ADM3_EN', 'ADM3_RW', 'Sector', 'SECTOR']);
   }
 
   /// Parses standard GeoJSON for Rwanda Villages (ADM5)
   static Future<List<MapRegion>> parseRwandaVillages() async {
      // ADM5 is huge (130MB+), use isolate.
-    return parse('assets/rwanda_adm5.geojson');
+    return parse('assets/rwanda_adm5.geojson', parentKeys: ['ADM4_EN', 'ADM4_RW', 'Cell', 'CELL']);
   }
 
   
   // Correct Pattern: Load bytes in main, decode & parse in isolate to save memory
-  static Future<List<MapRegion>> parse(String assetPath, {bool isProvince = false}) async {
+  static Future<List<MapRegion>> parse(String assetPath, {bool isProvince = false, List<String>? parentKeys}) async {
     try {
       // Use load instead of loadString to avoid UTF-16 expansion on main thread
       final ByteData data = await rootBundle.load(assetPath);
       final Uint8List bytes = data.buffer.asUint8List();
       
       // Transfer bytes to isolate
-      return compute(_parseGeoJSONBytes, {'bytes': bytes, 'isProvince': isProvince});
+      return compute(_parseGeoJSONBytes, {'bytes': bytes, 'isProvince': isProvince, 'parentKeys': parentKeys});
     } catch (e) {
       debugPrint('Error loading $assetPath: $e');
       return [];
@@ -64,6 +66,7 @@ class GeoJsonParser {
     try {
       final Uint8List bytes = params['bytes'] as Uint8List;
       final bool isProvince = params['isProvince'] as bool;
+      final List<String>? parentKeys = params['parentKeys'] as List<String>?;
       
       // Decode UTF-8 in isolate
       final String jsonString = utf8.decode(bytes);
@@ -74,19 +77,54 @@ class GeoJsonParser {
 
       for (var f in features) {
         final props = f['properties'] as Map<String, dynamic>;
-        // geoBoundaries often puts name in shapeName.
-        // For ADM4/5, sometimes names are missing or in other fields. 
-        // We iterate possible keys.
-        String rawName = props['shapeName'] ?? 
-                         props['ADM1_EN'] ?? 
-                         props['ADM2_EN'] ?? 
-                         props['ADM3_EN'] ?? 
-                         props['ADM4_EN'] ?? 
-                         props['ADM5_EN'] ?? // Add ADM5 check
-                         '';
         
-        // If empty, try 'Name' or 'NAME'
-        if (rawName.isEmpty) rawName = props['Name'] ?? props['NAME'] ?? 'Unknown';
+        // DEBUG: Print keys for the first item to debug parent extraction
+        if (regions.isEmpty && features.indexOf(f) == 0) {
+           // print is more reliable than debugPrint in isolates for some envs
+           print('GEOJSON DEBUG ($isProvince): Keys available -> ${props.keys.toList()}'); 
+           if (parentKeys != null) {
+              print('GEOJSON DEBUG: Looking for any of parentKeys $parentKeys');
+           }
+        }
+        
+        String rawName = props['shapeName'] ?? 
+                         props['ADM5_EN'] ?? 
+                         props['ADM5_RW'] ??
+                         props['ADM4_EN'] ?? 
+                         props['ADM3_EN'] ?? 
+                         props['ADM2_EN'] ?? 
+                         props['ADM1_EN'] ?? 
+                         props['Name'] ?? 
+                         props['NAME'] ?? 
+                         props['VILLAGE'] ??
+                         props['CELL'] ??
+                         props['SECTOR'] ??
+                         props['DISTRICT'] ??
+                         props['PROVINCE'] ??
+                         '';
+                         
+        // Parse Parent Name for disambiguation using specific keys if available
+        String? parentName;
+        if (parentKeys != null) {
+          for (var key in parentKeys) {
+            if (props[key] != null) {
+              parentName = props[key];
+              break;
+            }
+          }
+        } 
+        
+        if (parentName == null) {
+           // Fallback chain (legacy)
+           parentName = props['ADM4_EN'] ?? 
+                        props['ADM3_EN'] ?? 
+                        props['ADM2_EN'] ?? 
+                        props['ADM1_EN'] ??
+                        props['Parent']; // Generic fallback
+        }
+                             
+        // Cleanup name (remove type suffixes if present)
+        // rawName = rawName.replaceAll(RegExp(r'\s+(Village|Cell|Sector|District|Province)$', caseSensitive: false), '');
 
         String id = rawName;
         // Colors mapping logic for provinces
@@ -128,6 +166,7 @@ class GeoJsonParser {
            regions.add(MapRegion(
              id: id,
              name: rawName,
+             parentName: parentName,
              polygons: polygons,
              centroid: _computeCentroid(polygons),
            ));
