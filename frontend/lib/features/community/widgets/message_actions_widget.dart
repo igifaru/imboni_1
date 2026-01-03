@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:imboni/shared/theme/colors.dart';
 import '../models/community_models.dart';
-import 'professional_emoji_picker.dart';
+import 'desktop_message_menu.dart';
 
 enum MessageAction {
   copy,
@@ -80,7 +78,7 @@ class _MessageActionsWidgetState extends State<MessageActionsWidget> {
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
+                                color: Colors.black.withValues(alpha: 0.1),
                                 blurRadius: 4,
                                 offset: const Offset(0, 2),
                               ),
@@ -178,141 +176,13 @@ class _MessageActionsWidgetState extends State<MessageActionsWidget> {
   }
 
   void _showDesktopMenu({Offset? position}) {
-    final RelativeRect menuPosition = _calculateMenuPosition(position);
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final isDark = colorScheme.brightness == Brightness.dark;
-
-    showMenu<dynamic>( 
+    DesktopMessageMenu.show(
       context: context,
-      position: menuPosition,
-      elevation: 8,
-      shadowColor: Colors.black.withOpacity(0.2),
-      surfaceTintColor: colorScheme.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      items: [
-        // Professional Reaction Bar
-        PopupMenuItem(
-          enabled: false,
-          padding: EdgeInsets.zero,
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            decoration: BoxDecoration(
-              color: isDark ? colorScheme.surfaceContainerHigh : Colors.grey[50],
-              borderRadius: BorderRadius.circular(50),
-              border: Border.all(
-                color: isDark ? colorScheme.outline.withValues(alpha: 0.2) : Colors.grey[200]!
-              ),
-            ),
-            child: Row(
-               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-               children: [
-                 _buildDesktopEmojiBtn('👍'),
-                 _buildDesktopEmojiBtn('❤️'),
-                 _buildDesktopEmojiBtn('😂'),
-                 _buildDesktopEmojiBtn('😮'),
-                 _buildDesktopEmojiBtn('😢'),
-                 _buildDesktopEmojiBtn('😡'),
-                 // Add Button for Full Picker
-                 InkWell(
-                   onTap: () {
-                     Navigator.pop(context); // Close menu
-                     _showFullEmojiPicker(); 
-                   },
-                   borderRadius: BorderRadius.circular(20),
-                   child: Container(
-                     padding: const EdgeInsets.all(6),
-                     decoration: BoxDecoration(
-                       color: isDark ? Colors.grey[800] : Colors.grey[200],
-                       shape: BoxShape.circle,
-                     ),
-                     child: Icon(Icons.add, size: 18, color: isDark ? Colors.white : Colors.black),
-                   ),
-                 ),
-               ],
-            ),
-          ),
-        ),
-        const PopupMenuDivider(height: 1),
-        _buildPopupMenuItem(Icons.content_copy, 'Copy', MessageAction.copy),
-        _buildPopupMenuItem(Icons.reply, 'Reply', MessageAction.reply),
-        _buildPopupMenuItem(Icons.push_pin_outlined, 'Pin', MessageAction.pin),
-        _buildPopupMenuItem(Icons.info_outline, 'Info', MessageAction.info),
-      ],
-    ).then((value) {
-      if (value != null && value is MessageAction) {
-        widget.onAction(value);
-      }
-      setState(() => _isHovering = false);
-    });
-  }
-  
-  void _showFullEmojiPicker() {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(16),
-        child: ProfessionalEmojiPicker(
-          onEmojiSelected: (emoji) {
-            Navigator.pop(context);
-            widget.onReact(emoji);
-          },
-        ),
-      ),
-    );
-  }
-  
-  RelativeRect _calculateMenuPosition(Offset? position) {
-      if (position != null) {
-        return RelativeRect.fromLTRB(position.dx, position.dy, position.dx + 1, position.dy + 1);
-      }
-      
-      final RenderBox renderBox = context.findRenderObject() as RenderBox;
-      final size = renderBox.size;
-      final offset = renderBox.localToGlobal(Offset.zero);
-
-      // Width of the menu is approximately 340px (icons + padding + add button)
-      const menuWidth = 340.0;
-      
-      final dx = widget.isOwnMessage 
-          ? offset.dx - menuWidth - 8 
-          : offset.dx + size.width + 8;
-          
-      final dy = offset.dy; 
-
-      return RelativeRect.fromLTRB(
-        dx,
-        dy,
-        dx + menuWidth,
-        dy + 240, 
-      );
-  }
-
-  // ... existing code ...
-
-  Widget _buildDesktopEmojiBtn(String emoji) {
-    return HoverableEmoji(
-      emoji: emoji, 
-      onTap: () {
-        Navigator.pop(context);
-        widget.onReact(emoji);
-      }
-    );
-  }
-
-  PopupMenuItem<MessageAction> _buildPopupMenuItem(IconData icon, String label, MessageAction action) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return PopupMenuItem<MessageAction>(
-      value: action,
-      height: 40,
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: colorScheme.onSurface.withValues(alpha: 0.7)),
-          const SizedBox(width: 12),
-          Text(label, style: const TextStyle(fontSize: 14)),
-        ],
-      ),
+      position: position,
+      isOwnMessage: widget.isOwnMessage,
+      onAction: widget.onAction,
+      onReact: widget.onReact,
+      onDismiss: () => setState(() => _isHovering = false),
     );
   }
 
@@ -329,7 +199,7 @@ class _MessageActionsWidgetState extends State<MessageActionsWidget> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: color, size: 22),
@@ -340,48 +210,6 @@ class _MessageActionsWidgetState extends State<MessageActionsWidget> {
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-// Helper widget for hover effect on emojis (Yellow Faces)
-class HoverableEmoji extends StatefulWidget {
-  final String emoji;
-  final VoidCallback onTap;
-
-  const HoverableEmoji({super.key, required this.emoji, required this.onTap});
-
-  @override
-  State<HoverableEmoji> createState() => _HoverableEmojiState();
-}
-
-class _HoverableEmojiState extends State<HoverableEmoji> {
-  bool _isHovering = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovering = true),
-      onExit: (_) => setState(() => _isHovering = false),
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-          transform: _isHovering 
-            ? Matrix4.diagonal3Values(1.3, 1.3, 1.0) 
-            : Matrix4.identity(),
-          child: Text(
-            widget.emoji, 
-            style: TextStyle(
-              fontSize: 24,
-              color: Theme.of(context).colorScheme.onSurface, // Enforce solid color to prevent "cloudy" look
-              fontFamilyFallback: const ['Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', 'EmojiOne Color'],
-            )
-          ),
         ),
       ),
     );
