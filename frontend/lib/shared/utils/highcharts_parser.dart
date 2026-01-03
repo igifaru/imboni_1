@@ -80,11 +80,7 @@ class GeoJsonParser {
         
         // DEBUG: Print keys for the first item to debug parent extraction
         if (regions.isEmpty && features.indexOf(f) == 0) {
-           // print is more reliable than debugPrint in isolates for some envs
-           print('GEOJSON DEBUG ($isProvince): Keys available -> ${props.keys.toList()}'); 
-           if (parentKeys != null) {
-              print('GEOJSON DEBUG: Looking for any of parentKeys $parentKeys');
-           }
+           // Debug logging removed
         }
         
         String rawName = props['shapeName'] ?? 

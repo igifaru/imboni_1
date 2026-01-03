@@ -6,6 +6,10 @@ import 'package:http/http.dart' as http;
 /// API Client for backend communication
 class ApiClient {
   static String get _baseUrl {
+    // Check for environment variable first
+    const envUrl = String.fromEnvironment('API_URL');
+    if (envUrl.isNotEmpty) return envUrl;
+
     // For Web: use localhost
     if (kIsWeb) return 'http://localhost:3000/api';
     
@@ -14,18 +18,13 @@ class ApiClient {
       return 'http://localhost:3000/api';
     }
     
-    // For Android Emulator: use 10.0.2.2
+    // For Android Emulator: use 10.0.2.2 (standard loopback)
     if (Platform.isAndroid) {
-       // A crude check for emulator vs real device isn't always reliable in pure Dart without plugins,
-       // but 10.0.2.2 is the standard loopback for Android emulators.
-       // However, for physical devices, we need the LAN IP.
-       // Best practice: Use the hosting machine's LAN IP.
-       // REPLACE THIS WITH YOUR MACHINE'S CURRENT LAN IP:
-       return 'http://10.24.143.221:3000/api'; 
+       return 'http://10.0.2.2:3000/api'; 
     }
     
-    // For iOS / fallback: use LAN IP
-    return 'http://10.24.143.221:3000/api';
+    // For iOS / fallback: use localhost (though iOS simulator uses localhost, physical needs IP)
+    return 'http://localhost:3000/api';
   }
   
   static String get baseUrl => _baseUrl;

@@ -427,29 +427,4 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
   }
 }
 
-class _DiscoverTab extends StatelessWidget {
-  const _DiscoverTab();
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.explore_outlined, size: 64, color: Colors.grey[400]),
-          const SizedBox(height: 16),
-          Text(
-            'Birasohorera Vuba',
-            style: theme.textTheme.titleLarge?.copyWith(color: Colors.grey[600]),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Browse channels by interest coming soon',
-            style: TextStyle(color: Colors.grey[500]),
-          ),
-        ],
-      ),
-    );
-  }
-}
