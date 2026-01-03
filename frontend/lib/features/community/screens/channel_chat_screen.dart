@@ -28,9 +28,11 @@ class ChannelChatScreen extends StatefulWidget {
 class _ChannelChatScreenState extends State<ChannelChatScreen> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final FocusNode _focusNode = FocusNode();
   final LayerLink _layerLink = LayerLink();
   OverlayEntry? _mentionOverlay;
   String? _mentionQuery;
+  ChannelMessage? _replyingToMessage;
 
   @override
   void initState() {
@@ -47,6 +49,7 @@ class _ChannelChatScreenState extends State<ChannelChatScreen> {
     _controller.removeListener(_onTextChanged);
     _controller.dispose();
     _scrollController.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -80,13 +83,9 @@ class _ChannelChatScreenState extends State<ChannelChatScreen> {
 
   void _showMentionOverlay(String query) {
     _mentionQuery = query;
-    final members = context.read<CommunityProvider>().searchChannelMembers(widget.channel.id, query);
+    // Trigger async search
+    context.read<CommunityProvider>().searchMembers(widget.channel.id, query);
     
-    if (members.isEmpty) {
-      _hideMentionOverlay();
-      return;
-    }
-
     if (_mentionOverlay == null) {
       _mentionOverlay = _buildMentionOverlayEntry();
       Overlay.of(context).insert(_mentionOverlay!);
@@ -124,8 +123,25 @@ class _ChannelChatScreenState extends State<ChannelChatScreen> {
                 ),
                 child: Consumer<CommunityProvider>(
                   builder: (context, provider, child) {
-                   final members = provider.searchChannelMembers(widget.channel.id, _mentionQuery ?? '');
-                   if (members.isEmpty) return const SizedBox.shrink();
+                   final members = provider.memberSearchResults;
+                   
+                   if (provider.isSearchingMembers) {
+                     return const Padding(
+                       padding: EdgeInsets.all(16.0),
+                       child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
+                     );
+                   }
+
+                   if (members.isEmpty) {
+                      if ((_mentionQuery ?? '').length < 2) return const SizedBox.shrink();
+                      return Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Text(
+                          'No members found',
+                          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        ),
+                      );
+                   }
                    
                    return ListView.builder(
                      padding: EdgeInsets.zero,
@@ -192,8 +208,13 @@ class _ChannelChatScreenState extends State<ChannelChatScreen> {
 
     final success = await context.read<CommunityProvider>().sendMessage(
       widget.channel.id, 
-      content
+      content,
+      replyToId: _replyingToMessage?.id,
     );
+    
+    setState(() {
+      _replyingToMessage = null;
+    });
 
     if (success) {
       _controller.clear();
@@ -394,7 +415,6 @@ class _ChannelChatScreenState extends State<ChannelChatScreen> {
     final isDark = colorScheme.brightness == Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: isDark ? colorScheme.surfaceContainerLow : Colors.white,
         boxShadow: [
@@ -406,40 +426,91 @@ class _ChannelChatScreenState extends State<ChannelChatScreen> {
         ],
       ),
       child: SafeArea(
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            IconButton(
-              icon: const Icon(Icons.add_circle_outline), 
-              onPressed: () {}, // Attachments
-              color: isDark ? colorScheme.onSurface.withOpacity(0.7) : Colors.grey,
-            ),
-            Expanded(
-              child: CompositedTransformTarget(
-                link: _layerLink,
-                child: TextField(
-                  controller: _controller,
-                  style: theme.textTheme.bodyMedium,
-                  decoration: InputDecoration(
-                    hintText: 'Type a message...',
-                    hintStyle: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(24),
-                      borderSide: BorderSide.none,
+            if (_replyingToMessage != null)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHigh,
+                  border: Border(bottom: BorderSide(color: colorScheme.outlineVariant)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.reply, size: 16, color: colorScheme.primary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Replying to ${_replyingToMessage!.author?.name ?? 'Unknown'}',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            _replyingToMessage!.content,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    filled: true,
-                    fillColor: isDark ? colorScheme.surfaceContainerHigh : Colors.grey[100],
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  ),
-                  minLines: 1,
-                  maxLines: 4,
+                    IconButton(
+                      icon: const Icon(Icons.close, size: 16),
+                      onPressed: () => setState(() => _replyingToMessage = null),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
                 ),
               ),
-            ),
-            const SizedBox(width: 8),
-            IconButton(
-              icon: const Icon(Icons.send),
-              onPressed: _sendMessage,
-              color: ImboniColors.primary,
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.add_circle_outline), 
+                    onPressed: () {}, // Attachments
+                    color: isDark ? colorScheme.onSurface.withOpacity(0.7) : Colors.grey,
+                  ),
+                  Expanded(
+                    child: CompositedTransformTarget(
+                      link: _layerLink,
+                      child: TextField(
+                        controller: _controller,
+                        focusNode: _focusNode,
+                        style: theme.textTheme.bodyMedium,
+                        decoration: InputDecoration(
+                          hintText: 'Type a message...',
+                          hintStyle: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: BorderSide.none,
+                          ),
+                          filled: true,
+                          fillColor: isDark ? colorScheme.surfaceContainerHigh : Colors.grey[100],
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        ),
+                        minLines: 1,
+                        maxLines: 4,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.send),
+                    onPressed: _sendMessage,
+                    color: ImboniColors.primary,
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -462,10 +533,13 @@ class _ChannelChatScreenState extends State<ChannelChatScreen> {
         );
         break;
       case MessageAction.reply:
-        // TODO: Implement reply logic
+        setState(() {
+          _replyingToMessage = message;
+        });
+        _focusNode.requestFocus();
         break;
       case MessageAction.pin:
-        // TODO: Implement pin logic (API call)
+        context.read<CommunityProvider>().togglePin(widget.channel.id, message.id);
         break;
       // Other cases...
       default:
@@ -473,6 +547,37 @@ class _ChannelChatScreenState extends State<ChannelChatScreen> {
     }
   }
 
+
+  // Scroll to a specific message
+  void _scrollToMessage(String messageId) {
+    final messages = context.read<CommunityProvider>().getMessages(widget.channel.id);
+    final index = messages.indexWhere((m) => m.id == messageId);
+    
+    if (index != -1) {
+      // Calculate render index (reversed logic matches ListView builder)
+      final renderIndex = messages.length - 1 - index;
+      
+      // Estimate position (assuming ~70px per message on average)
+      // This is a heuristic since we don't have exact heights
+      final double offset = renderIndex * 70.0; 
+      
+      // Clamp to extents
+      final double target = offset.clamp(
+          _scrollController.position.minScrollExtent, 
+          _scrollController.position.maxScrollExtent
+      );
+
+      _scrollController.animateTo(
+        target,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Message not found (might be older)')),
+      );
+    }
+  }
 
   // Render message with clickable mentions
   Widget _buildRichMessage(BuildContext context, String content, bool isOwnMessage) {
@@ -504,11 +609,49 @@ class _ChannelChatScreenState extends State<ChannelChatScreen> {
         WidgetSpan(
           alignment: PlaceholderAlignment.middle,
           child: GestureDetector(
-            onTap: () {
-               ScaffoldMessenger.of(context).showSnackBar(
-                 SnackBar(content: Text('Tapped mention: $mentionText')),
-               );
-               // TODO: Navigate to user profile
+            onTap: () async {
+               final name = mentionText.replaceAll('@', '').trim();
+               final user = await context.read<CommunityProvider>().findMemberByName(widget.channel.id, name);
+               
+               if (context.mounted) {
+                   if (user != null) {
+                       showDialog(context: context, builder: (context) => AlertDialog(
+                           title: Row(children: [
+                               CircleAvatar(
+                                 backgroundImage: user.profilePicture != null ? NetworkImage(user.profilePicture!) : null,
+                                 child: user.profilePicture == null ? Text(user.initials ?? 'U') : null,
+                               ),
+                               const SizedBox(width: 12),
+                               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                   Text(user.displayName ?? user.name ?? 'Unknown', style: Theme.of(context).textTheme.titleMedium),
+                                   Text(user.role?.toString().split('.').last ?? 'Member', style: Theme.of(context).textTheme.bodySmall)
+                               ])
+                           ]),
+                           content: Column(
+                               mainAxisSize: MainAxisSize.min,
+                               crossAxisAlignment: CrossAxisAlignment.start,
+                               children: [
+                                   if (user.email != null) ListTile(
+                                       leading: const Icon(Icons.email, size: 20),
+                                       title: Text(user.email!, style: const TextStyle(fontSize: 14)),
+                                       contentPadding: EdgeInsets.zero,
+                                       dense: true,
+                                   ),
+                               ],
+                           ),
+                           actions: [
+                               TextButton(
+                                   onPressed: () => Navigator.pop(context),
+                                   child: const Text('Close'),
+                               )
+                           ],
+                       ));
+                   } else {
+                       ScaffoldMessenger.of(context).showSnackBar(
+                         SnackBar(content: Text('User "$name" not found')),
+                       );
+                   }
+               }
             },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
@@ -640,50 +783,97 @@ class _ChannelChatScreenState extends State<ChannelChatScreen> {
                             ? Border.all(color: ImboniColors.primary.withValues(alpha: 0.3))
                             : null,
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-
-
-
-
-  // ... inside build ...
-
-                          /* 
-                          Text(
-                            message.content,
-                            style: TextStyle(
-                              fontSize: 15,
-                              color: isOwnMessage ? Colors.white : colorScheme.onSurface,
-                              height: 1.4,
-                            ),
-                          ),
-                          */
-                          _buildRichMessage(context, message.content, isOwnMessage),
-                          const SizedBox(height: 4),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                DateFormat('HH:mm').format(message.createdAt),
-                                style: TextStyle(
-                                  color: isOwnMessage 
-                                      ? Colors.white.withValues(alpha: 0.7) 
-                                      : Colors.grey[500],
-                                  fontSize: 10,
+                      child: IntrinsicWidth(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                              // Reply Preview Section
+                              if (message.replyTo != null)
+                                GestureDetector(
+                                  onTap: () => _scrollToMessage(message.replyTo!.id),
+                                  child: Container(
+                                    // Removed width: double.infinity
+                                    margin: const EdgeInsets.only(bottom: 6),
+                                    padding: const EdgeInsets.fromLTRB(10, 6, 8, 6),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withValues(alpha: 0.05),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border(
+                                        left: BorderSide(
+                                          color: _getAvatarColor(message.replyTo!.authorName), 
+                                          width: 4.5
+                                        ), 
+                                      ),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          message.replyTo!.authorName, 
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                            color: _getAvatarColor(message.replyTo!.authorName),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          message.replyTo!.content,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: isOwnMessage 
+                                                ? Colors.white.withValues(alpha: 0.9) 
+                                                : colorScheme.onSurface.withValues(alpha: 0.8),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 ),
-                              ),
-                              if (isOwnMessage) ...[
-                                const SizedBox(width: 4),
-                                Icon(
-                                  Icons.done_all,
-                                  size: 14,
-                                  color: Colors.white.withValues(alpha: 0.7),
+
+                            // Pinned Indicator
+                            if (message.isPinned)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 4),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.push_pin, size: 12, color: isOwnMessage ? Colors.white70 : Colors.grey),
+                                      const SizedBox(width: 4),
+                                      Text('Pinned', style: TextStyle(fontSize: 10, color: isOwnMessage ? Colors.white70 : Colors.grey, fontStyle: FontStyle.italic)),
+                                    ],
+                                  ),
                                 ),
+
+                            _buildRichMessage(context, message.content, isOwnMessage),
+                            const SizedBox(height: 2),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Text(
+                                  DateFormat('HH:mm').format(message.createdAt),
+                                  style: TextStyle(
+                                    color: isOwnMessage 
+                                        ? Colors.white.withValues(alpha: 0.7) 
+                                        : Colors.grey[500],
+                                    fontSize: 10,
+                                  ),
+                                ),
+                                if (isOwnMessage) ...[
+                                  const SizedBox(width: 4),
+                                  Icon(
+                                    Icons.done_all,
+                                    size: 14,
+                                    color: Colors.white.withValues(alpha: 0.7),
+                                  ),
+                                ],
                               ],
-                            ],
-                          ),
-                        ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     
