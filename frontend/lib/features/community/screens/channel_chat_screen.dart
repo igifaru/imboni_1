@@ -521,9 +521,7 @@ class _ChannelChatScreenState extends State<ChannelChatScreen> {
 
   // Helper handling methods for message actions
   void _handleMessageAction(MessageAction action, ChannelMessage message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Action selected: ${action.name} for message: ${message.content}')),
-    );
+
      
     switch (action) {
       case MessageAction.copy:
