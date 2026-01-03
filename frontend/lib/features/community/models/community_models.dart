@@ -131,10 +131,11 @@ class ChannelMessage {
   ChannelMessage copyWith({
     List<MessageReaction>? reactions,
     bool? isPinned,
+    String? content,
   }) {
     return ChannelMessage(
       id: id,
-      content: content,
+      content: content ?? this.content,
       channelId: channelId,
       authorId: authorId,
       author: author,

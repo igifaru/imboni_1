@@ -9,6 +9,8 @@ enum MessageAction {
   react,
   info,
   mention,
+  edit,
+  delete,
 }
 
 class MessageActionsWidget extends StatefulWidget {
@@ -158,6 +160,10 @@ class _MessageActionsWidgetState extends State<MessageActionsWidget> {
             _buildActionItem(Icons.content_copy, 'Copy Text', MessageAction.copy, colorScheme.onSurface),
             _buildActionItem(Icons.reply, 'Reply', MessageAction.reply, colorScheme.onSurface),
             _buildActionItem(Icons.push_pin_outlined, 'Pin Message', MessageAction.pin, Colors.orange),
+            if (widget.isOwnMessage) ...[
+               _buildActionItem(Icons.edit_outlined, 'Edit Message', MessageAction.edit, colorScheme.onSurface),
+               _buildActionItem(Icons.delete_outline, 'Delete Message', MessageAction.delete, Colors.red),
+            ],
             _buildActionItem(Icons.info_outline, 'Info', MessageAction.info, Colors.grey),
           ],
         ),

@@ -81,6 +81,20 @@ class ApiClient {
     } catch (e) {
       return ApiResponse.error('Network error: $e');
     }
+    }
+
+
+  Future<ApiResponse<T>> delete<T>(String endpoint, {Map<String, dynamic>? body, T Function(dynamic)? fromJson}) async {
+    try {
+      final response = await _client.delete(
+        Uri.parse('$_baseUrl$endpoint'),
+        headers: _headers,
+        body: body != null ? jsonEncode(body) : null,
+      ).timeout(const Duration(seconds: 15));
+      return _handleResponse(response, fromJson: fromJson);
+    } catch (e) {
+      return ApiResponse.error('Network error: $e');
+    }
   }
 
   Future<ApiResponse<T>> uploadFile<T>(String endpoint, String filePath, {String fieldName = 'file', T Function(dynamic)? fromJson}) async {

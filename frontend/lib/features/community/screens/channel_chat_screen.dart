@@ -547,9 +547,71 @@ class _ChannelChatScreenState extends State<ChannelChatScreen> {
         context.read<CommunityProvider>().togglePin(widget.channel.id, message.id);
         break;
       // Other cases...
+      case MessageAction.edit:
+        _showEditMessageDialog(message);
+        break;
+      case MessageAction.delete:
+        _showDeleteMessageDialog(message);
+        break;
       default:
         break;
     }
+  }
+
+  void _showEditMessageDialog(ChannelMessage message) {
+    final editController = TextEditingController(text: message.content);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Message'),
+        content: TextField(
+          controller: editController,
+          autofocus: true,
+          decoration: const InputDecoration(border: OutlineInputBorder()),
+          maxLines: 3,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+               final newContent = editController.text.trim();
+               if (newContent.isNotEmpty && newContent != message.content) {
+                  context.read<CommunityProvider>().editMessage(widget.channel.id, message.id, newContent);
+               }
+               Navigator.pop(context);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteMessageDialog(ChannelMessage message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Message'),
+        content: const Text('Are you sure you want to delete this message? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () {
+               context.read<CommunityProvider>().deleteMessage(widget.channel.id, message.id);
+               Navigator.pop(context);
+            },
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
   }
 
 

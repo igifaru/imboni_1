@@ -70,6 +70,11 @@ class DesktopMessageMenu {
         _buildPopupMenuItem(context, Icons.content_copy, 'Copy', MessageAction.copy),
         _buildPopupMenuItem(context, Icons.reply, 'Reply', MessageAction.reply),
         _buildPopupMenuItem(context, Icons.push_pin_outlined, 'Pin', MessageAction.pin),
+        if (isOwnMessage) ...[
+          _buildPopupMenuItem(context, Icons.edit_outlined, 'Edit', MessageAction.edit),
+          _buildPopupMenuItem(context, Icons.delete_outline, 'Delete', MessageAction.delete),
+          const PopupMenuDivider(height: 1),
+        ],
         _buildPopupMenuItem(context, Icons.info_outline, 'Info', MessageAction.info),
       ],
     ).then((value) {

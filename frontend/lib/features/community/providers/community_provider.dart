@@ -252,6 +252,111 @@ class CommunityProvider extends ChangeNotifier {
       return false;
     }
   }
+  
+  /// Delete a message
+  Future<bool> deleteMessage(String channelId, String messageId) async {
+    // 1. Optimistic Update
+    final currentMessages = _messages[channelId] ?? [];
+    final msgIndex = currentMessages.indexWhere((m) => m.id == messageId);
+    
+    // BACKUP for revert
+    ChannelMessage? backupMsg;
+    
+    if (msgIndex != -1) {
+      backupMsg = currentMessages[msgIndex];
+      // Remove from list
+      final newMessages = List<ChannelMessage>.from(currentMessages);
+      newMessages.removeAt(msgIndex);
+      _messages[channelId] = newMessages;
+      notifyListeners();
+    }
+
+    try {
+      // 2. API Call
+      final response = await _api.delete('/community/messages/$messageId');
+
+      if (response.isSuccess) {
+        return true;
+      }
+      return false; // Revert handled below
+    } catch (e) {
+      debugPrint('Error deleting message: $e');
+      // Revert if failed
+      if (backupMsg != null && msgIndex != -1) {
+         final current = List<ChannelMessage>.from(_messages[channelId] ?? []);
+         // Re-insert at original index if possible, or sorted
+         // For now, simpler to just prepend or re-fetch, but let's try insert
+         if (current.length >= msgIndex) {
+            current.insert(msgIndex, backupMsg);
+         } else {
+            current.add(backupMsg);
+         }
+         _messages[channelId] = current;
+         notifyListeners();
+      }
+      return false;
+    }
+  }
+
+  /// Edit a message
+  Future<bool> editMessage(String channelId, String messageId, String newContent) async {
+    // 1. Optimistic Update
+    final currentMessages = _messages[channelId] ?? [];
+    final msgIndex = currentMessages.indexWhere((m) => m.id == messageId);
+    
+    ChannelMessage? backupMsg;
+
+    if (msgIndex != -1) {
+      final msg = currentMessages[msgIndex];
+      backupMsg = msg;
+      
+      // Update content
+      currentMessages[msgIndex] = msg.copyWith(content: newContent);
+      _messages[channelId] = List.from(currentMessages);
+      notifyListeners();
+    }
+
+    try {
+      final response = await _api.patch('/community/messages/$messageId', {
+        'content': newContent,
+      });
+
+      if (response.isSuccess && response.data != null) {
+         // Update with server truth
+         final updatedMsg = ChannelMessage.fromJson(response.data);
+         if (msgIndex != -1) {
+            final msgs = _messages[channelId] ?? [];
+            if (msgs.length > msgIndex) {
+               msgs[msgIndex] = updatedMsg;
+               notifyListeners();
+            }
+         }
+         return true;
+      }
+      
+      // Revert
+      if (backupMsg != null && msgIndex != -1) {
+          final msgs = _messages[channelId] ?? [];
+          if (msgs.length > msgIndex) {
+             msgs[msgIndex] = backupMsg;
+             _messages[channelId] = List.from(msgs);
+             notifyListeners();
+          }
+      }
+      return false;
+    } catch (e) {
+      debugPrint('Error editing message: $e');
+      if (backupMsg != null && msgIndex != -1) {
+          final msgs = _messages[channelId] ?? [];
+          if (msgs.length > msgIndex) {
+             msgs[msgIndex] = backupMsg;
+             _messages[channelId] = List.from(msgs);
+             notifyListeners();
+          }
+      }
+      return false;
+    }
+  }
 
   // Member Search State
   List<UserModel> _memberSearchResults = [];
