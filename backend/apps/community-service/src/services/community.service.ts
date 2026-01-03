@@ -526,6 +526,56 @@ export class CommunityService {
         });
     }
 
+    /**
+     * Update a message content
+     */
+    async updateMessage(messageId: string, content: string) {
+        return prisma.channelMessage.update({
+            where: { id: messageId },
+            data: { content },
+            include: {
+                author: {
+                    select: { id: true, name: true, role: true, profilePicture: true }
+                },
+                reactions: {
+                    select: {
+                        emoji: true,
+                        userId: true,
+                        user: {
+                            select: {
+                                id: true,
+                                name: true,
+                                profilePicture: true,
+                                role: true
+                            }
+                        }
+                    }
+                },
+                replyTo: {
+                    select: {
+                        id: true,
+                        content: true,
+                        author: {
+                            select: {
+                                id: true,
+                                name: true
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    /**
+     * Delete a message
+     */
+    async deleteMessage(messageId: string) {
+        return prisma.channelMessage.delete({
+            where: { id: messageId }
+        });
+    }
+
     // Traverse up the tree
     private async getUnitLineage(unitId: string): Promise<AdministrativeUnit[]> {
         const line: AdministrativeUnit[] = [];

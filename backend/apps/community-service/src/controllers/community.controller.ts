@@ -157,4 +157,48 @@ router.post('/messages/:messageId/pin', async (req: Request, res: Response) => {
     }
 });
 
+// PATCH /api/community/messages/:messageId
+router.patch('/messages/:messageId', async (req: Request, res: Response) => {
+    try {
+        const { messageId } = req.params;
+        const { content } = req.body;
+        const userId = (req as any).user?.userId;
+
+        if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+        if (!content) return res.status(400).json({ error: 'Content is required' });
+
+        // TODO: Validate user is author
+        const message = await prisma.channelMessage.findUnique({ where: { id: messageId } });
+        if (!message) return res.status(404).json({ error: 'Message not found' });
+        if (message.authorId !== userId) return res.status(403).json({ error: 'Forbidden' });
+
+        const updated = await communityService.updateMessage(messageId, content);
+        res.json(updated);
+    } catch (error) {
+        logger.error('Error updating message', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// DELETE /api/community/messages/:messageId
+router.delete('/messages/:messageId', async (req: Request, res: Response) => {
+    try {
+        const { messageId } = req.params;
+        const userId = (req as any).user?.userId;
+
+        if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+        // TODO: Validate user is author or mod
+        const message = await prisma.channelMessage.findUnique({ where: { id: messageId } });
+        if (!message) return res.status(404).json({ error: 'Message not found' });
+        if (message.authorId !== userId) return res.status(403).json({ error: 'Forbidden' });
+
+        await communityService.deleteMessage(messageId);
+        res.json({ success: true });
+    } catch (error) {
+        logger.error('Error deleting message', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
 export const communityController = router;
