@@ -95,11 +95,20 @@ class _EscalationAlertsScreenState extends State<EscalationAlertsScreen> {
   }
 
   int _calculateHoursRemaining(CaseModel c) {
-    // Basic fallback logic if deadline isn't available in simplified model, 
-    // assuming backend sorted them by urgency/deadline.
-    // In real app, CaseModel would have 'deadlineAt'.
-    // Here we simulate for display or use createdAt logic if deadline missing.
-    return 24; 
+    // Calculate hours remaining based on urgency SLA from createdAt.
+    // SLA Rules: EMERGENCY=24h, HIGH=48h, MEDIUM=72h, LOW=168h (7 days)
+    final slaHours = switch (c.urgency.toUpperCase()) {
+      'EMERGENCY' => 24,
+      'HIGH' => 48,
+      'MEDIUM' => 72,
+      'LOW' => 168,
+      _ => 72, // Default to MEDIUM
+    };
+    
+    final deadline = c.createdAt.add(Duration(hours: slaHours));
+    final remaining = deadline.difference(DateTime.now()).inHours;
+    
+    return remaining.clamp(0, slaHours); // Ensure non-negative
   }
 }
 

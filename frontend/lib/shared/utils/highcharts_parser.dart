@@ -78,10 +78,6 @@ class GeoJsonParser {
       for (var f in features) {
         final props = f['properties'] as Map<String, dynamic>;
         
-        // DEBUG: Print keys for the first item to debug parent extraction
-        if (regions.isEmpty && features.indexOf(f) == 0) {
-           // Debug logging removed
-        }
         
         String rawName = props['shapeName'] ?? 
                          props['ADM5_EN'] ?? 
@@ -110,14 +106,12 @@ class GeoJsonParser {
           }
         } 
         
-        if (parentName == null) {
-           // Fallback chain (legacy)
-           parentName = props['ADM4_EN'] ?? 
-                        props['ADM3_EN'] ?? 
-                        props['ADM2_EN'] ?? 
-                        props['ADM1_EN'] ??
-                        props['Parent']; // Generic fallback
-        }
+        // Fallback chain (legacy)
+        parentName ??= props['ADM4_EN'] ?? 
+                       props['ADM3_EN'] ?? 
+                       props['ADM2_EN'] ?? 
+                       props['ADM1_EN'] ??
+                       props['Parent']; // Generic fallback
                              
         // Cleanup name (remove type suffixes if present)
         // rawName = rawName.replaceAll(RegExp(r'\s+(Village|Cell|Sector|District|Province)$', caseSensitive: false), '');
