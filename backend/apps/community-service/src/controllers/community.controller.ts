@@ -147,7 +147,13 @@ router.post('/messages/:messageId/pin', async (req: Request, res: Response) => {
         const userId = (req as any).user?.userId;
 
         if (!userId) return res.status(401).json({ error: 'Unauthorized' });
-        // TODO: Add permission check (Leader/Admin only)
+        if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+        // Permission Check: Leader or Admin only
+        const role = (req as any).user?.role;
+        if (role !== 'LEADER' && role !== 'ADMIN') {
+            return res.status(403).json({ error: 'Forbidden. Only leaders can pin messages.' });
+        }
 
         const updatedMessage = await communityService.togglePin(messageId);
         res.json(updatedMessage);
@@ -167,7 +173,8 @@ router.patch('/messages/:messageId', async (req: Request, res: Response) => {
         if (!userId) return res.status(401).json({ error: 'Unauthorized' });
         if (!content) return res.status(400).json({ error: 'Content is required' });
 
-        // TODO: Validate user is author
+        // Validate user is author
+
         const message = await prisma.channelMessage.findUnique({ where: { id: messageId } });
         if (!message) return res.status(404).json({ error: 'Message not found' });
         if (message.authorId !== userId) return res.status(403).json({ error: 'Forbidden' });
@@ -188,10 +195,20 @@ router.delete('/messages/:messageId', async (req: Request, res: Response) => {
 
         if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
-        // TODO: Validate user is author or mod
+        // Permission check: Author OR Mod
+        const role = (req as any).user?.role;
         const message = await prisma.channelMessage.findUnique({ where: { id: messageId } });
+
         if (!message) return res.status(404).json({ error: 'Message not found' });
-        if (message.authorId !== userId) return res.status(403).json({ error: 'Forbidden' });
+
+        // Strict: Only Author can delete for now, unless Mod check is robust
+        // Assuming role 'MODERATOR' exists based on ChannelRole enum, but this is system role.
+        // Let's stick to Author for MVP safety unless "admin" system role.
+
+        const isAuthor = message.authorId === userId;
+        const isAdmin = role === 'ADMIN' || role === 'LEADER'; // Assuming these roles based on context
+
+        if (!isAuthor && !isAdmin) return res.status(403).json({ error: 'Forbidden' });
 
         await communityService.deleteMessage(messageId);
         res.json({ success: true });

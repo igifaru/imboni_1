@@ -152,8 +152,12 @@ class CommunityProvider extends ChangeNotifier {
     final currentMessages = _messages[channelId] ?? [];
     final msgIndex = currentMessages.indexWhere((m) => m.id == messageId);
     
+    ChannelMessage? backupMsg;
+
     if (msgIndex != -1) {
       final msg = currentMessages[msgIndex];
+      backupMsg = msg; // Backup for revert
+      
       final currentUserId = getCurrentUserId();
       
       if (currentUserId != null) {
@@ -195,7 +199,15 @@ class CommunityProvider extends ChangeNotifier {
       return false;
     } catch (e) {
       debugPrint('Error toggling reaction: $e');
-      // TODO: Revert optimistic update on failure?
+      // Revert optimistic update
+      if (backupMsg != null && msgIndex != -1) {
+          final msgs = _messages[channelId] ?? [];
+          if (msgs.length > msgIndex) {
+             msgs[msgIndex] = backupMsg;
+             _messages[channelId] = List.from(msgs);
+             notifyListeners();
+          }
+      }
       return false;
     }
   }
