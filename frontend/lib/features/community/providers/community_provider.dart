@@ -90,12 +90,13 @@ class CommunityProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> sendMessage(String channelId, String content) async {
+  Future<bool> sendMessage(String channelId, String content, {String? replyToId}) async {
     debugPrint('CommunityProvider: sendMessage called for channel=$channelId');
     try {
       final response = await _api.post('/community/messages', {
         'channelId': channelId,
         'content': content,
+        if (replyToId != null) 'replyToId': replyToId,
       });
       
       debugPrint('CommunityProvider: sendMessage response isSuccess=${response.isSuccess}, data=${response.data}');
@@ -199,28 +200,112 @@ class CommunityProvider extends ChangeNotifier {
     }
   }
 
-  /// Search members in a channel (Simple client-side search for now)
-  List<UserModel> searchChannelMembers(String channelId, String query) {
-    // if (query.isEmpty) return []; // Allow empty query to return all members
+  /// Toggle pin status of a message
+  Future<bool> togglePin(String channelId, String messageId) async {
+    // 1. Optimistic Update
+    final currentMessages = _messages[channelId] ?? [];
+    final msgIndex = currentMessages.indexWhere((m) => m.id == messageId);
     
-    final lowerQuery = query.toLowerCase();
-    
-    // For now, we collect diverse authors from loaded messages as we don't have a members API
-    // This is a "good enough" heuristic for active members
-    final messages = _messages[channelId] ?? [];
-    final Map<String, UserModel> knownMembers = {};
-    
-    for (var m in messages) {
-      if (m.author != null) {
-        knownMembers[m.authorId] = m.author!;
-      }
+    if (msgIndex != -1) {
+      final msg = currentMessages[msgIndex];
+      // Toggle local state
+      currentMessages[msgIndex] = msg.copyWith(isPinned: !msg.isPinned);
+      _messages[channelId] = List.from(currentMessages);
+      notifyListeners();
     }
-    
-    return knownMembers.values
-        .where((u) => 
-            (u.name?.toLowerCase().contains(lowerQuery) ?? false) ||
-            (u.email?.toLowerCase().contains(lowerQuery) ?? false) 
-        )
-        .toList();
+
+    try {
+      // 2. API Call
+      final response = await _api.post('/community/messages/$messageId/pin', {});
+
+      if (response.isSuccess && response.data != null) {
+        // 3. Update with server truth
+        final updatedMsg = ChannelMessage.fromJson(response.data);
+        if (msgIndex != -1) {
+          final msgs = _messages[channelId] ?? [];
+          if (msgs.length > msgIndex) {
+            msgs[msgIndex] = updatedMsg;
+            notifyListeners();
+          }
+        }
+        return true;
+      }
+      // Revert if failed (simple revert)
+      if (msgIndex != -1) {
+         final currentMessages = _messages[channelId] ?? [];
+         final msg = currentMessages[msgIndex];
+         currentMessages[msgIndex] = msg.copyWith(isPinned: !msg.isPinned);
+         _messages[channelId] = List.from(currentMessages);
+         notifyListeners();
+      }
+      return false;
+    } catch (e) {
+      debugPrint('Error toggling pin: $e');
+      // Revert on error
+      if (msgIndex != -1) {
+         final currentMessages = _messages[channelId] ?? [];
+         final msg = currentMessages[msgIndex];
+         currentMessages[msgIndex] = msg.copyWith(isPinned: !msg.isPinned);
+         _messages[channelId] = List.from(currentMessages);
+         notifyListeners();
+      }
+      return false;
+    }
+  }
+
+  // Member Search State
+  List<UserModel> _memberSearchResults = [];
+  bool _isSearchingMembers = false;
+  
+  List<UserModel> get memberSearchResults => _memberSearchResults;
+  bool get isSearchingMembers => _isSearchingMembers;
+
+  /// Search members in a channel via API
+  Future<void> searchMembers(String channelId, String query) async {
+    if (query.isEmpty) {
+      _memberSearchResults = [];
+      notifyListeners();
+      return;
+    }
+
+    _isSearchingMembers = true;
+    notifyListeners();
+
+    try {
+      final response = await _api.get('/community/channels/$channelId/members', queryParameters: {'query': query});
+      if (response.isSuccess && response.data != null) {
+        final List data = response.data;
+        _memberSearchResults = data.map((e) => UserModel.fromJson(e)).toList();
+      } else {
+        _memberSearchResults = [];
+      }
+    } catch (e) {
+      debugPrint('Error searching members: $e');
+      _memberSearchResults = [];
+    } finally {
+      _isSearchingMembers = false;
+      notifyListeners();
+    }
+  }
+
+  /// Find a member by name (for tapping mentions)
+  Future<UserModel?> findMemberByName(String channelId, String name) async {
+    try {
+      final response = await _api.get('/community/channels/$channelId/members', queryParameters: {'query': name});
+      if (response.isSuccess && response.data != null) {
+        final List data = response.data;
+        if (data.isNotEmpty) {
+           // Prefer exact match
+           final exact = data.firstWhere(
+             (e) => (e['name'] as String?)?.toLowerCase() == name.toLowerCase(), 
+             orElse: () => data.first
+           );
+           return UserModel.fromJson(exact);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error finding member by name: $e');
+    }
+    return null;
   }
 }

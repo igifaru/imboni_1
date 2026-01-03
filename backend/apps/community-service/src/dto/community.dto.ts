@@ -35,6 +35,10 @@ export class CreateMessageDto {
     @IsBoolean()
     @IsOptional()
     isOfficial?: boolean;
+
+    @IsString()
+    @IsOptional()
+    replyToId?: string;
 }
 
 export class JoinChannelDto {
@@ -52,6 +56,7 @@ import { z } from 'zod';
 export const CreateMessageSchema = z.object({
     content: z.string().min(1),
     channelId: z.string().min(1), // Changed from uuid() to accept CUIDs
-    isOfficial: z.boolean().optional()
+    isOfficial: z.boolean().optional(),
+    replyToId: z.string().optional()
 });
 

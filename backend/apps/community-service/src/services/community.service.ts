@@ -60,6 +60,18 @@ export class CommunityService {
                             }
                         }
                     }
+                },
+                replyTo: {
+                    select: {
+                        id: true,
+                        content: true,
+                        author: {
+                            select: {
+                                id: true,
+                                name: true
+                            }
+                        }
+                    }
                 }
             }
         });
@@ -75,10 +87,23 @@ export class CommunityService {
                 channelId: dto.channelId,
                 authorId: dto.authorId,
                 isOfficial: dto.isOfficial || false,
+                replyToId: dto.replyToId
             },
             include: {
                 author: {
                     select: { id: true, name: true, role: true, profilePicture: true }
+                },
+                replyTo: {
+                    select: {
+                        id: true,
+                        content: true,
+                        author: {
+                            select: {
+                                id: true,
+                                name: true
+                            }
+                        }
+                    }
                 }
             }
         });
@@ -361,6 +386,35 @@ export class CommunityService {
     }
 
     /**
+     * Search members in a channel
+     */
+    async searchChannelMembers(channelId: string, query: string) {
+        return prisma.channelMembership.findMany({
+            where: {
+                channelId,
+                user: {
+                    OR: [
+                        { name: { contains: query, mode: 'insensitive' } },
+                        { email: { contains: query, mode: 'insensitive' } }
+                    ]
+                }
+            },
+            take: 20,
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        profilePicture: true,
+                        role: true
+                    }
+                }
+            }
+        });
+    }
+
+    /**
      * Toggle a reaction on a message
      */
     async toggleReaction(userId: string, messageId: string, emoji: string) {
@@ -408,6 +462,62 @@ export class CommunityService {
                                 name: true,
                                 profilePicture: true,
                                 role: true
+                            }
+                        }
+                    }
+                },
+                replyTo: {
+                    select: {
+                        id: true,
+                        content: true,
+                        author: {
+                            select: {
+                                id: true,
+                                name: true
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    /**
+     * Toggle pin status of a message
+     */
+    async togglePin(messageId: string) {
+        const message = await prisma.channelMessage.findUnique({ where: { id: messageId } });
+        if (!message) throw new Error('Message not found');
+
+        return prisma.channelMessage.update({
+            where: { id: messageId },
+            data: { isPinned: !message.isPinned },
+            include: {
+                author: {
+                    select: { id: true, name: true, role: true, profilePicture: true }
+                },
+                reactions: {
+                    select: {
+                        emoji: true,
+                        userId: true,
+                        user: {
+                            select: {
+                                id: true,
+                                name: true,
+                                profilePicture: true,
+                                role: true
+                            }
+                        }
+                    }
+                },
+                replyTo: {
+                    select: {
+                        id: true,
+                        content: true,
+                        author: {
+                            select: {
+                                id: true,
+                                name: true
                             }
                         }
                     }

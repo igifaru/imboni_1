@@ -66,6 +66,22 @@ router.get('/channels/:channelId/messages', async (req: Request, res: Response) 
     }
 });
 
+// GET /api/community/channels/:channelId/members
+router.get('/channels/:channelId/members', async (req: Request, res: Response) => {
+    try {
+        const { channelId } = req.params;
+        const query = req.query.query as string || '';
+
+        const members = await communityService.searchChannelMembers(channelId, query);
+        // Transform to return user objects directly
+        const users = members.map(m => m.user);
+        res.json(users);
+    } catch (error) {
+        logger.error('Error searching members', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
 // POST /api/community/messages
 router.post('/messages', async (req: Request, res: Response) => {
     try {
@@ -120,6 +136,23 @@ router.post('/messages/:messageId/react', async (req: Request, res: Response) =>
         res.json(updatedMessage);
     } catch (error) {
         logger.error('Error toggling reaction', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// POST /api/community/messages/:messageId/pin
+router.post('/messages/:messageId/pin', async (req: Request, res: Response) => {
+    try {
+        const { messageId } = req.params;
+        const userId = (req as any).user?.userId;
+
+        if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+        // TODO: Add permission check (Leader/Admin only)
+
+        const updatedMessage = await communityService.togglePin(messageId);
+        res.json(updatedMessage);
+    } catch (error) {
+        logger.error('Error toggling pin', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });

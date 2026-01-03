@@ -90,6 +90,7 @@ class ChannelMessage {
   final dynamic attachments;
   final List<MessageReaction> reactions;
   final String? replyToId;
+  final ReplyMessage? replyTo;
   final bool isPinned;
 
   const ChannelMessage({
@@ -103,6 +104,7 @@ class ChannelMessage {
     this.attachments,
     this.reactions = const [],
     this.replyToId,
+    this.replyTo,
     this.isPinned = false,
   });
 
@@ -120,6 +122,7 @@ class ChannelMessage {
           ?.map((e) => MessageReaction.fromJson(e))
           .toList() ?? [],
       replyToId: json['replyToId'] as String?,
+      replyTo: json['replyTo'] != null ? ReplyMessage.fromJson(json['replyTo']) : null,
       isPinned: json['isPinned'] as bool? ?? false,
     );
   }
@@ -127,6 +130,7 @@ class ChannelMessage {
   // Create a copyWith method for optimistic updates
   ChannelMessage copyWith({
     List<MessageReaction>? reactions,
+    bool? isPinned,
   }) {
     return ChannelMessage(
       id: id,
@@ -138,8 +142,30 @@ class ChannelMessage {
       createdAt: createdAt,
       attachments: attachments,
       reactions: reactions ?? this.reactions,
-      replyToId: replyToId,
-      isPinned: isPinned,
+      isPinned: isPinned ?? this.isPinned,
+    );
+  }
+}
+
+class ReplyMessage {
+  final String id;
+  final String content;
+  final String authorName;
+  final String? authorId;
+
+  const ReplyMessage({
+    required this.id,
+    required this.content,
+    required this.authorName,
+    this.authorId,
+  });
+
+  factory ReplyMessage.fromJson(Map<String, dynamic> json) {
+    return ReplyMessage(
+      id: json['id'] as String,
+      content: json['content'] as String,
+      authorName: json['author']?['name'] as String? ?? 'Unknown',
+      authorId: json['author']?['id'] as String?,
     );
   }
 }
