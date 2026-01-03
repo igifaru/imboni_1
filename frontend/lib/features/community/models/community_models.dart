@@ -143,6 +143,8 @@ class ChannelMessage {
       attachments: attachments,
       reactions: reactions ?? this.reactions,
       isPinned: isPinned ?? this.isPinned,
+      replyToId: replyToId,
+      replyTo: replyTo,
     );
   }
 }
