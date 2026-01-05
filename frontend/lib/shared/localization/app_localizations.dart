@@ -326,6 +326,10 @@ class AppLocalizations {
   String get members => get('members');
   String get general => get('general');
 
+  // PFTCV - Public Fund Transparency
+  String get publicFunds => get('public_funds');
+  String get publicFundsSubtitle => get('public_funds_subtitle');
+
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
@@ -609,6 +613,9 @@ const Map<String, Map<String, String>> _translations = {
     'type_message': 'Andika ubutumwa...',
     'members': 'Abanyamuryango',
     'general': 'Rusange',
+    // PFTCV RW
+    'public_funds': 'Imari ya Leta',
+    'public_funds_subtitle': 'Genzura imishinga ya Leta',
   },
   'en': {
     'app_name': 'Imboni',
@@ -881,6 +888,9 @@ const Map<String, Map<String, String>> _translations = {
     'save_tracking_hint': 'Save this number to track your case.',
     'ok': 'OK',
     'failed': 'Failed',
+    // PFTCV EN
+    'public_funds': 'Public Funds',
+    'public_funds_subtitle': 'Verify government projects',
   },
   'fr': {
     'app_name': 'Imboni',

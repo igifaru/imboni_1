@@ -10,6 +10,7 @@ import '../profile/profile_screen.dart';
 import '../my_cases/my_cases_screen.dart';
 import '../../leader/dashboard/widgets/professional_case_card.dart';
 import '../../features/community/screens/community_home_screen.dart';
+import '../../features/pftcv/pftcv.dart';
 
 /// Citizen Home Screen - Professional design with theme support
 class CitizenHomeScreen extends StatefulWidget {
@@ -333,6 +334,8 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
       const SizedBox(height: 12),
       Row(children: [
         Expanded(child: _QuickActionCard(icon: Icons.people_outline, label: 'Community', subtitle: 'Connect with neighbors', color: ImboniColors.categorySocial, theme: theme, onTap: () => _navigateTo(const CommunityHomeScreen()))),
+        const SizedBox(width: 12),
+        Expanded(child: _QuickActionCard(icon: Icons.account_balance, label: l10n.publicFunds, subtitle: l10n.publicFundsSubtitle, color: Colors.teal, theme: theme, onTap: () => _navigateTo(const PftcvHomeScreen()))),
       ]),
     ]);
   }
@@ -348,6 +351,8 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
       Expanded(child: _QuickActionCard(icon: Icons.folder_copy_outlined, label: l10n.myCasesTitle, subtitle: l10n.myCasesSubtitle, color: ImboniColors.info, theme: theme, onTap: () => _navigateTo(const MyCasesScreen()))),
       const SizedBox(width: 16),
       Expanded(child: _QuickActionCard(icon: Icons.people_outline, label: 'Community', subtitle: 'Connect with neighbors', color: ImboniColors.categorySocial, theme: theme, onTap: () => _navigateTo(const CommunityHomeScreen()))),
+      const SizedBox(width: 16),
+      Expanded(child: _QuickActionCard(icon: Icons.account_balance, label: l10n.publicFunds, subtitle: l10n.publicFundsSubtitle, color: Colors.teal, theme: theme, onTap: () => _navigateTo(const PftcvHomeScreen()))),
     ]);
   }
 

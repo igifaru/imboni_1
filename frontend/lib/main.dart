@@ -11,6 +11,7 @@ import 'package:imboni/citizen/home/citizen_home_screen.dart';
 import 'package:imboni/leader/dashboard/leader_dashboard_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:imboni/features/community/providers/community_provider.dart';
+import 'package:imboni/features/pftcv/providers/pftcv_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -68,6 +69,7 @@ class _ImboniAppState extends State<ImboniApp> {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => CommunityProvider()),
+        ChangeNotifierProvider(create: (_) => PftcvProvider()),
       ],
       child: MaterialApp(
         title: 'Imboni',

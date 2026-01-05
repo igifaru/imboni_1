@@ -18,6 +18,7 @@ import '../case_management/case_details_screen.dart';
 import '../../shared/services/auth_service.dart';
 
 import '../../features/community/screens/community_home_screen.dart';
+import '../../features/pftcv/pftcv.dart';
 
 /// Leader Dashboard Screen - Professional responsive design
 class LeaderDashboardScreen extends StatefulWidget {
@@ -66,7 +67,8 @@ class _LeaderDashboardScreenState extends State<LeaderDashboardScreen> {
 
     final screens = [
       _DashboardHome(currentLevel: _currentLevel),
-      const CommunityHomeScreen(), // New Community Tab 
+      const CommunityHomeScreen(), // Community Tab 
+      const PftcvHomeScreen(), // PFTCV Tab
       const AssignedCasesScreen(),
       const EscalationAlertsScreen(),
       const PerformanceScreen(),
@@ -88,7 +90,8 @@ class _LeaderDashboardScreenState extends State<LeaderDashboardScreen> {
       onDestinationSelected: (i) => setState(() => _currentIndex = i),
       destinations: [
         NavigationDestination(icon: const Icon(Icons.dashboard_outlined), selectedIcon: const Icon(Icons.dashboard), label: AppLocalizations.of(context).dashboard),
-        NavigationDestination(icon: const Icon(Icons.people_outline), selectedIcon: const Icon(Icons.people), label: AppLocalizations.of(context).communityTitle), // New Mobile Nav Item
+        NavigationDestination(icon: const Icon(Icons.people_outline), selectedIcon: const Icon(Icons.people), label: AppLocalizations.of(context).communityTitle),
+        NavigationDestination(icon: const Icon(Icons.account_balance_outlined), selectedIcon: const Icon(Icons.account_balance), label: AppLocalizations.of(context).publicFunds),
         NavigationDestination(icon: const Icon(Icons.folder_outlined), selectedIcon: const Icon(Icons.folder), label: AppLocalizations.of(context).myCases),
         NavigationDestination(icon: const Icon(Icons.warning_amber_outlined), selectedIcon: const Icon(Icons.warning_amber), label: AppLocalizations.of(context).alerts),
         NavigationDestination(icon: const Icon(Icons.analytics_outlined), selectedIcon: const Icon(Icons.analytics), label: AppLocalizations.of(context).performance),
@@ -147,11 +150,12 @@ class _LeaderDashboardScreenState extends State<LeaderDashboardScreen> {
   List<Widget> _buildNavItems(ThemeData theme, bool isDark, bool showRegister, AppLocalizations l10n) {
     final items = [
       (Icons.dashboard, l10n.dashboard, 0),
-      (Icons.people_outline, l10n.communityTitle, 1), // New Desktop Nav Item
-      (Icons.folder, l10n.myCases, 2),
-      (Icons.warning_amber, l10n.alerts, 3),
-      (Icons.analytics, l10n.performance, 4),
-      if (showRegister) (Icons.person_add, l10n.registerNewLeader, 5),
+      (Icons.people_outline, l10n.communityTitle, 1),
+      (Icons.account_balance, l10n.publicFunds, 2),
+      (Icons.folder, l10n.myCases, 3),
+      (Icons.warning_amber, l10n.alerts, 4),
+      (Icons.analytics, l10n.performance, 5),
+      if (showRegister) (Icons.person_add, l10n.registerNewLeader, 6),
     ];
 
     return items.map((item) {
