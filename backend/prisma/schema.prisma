@@ -20,6 +20,7 @@ model AdministrativeUnit {
   cases             Case[]
   communityChannels CommunityChannel[]
   leaderAssignments LeaderAssignment[]
+  projects          Project[]
 
   @@map("administrative_units")
 }
@@ -45,6 +46,7 @@ model User {
   notifications      Notification[]
   messageReactions   MessageReaction[]
   messageReadReceipts MessageReadReceipt[]
+  verifications      CitizenVerification[]
 
   @@map("users")
 }
@@ -377,4 +379,120 @@ enum ChannelType {
 enum ChannelRole {
   MEMBER
   MODERATOR
+}
+
+// ============================================
+// PFTCV - Public Fund Transparency & Citizen Verification
+// ============================================
+
+model Project {
+  id                   String               @id @default(cuid())
+  projectCode          String               @unique @map("project_code")
+  name                 String
+  sector               ProjectSector
+  description          String?
+  administrativeUnitId String               @map("administrative_unit_id")
+  gpsLatitude          Float?               @map("gps_latitude")
+  gpsLongitude         Float?               @map("gps_longitude")
+  approvedBudget       Float                @map("approved_budget")
+  fundingSource        String?              @map("funding_source")
+  implementingAgency   String?              @map("implementing_agency")
+  expectedOutputs      String?              @map("expected_outputs")
+  startDate            DateTime?            @map("start_date")
+  endDate              DateTime?            @map("end_date")
+  status               ProjectStatus        @default(PLANNED)
+  riskLevel            RiskLevel            @default(NORMAL) @map("risk_level")
+  riskScore            Int                  @default(0) @map("risk_score")
+  verifiedPercentage   Int                  @default(0) @map("verified_percentage")
+  createdAt            DateTime             @default(now()) @map("created_at")
+  updatedAt            DateTime             @updatedAt @map("updated_at")
+  administrativeUnit   AdministrativeUnit   @relation(fields: [administrativeUnitId], references: [id])
+  fundReleases         FundRelease[]
+  verifications        CitizenVerification[]
+
+  @@index([sector])
+  @@index([status])
+  @@index([riskLevel])
+  @@map("projects")
+}
+
+model FundRelease {
+  id            String   @id @default(cuid())
+  projectId     String   @map("project_id")
+  amount        Float
+  releaseDate   DateTime @map("release_date")
+  releaseRef    String?  @map("release_ref")
+  description   String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("fund_releases")
+}
+
+model CitizenVerification {
+  id                String              @id @default(cuid())
+  projectId         String              @map("project_id")
+  verifierId        String?             @map("verifier_id")
+  isAnonymous       Boolean             @default(false) @map("is_anonymous")
+  deliveryStatus    DeliveryStatus      @map("delivery_status")
+  completionPercent Int                 @default(0) @map("completion_percent")
+  qualityRating     Int?                @map("quality_rating")
+  comment           String?
+  gpsLatitude       Float?              @map("gps_latitude")
+  gpsLongitude      Float?              @map("gps_longitude")
+  verifiedAt        DateTime            @default(now()) @map("verified_at")
+  project           Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  verifier          User?               @relation(fields: [verifierId], references: [id])
+  evidence          VerificationEvidence[]
+
+  @@index([projectId])
+  @@map("citizen_verifications")
+}
+
+model VerificationEvidence {
+  id             String              @id @default(cuid())
+  verificationId String              @map("verification_id")
+  type           EvidenceType
+  url            String
+  fileName       String              @map("file_name")
+  fileSize       Int                 @map("file_size")
+  mimeType       String              @map("mime_type")
+  createdAt      DateTime            @default(now()) @map("created_at")
+  verification   CitizenVerification @relation(fields: [verificationId], references: [id], onDelete: Cascade)
+
+  @@index([verificationId])
+  @@map("verification_evidence")
+}
+
+enum ProjectSector {
+  ROADS
+  HEALTH
+  EDUCATION
+  WATER
+  SOCIAL_AID
+  AGRICULTURE
+  ENERGY
+  OTHER
+}
+
+enum ProjectStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  SUSPENDED
+  CANCELLED
+}
+
+enum DeliveryStatus {
+  FULLY_DELIVERED
+  PARTIALLY_DELIVERED
+  NOT_DELIVERED
+  NOT_STARTED
+}
+
+enum RiskLevel {
+  NORMAL
+  NEEDS_REVIEW
+  HIGH_RISK
 }
