@@ -15,6 +15,8 @@ class PftcvService {
     String? status,
     String? riskLevel,
     String? locationId,
+    String? locationName,
+    String? locationLevel,
     String? search,
   }) async {
     final queryParams = <String, String>{
@@ -24,6 +26,8 @@ class PftcvService {
       if (status != null) 'status': status,
       if (riskLevel != null) 'riskLevel': riskLevel,
       if (locationId != null) 'locationId': locationId,
+      if (locationName != null) 'locationName': locationName,
+      if (locationLevel != null) 'locationLevel': locationLevel,
       if (search != null && search.isNotEmpty) 'search': search,
     };
 
@@ -83,9 +87,15 @@ class PftcvService {
   }
 
   /// Get dashboard statistics
-  Future<PftcvStats?> getStats({String? locationId}) async {
+  Future<PftcvStats?> getStats({
+    String? locationId,
+    String? locationName,
+    String? locationLevel,
+  }) async {
     final queryParams = <String, String>{
       if (locationId != null) 'locationId': locationId,
+      if (locationName != null) 'locationName': locationName,
+      if (locationLevel != null) 'locationLevel': locationLevel,
     };
 
     final response = await _apiClient.get<dynamic>('/projects/stats', queryParameters: queryParams);

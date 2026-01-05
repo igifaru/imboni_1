@@ -29,7 +29,7 @@ class _PftcvHomeScreenState extends State<PftcvHomeScreen> {
       if (lastIndex >= 0) {
         setState(() => _selectedLevelIndex = lastIndex);
         final loc = provider.userHierarchy[lastIndex];
-        provider.selectLocation(loc.level == 'ALL' ? null : loc.unitId, loc.name);
+        provider.selectLocation(loc);
       } else {
         provider.fetchProjects();
         provider.fetchStats();
@@ -175,7 +175,7 @@ class _PftcvHomeScreenState extends State<PftcvHomeScreen> {
         trailing: Icon(Icons.chevron_right, color: isSelected ? ImboniColors.primary : Colors.grey, size: 20),
         onTap: () {
           setState(() => _selectedLevelIndex = index);
-          context.read<PftcvProvider>().selectLocation(loc.unitId, loc.name);
+          context.read<PftcvProvider>().selectLocation(loc);
           if (!isWide) {
             Navigator.push(context, MaterialPageRoute(builder: (_) => _ProjectListPage(levelName: loc.name)));
           }

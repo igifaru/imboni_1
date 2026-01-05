@@ -15,6 +15,8 @@ interface ProjectFilters {
     status?: string;
     riskLevel?: string;
     locationId?: string;
+    locationName?: string;
+    locationLevel?: string;
     search?: string;
 }
 
@@ -50,7 +52,31 @@ export class PftcvService {
         if (sector) where.sector = sector;
         if (status) where.status = status;
         if (riskLevel) where.riskLevel = riskLevel;
-        if (locationId) where.administrativeUnitId = locationId;
+        if (locationId) {
+            const descendantIds = await this.getDescendantUnitIds(locationId);
+            where.administrativeUnitId = { in: descendantIds };
+        } else if (filters.locationName && filters.locationLevel) {
+            console.log(`[PFTCV] Filtering by Name: ${filters.locationName}, Level: ${filters.locationLevel}`);
+            // Find unit by name and level
+            const unit = await prisma.administrativeUnit.findFirst({
+                where: {
+                    name: { equals: filters.locationName, mode: 'insensitive' },
+                    level: filters.locationLevel as any
+                }
+            });
+
+            console.log(`[PFTCV] Found Unit: ${unit?.name} (${unit?.id})`);
+
+            if (unit) {
+                const descendantIds = await this.getDescendantUnitIds(unit.id);
+                where.administrativeUnitId = { in: descendantIds };
+                console.log(`[PFTCV] Filter IDs count: ${descendantIds.length}`);
+            } else {
+                console.log('[PFTCV] Unit not found, forcing empty result');
+                where.administrativeUnitId = 'INVALID_LOC_ID';
+            }
+        }
+
         if (search) {
             where.OR = [
                 { name: { contains: search, mode: 'insensitive' } },
@@ -244,8 +270,28 @@ export class PftcvService {
     /**
      * Get dashboard statistics
      */
-    async getStats(locationId?: string) {
-        const where: any = locationId ? { administrativeUnitId: locationId } : {};
+    async getStats(locationId?: string, locationName?: string, locationLevel?: string) {
+        const where: any = {};
+
+        if (locationId) {
+            const descendantIds = await this.getDescendantUnitIds(locationId);
+            where.administrativeUnitId = { in: descendantIds };
+        } else if (locationName && locationLevel) {
+            // Find unit by name and level
+            const unit = await prisma.administrativeUnit.findFirst({
+                where: {
+                    name: { equals: locationName, mode: 'insensitive' },
+                    level: locationLevel as any
+                }
+            });
+
+            if (unit) {
+                const descendantIds = await this.getDescendantUnitIds(unit.id);
+                where.administrativeUnitId = { in: descendantIds };
+            } else {
+                where.administrativeUnitId = 'INVALID_LOC_ID';
+            }
+        }
 
         const [totalProjects, byStatus, byRisk, bySector, recentVerifications] = await Promise.all([
             prisma.project.count({ where }),
@@ -315,8 +361,25 @@ export class PftcvService {
             }
         });
 
-        logger.info('Fund release added', { projectId: data.projectId, amount: data.amount });
         return release;
+    }
+
+    /**
+     * Helper to get all descendant unit IDs (recursive)
+     */
+    private async getDescendantUnitIds(unitId: string): Promise<string[]> {
+        // BFS or simple recursion
+        const children = await prisma.administrativeUnit.findMany({
+            where: { parentId: unitId },
+            select: { id: true }
+        });
+
+        let ids = [unitId];
+        for (const child of children) {
+            const subIds = await this.getDescendantUnitIds(child.id);
+            ids = [...ids, ...subIds];
+        }
+        return ids;
     }
 }
 

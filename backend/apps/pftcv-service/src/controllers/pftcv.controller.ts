@@ -19,10 +19,12 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         const status = req.query.status as string;
         const riskLevel = req.query.riskLevel as string;
         const locationId = req.query.locationId as string;
+        const locationName = req.query.locationName as string;
+        const locationLevel = req.query.locationLevel as string;
         const search = req.query.search as string;
 
         const result = await pftcvService.getProjects({
-            page, limit, sector, status, riskLevel, locationId, search
+            page, limit, sector, status, riskLevel, locationId, locationName, locationLevel, search
         });
 
         res.json({ success: true, data: result.projects, meta: { total: result.total, page, limit } });
@@ -38,7 +40,9 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 router.get('/stats', async (req: Request, res: Response, next: NextFunction) => {
     try {
         const locationId = req.query.locationId as string;
-        const result = await pftcvService.getStats(locationId);
+        const locationName = req.query.locationName as string;
+        const locationLevel = req.query.locationLevel as string;
+        const result = await pftcvService.getStats(locationId, locationName, locationLevel);
         res.json({ success: true, data: result });
     } catch (error) {
         logger.error('Failed to fetch stats', error);
