@@ -260,10 +260,10 @@ class _PftcvHomeScreenState extends State<PftcvHomeScreen> {
         return GridView.builder(
           padding: const EdgeInsets.all(16),
           gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: 400,
+            maxCrossAxisExtent: 600,
             mainAxisSpacing: 16,
             crossAxisSpacing: 16,
-            childAspectRatio: 1.4,
+            childAspectRatio: 1.6,
           ),
           itemCount: provider.projects.length,
           itemBuilder: (context, index) {
