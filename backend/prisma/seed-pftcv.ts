@@ -3,7 +3,9 @@
  */
 import { prisma } from '../libs/database/prisma.service';
 
-async function seedPftcvData() {
+import { hash } from 'bcryptjs';
+
+export async function seedPftcvData() {
     console.log('🌱 Seeding PFTCV sample data...');
 
     // First, get some administrative units
@@ -13,9 +15,48 @@ async function seedPftcvData() {
     });
 
     if (units.length === 0) {
-        console.log('⚠️ No administrative units found. Please seed base data first.');
-        return;
+        // If no units, let's create a dummy district for testing
+        const district = await prisma.administrativeUnit.create({
+            data: {
+                name: 'Burera',
+                level: 'DISTRICT',
+                code: 'BURERA_TEST',
+            }
+        });
+        units.push(district);
+        console.log('⚠️ Created test district Burera');
     }
+
+    // 1. Create a Leader User if not exists
+    const leaderEmail = 'leader@imboni.rw';
+    const leaderPassword = await hash('leader123', 10);
+
+    const leaderUser = await prisma.user.upsert({
+        where: { email: leaderEmail },
+        update: {},
+        create: {
+            email: leaderEmail,
+            name: 'Jean Claude (Leader)',
+            phone: '0788123456',
+            password: leaderPassword,
+            role: 'LEADER',
+            status: 'ACTIVE',
+        }
+    });
+    console.log(`✅ Leader user ensured: ${leaderEmail}`);
+
+    // 2. Assign Leader to the first unit (e.g. Burera)
+    const targetUnit = units[0];
+    await prisma.leaderAssignment.create({
+        data: {
+            userId: leaderUser.id,
+            administrativeUnitId: targetUnit.id,
+            positionTitle: 'Mayor',
+            startDate: new Date(),
+            isActive: true
+        }
+    }).catch(() => console.log('ℹ️ Leader already assigned'));
+
 
     const sampleProjects = [
         {

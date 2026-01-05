@@ -32,7 +32,12 @@ class _VerificationScreenState extends State<VerificationScreen> {
     try {
       final result = await pftcvService.submitVerification(
         projectId: widget.project.id,
-        deliveryStatus: _selectedStatus.name.toUpperCase(),
+        deliveryStatus: switch (_selectedStatus) {
+          DeliveryStatus.fullyDelivered => 'FULLY_DELIVERED',
+          DeliveryStatus.partiallyDelivered => 'PARTIALLY_DELIVERED',
+          DeliveryStatus.notDelivered => 'NOT_DELIVERED',
+          DeliveryStatus.notStarted => 'NOT_STARTED',
+        },
         completionPercent: _completionPercent,
         qualityRating: _qualityRating,
         comment: _commentController.text,

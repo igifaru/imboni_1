@@ -61,5 +61,9 @@ main()
         process.exit(1);
     })
     .finally(async () => {
+        // Run PFTCV seeds
+        const { seedPftcvData } = require('./seed-pftcv');
+        await seedPftcvData();
+
         await prisma.$disconnect();
     });
