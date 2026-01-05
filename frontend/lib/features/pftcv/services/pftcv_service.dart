@@ -1,4 +1,4 @@
-/// PFTCV Service - API communication for Public Fund Transparency
+// PFTCV Service - API communication for Public Fund Transparency
 import '../../../shared/services/api_client.dart';
 import '../models/pftcv_models.dart';
 
@@ -7,7 +7,7 @@ class PftcvService {
 
   PftcvService({ApiClient? client}) : _apiClient = client ?? apiClient;
 
-  /// Get list of projects with optional filters
+  // Get list of projects with optional filters
   Future<List<Project>> getProjects({
     int page = 1,
     int limit = 20,
@@ -39,7 +39,7 @@ class PftcvService {
     return [];
   }
 
-  /// Get single project details
+  // Get single project details
   Future<Project?> getProjectById(String id) async {
     final response = await _apiClient.get<dynamic>('/projects/$id');
     if (response.isSuccess && response.data != null) {
@@ -48,7 +48,7 @@ class PftcvService {
     return null;
   }
 
-  /// Submit citizen verification
+  // Submit citizen verification
   Future<CitizenVerification?> submitVerification({
     required String projectId,
     required String deliveryStatus,
@@ -76,7 +76,7 @@ class PftcvService {
     return null;
   }
 
-  /// Get verifications for a project
+  // Get verifications for a project
   Future<List<CitizenVerification>> getProjectVerifications(String projectId) async {
     final response = await _apiClient.get<dynamic>('/projects/$projectId/verifications');
     if (response.isSuccess && response.data != null) {
@@ -86,7 +86,7 @@ class PftcvService {
     return [];
   }
 
-  /// Get dashboard statistics
+  // Get dashboard statistics
   Future<PftcvStats?> getStats({
     String? locationId,
     String? locationName,

@@ -1,4 +1,4 @@
-/// PFTCV Home Screen - Similar to Community with hierarchical location navigation
+// PFTCV Home Screen - Similar to Community with hierarchical location navigation
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/theme/colors.dart';
@@ -57,7 +57,7 @@ class _PftcvHomeScreenState extends State<PftcvHomeScreen> {
     );
   }
 
-  /// Wide screen layout with left panel (units) and right panel (content)
+  // Wide screen layout with left panel (units) and right panel (content)
   Widget _buildWideLayout(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -89,7 +89,7 @@ class _PftcvHomeScreenState extends State<PftcvHomeScreen> {
     );
   }
 
-  /// Mobile layout
+  // Mobile layout
   Widget _buildMobileLayout(BuildContext context) {
     final theme = Theme.of(context);
     return Column(
@@ -259,11 +259,11 @@ class _PftcvHomeScreenState extends State<PftcvHomeScreen> {
 
         return LayoutBuilder(
           builder: (context, constraints) {
-            final aspectRatio = 1.0;
+            const aspectRatio = 1.0;
 
             return GridView.builder(
               padding: const EdgeInsets.all(16),
-              gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                 maxCrossAxisExtent: 600,
                 mainAxisSpacing: 16,
                 crossAxisSpacing: 16,
@@ -289,7 +289,7 @@ class _PftcvHomeScreenState extends State<PftcvHomeScreen> {
   }
 }
 
-/// Separate page for mobile project list
+// Separate page for mobile project list
 class _ProjectListPage extends StatelessWidget {
   final String levelName;
   const _ProjectListPage({required this.levelName});
@@ -310,11 +310,11 @@ class _ProjectListPage extends StatelessWidget {
           }
           return LayoutBuilder(
             builder: (context, constraints) {
-              final aspectRatio = 1.0;
+              const aspectRatio = 1.0;
               
               return GridView.builder(
                 padding: const EdgeInsets.all(16),
-                gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                   maxCrossAxisExtent: 600,
                   mainAxisSpacing: 16,
                   crossAxisSpacing: 16,
@@ -337,7 +337,7 @@ class _ProjectListPage extends StatelessWidget {
   }
 }
 
-/// Search delegate for projects
+// Search delegate for projects
 class _ProjectSearchDelegate extends SearchDelegate<Project?> {
   final PftcvProvider provider;
   _ProjectSearchDelegate(this.provider);

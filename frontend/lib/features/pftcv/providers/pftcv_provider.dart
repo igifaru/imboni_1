@@ -1,12 +1,11 @@
-/// PFTCV Provider - State management for Public Fund Transparency
+// PFTCV Provider - State management for Public Fund Transparency
 import 'package:flutter/foundation.dart';
-import '../../../shared/services/api_client.dart';
 import '../../../shared/services/auth_service.dart';
 import '../models/pftcv_models.dart';
 import '../services/pftcv_service.dart';
 
 class PftcvProvider extends ChangeNotifier {
-  final ApiClient _api = apiClient;
+  /* final ApiClient _api = apiClient; */
 
   List<Project> _projects = [];
   PftcvStats? _stats;

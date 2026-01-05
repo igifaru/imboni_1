@@ -1,4 +1,4 @@
-/// Project List Screen - Public Fund Transparency
+// Project List Screen - Public Fund Transparency
 import 'package:flutter/material.dart';
 import '../models/pftcv_models.dart';
 import '../services/pftcv_service.dart';

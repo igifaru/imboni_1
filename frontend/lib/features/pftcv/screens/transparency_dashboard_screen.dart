@@ -1,4 +1,4 @@
-/// Transparency Dashboard Screen
+// Transparency Dashboard Screen
 import 'package:flutter/material.dart';
 import '../models/pftcv_models.dart';
 import '../services/pftcv_service.dart';

@@ -168,10 +168,10 @@ class _RwandaMapWidgetState extends State<RwandaMapWidget> {
       if (parentName != null) {
           String? pLevel;
           // Determine parent level
-          if (level == 'village') pLevel = 'cell';
-          else if (level == 'cell') pLevel = 'sector';
-          else if (level == 'sector') pLevel = 'district';
-          else if (level == 'district') pLevel = 'province';
+          if (level == 'village') { pLevel = 'cell'; }
+          else if (level == 'cell') { pLevel = 'sector'; }
+          else if (level == 'sector') { pLevel = 'district'; }
+          else if (level == 'district') { pLevel = 'province'; }
           
           if (pLevel != null) {
              // Recursive lookup for parent (without parent context to avoid infinite loop)

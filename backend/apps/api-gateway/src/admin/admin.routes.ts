@@ -72,7 +72,7 @@ function getDataAtUnitPath(path: any[], data: any) {
 
     // Follow the path
     for (const unit of path) {
-        let key = provinceMapping[unit.name] || unit.name;
+        const key = provinceMapping[unit.name] || unit.name;
 
         if (current[key]) {
             current = current[key];

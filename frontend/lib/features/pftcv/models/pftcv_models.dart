@@ -1,4 +1,4 @@
-/// PFTCV Models - Public Fund Transparency & Citizen Verification
+// PFTCV Models - Public Fund Transparency & Citizen Verification
 import 'package:flutter/material.dart';
 
 enum ProjectSector {

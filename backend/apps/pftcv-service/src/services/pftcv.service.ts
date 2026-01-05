@@ -1,10 +1,11 @@
 /**
  * PFTCV Service - Business Logic
+ * Ref: Type definitions validated
  */
 import { prisma } from '../../../../libs/database/prisma.service';
 import { publishEvent, CHANNELS } from '../../../../libs/messaging/messaging.service';
 import { createServiceLogger } from '../../../../libs/logging/logger.service';
-import { ProjectSector, ProjectStatus, DeliveryStatus, RiskLevel } from '@prisma/client';
+import { DeliveryStatus, RiskLevel } from '@prisma/client';
 
 const logger = createServiceLogger('pftcv-service');
 
@@ -56,7 +57,6 @@ export class PftcvService {
             const descendantIds = await this.getDescendantUnitIds(locationId);
             where.administrativeUnitId = { in: descendantIds };
         } else if (filters.locationName && filters.locationLevel) {
-            console.log(`[PFTCV] Filtering by Name: ${filters.locationName}, Level: ${filters.locationLevel}`);
             // Find unit by name and level
             const unit = await prisma.administrativeUnit.findFirst({
                 where: {
@@ -65,14 +65,10 @@ export class PftcvService {
                 }
             });
 
-            console.log(`[PFTCV] Found Unit: ${unit?.name} (${unit?.id})`);
-
             if (unit) {
                 const descendantIds = await this.getDescendantUnitIds(unit.id);
                 where.administrativeUnitId = { in: descendantIds };
-                console.log(`[PFTCV] Filter IDs count: ${descendantIds.length}`);
             } else {
-                console.log('[PFTCV] Unit not found, forcing empty result');
                 where.administrativeUnitId = 'INVALID_LOC_ID';
             }
         }
@@ -101,9 +97,9 @@ export class PftcvService {
         ]);
 
         return {
-            projects: projects.map(p => ({
+            projects: projects.map((p: any) => ({
                 ...p,
-                totalReleased: p.fundReleases.reduce((sum, r) => sum + r.amount, 0),
+                totalReleased: p.fundReleases.reduce((sum: number, r: { amount: number }) => sum + r.amount, 0),
                 verificationCount: p._count.verifications,
                 fundReleases: undefined,
                 _count: undefined
@@ -133,7 +129,7 @@ export class PftcvService {
 
         return {
             ...project,
-            totalReleased: project.fundReleases.reduce((sum, r) => sum + r.amount, 0),
+            totalReleased: project.fundReleases.reduce((sum: number, r: { amount: number }) => sum + r.amount, 0),
             verificationCount: project.verifications.length
         };
     }
@@ -312,9 +308,9 @@ export class PftcvService {
             totalBudget: totalBudget._sum.approvedBudget || 0,
             totalReleased: totalReleased._sum.amount || 0,
             totalVerifications: recentVerifications,
-            byStatus: byStatus.map(s => ({ status: s.status, count: s._count })),
-            byRisk: byRisk.map(r => ({ riskLevel: r.riskLevel, count: r._count })),
-            bySector: bySector.map(s => ({ sector: s.sector, budget: s._sum.approvedBudget || 0 }))
+            byStatus: byStatus.map((s: any) => ({ status: s.status, count: s._count })),
+            byRisk: byRisk.map((r: any) => ({ riskLevel: r.riskLevel, count: r._count })),
+            bySector: bySector.map((s: any) => ({ sector: s.sector, budget: s._sum.approvedBudget || 0 }))
         };
     }
 

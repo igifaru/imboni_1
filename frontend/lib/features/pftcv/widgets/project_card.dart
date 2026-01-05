@@ -1,4 +1,4 @@
-/// Project Card Widget - Polished & Responsive
+// Project Card Widget - Polished & Responsive
 import 'package:flutter/material.dart';
 import '../../../shared/theme/colors.dart';
 import '../models/pftcv_models.dart';

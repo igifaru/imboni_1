@@ -1,4 +1,4 @@
-/// Citizen Verification Screen - Professional Premium Design
+// Citizen Verification Screen - Professional Premium Design
 import 'package:flutter/material.dart';
 import '../../../shared/theme/colors.dart';
 import '../models/pftcv_models.dart';
@@ -381,7 +381,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide(color: ImboniColors.primary, width: 2),
+            borderSide: const BorderSide(color: ImboniColors.primary, width: 2),
           ),
           contentPadding: const EdgeInsets.all(16),
         ),

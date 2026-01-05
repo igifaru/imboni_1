@@ -1,4 +1,4 @@
-/// Project Detail Screen - Professional Premium Design
+// Project Detail Screen - Professional Premium Design
 import 'package:flutter/material.dart';
 import '../../../shared/theme/colors.dart';
 import '../models/pftcv_models.dart';
@@ -259,7 +259,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
               value: p.releaseRatio.clamp(0.0, 1.0),
               minHeight: 12,
               backgroundColor: colorScheme.surfaceContainerHighest,
-              valueColor: AlwaysStoppedAnimation(ImboniColors.primary),
+              valueColor: const AlwaysStoppedAnimation(ImboniColors.primary),
             ),
           ),
           const SizedBox(height: 8),

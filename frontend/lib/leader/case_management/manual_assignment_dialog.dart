@@ -3,7 +3,7 @@ import '../../../admin/services/admin_service.dart';
 import '../../../shared/services/case_service.dart';
 import '../../../shared/models/models.dart';
 import '../../../shared/theme/colors.dart';
-import '../../../shared/localization/app_localizations.dart';
+
 
 class ManualAssignmentDialog extends StatefulWidget {
   final String caseId;
@@ -125,7 +125,7 @@ class _ManualAssignmentDialogState extends State<ManualAssignmentDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context); // Note: Assuming standard l10n context available
+    // final l10n = AppLocalizations.of(context); // Note: Assuming standard l10n context available
     final theme = Theme.of(context);
 
     // Hardcoded strings for now for speed, ideally localized ("Assign Case", "Select Leader", etc.)
@@ -175,7 +175,8 @@ class _ManualAssignmentDialogState extends State<ManualAssignmentDialog> {
                                 style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
                             const SizedBox(height: 8),
                             DropdownButtonFormField<String>(
-                              value: _selectedLeaderId,
+                              // value: _selectedLeaderId, // Deprecated, using initialValue
+              initialValue: _selectedLeaderId,
                               dropdownColor: theme.colorScheme.surfaceContainerHighest,
                               decoration: InputDecoration(
                                 hintText: 'Choose a leader from this unit',
