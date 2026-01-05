@@ -1,5 +1,6 @@
-/// Project Detail Screen with Verification
+/// Project Detail Screen - Professional Premium Design
 import 'package:flutter/material.dart';
+import '../../../shared/theme/colors.dart';
 import '../models/pftcv_models.dart';
 import '../services/pftcv_service.dart';
 import 'verification_screen.dart';
@@ -48,6 +49,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
     if (_isLoading) {
       return widget.embedded
@@ -63,141 +65,356 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
 
     final p = _project!;
 
-    Widget body = CustomScrollView(
-      slivers: [
-        SliverAppBar(
-          expandedHeight: 200,
-          pinned: true,
-          leading: widget.embedded && widget.onBack != null
-              ? IconButton(icon: const Icon(Icons.arrow_back), onPressed: widget.onBack)
-              : null,
-          automaticallyImplyLeading: !widget.embedded,
-          flexibleSpace: FlexibleSpaceBar(
-            title: Text(p.name, style: const TextStyle(fontSize: 16)),
-            background: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [colorScheme.primary, colorScheme.primaryContainer]),
+    return Scaffold(
+      backgroundColor: colorScheme.surface,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide = constraints.maxWidth > 800;
+          
+          return CustomScrollView(
+            slivers: [
+              // Header with back button and title on same row
+              SliverToBoxAdapter(
+                child: Container(
+                  padding: EdgeInsets.fromLTRB(16, MediaQuery.of(context).padding.top + 16, 16, 24),
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [ImboniColors.primary, ImboniColors.primaryDark],
+                    ),
+                  ),
+                  child: Stack(
+                    children: [
+                      // Background icon
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        child: Icon(p.sector.icon, size: 100, color: Colors.white.withAlpha(25)),
+                      ),
+                      // Content
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Back button and title row
+                          Row(
+                            children: [
+                              Material(
+                                color: Colors.white.withAlpha(30),
+                                borderRadius: BorderRadius.circular(12),
+                                child: InkWell(
+                                  onTap: widget.embedded && widget.onBack != null ? widget.onBack : () => Navigator.pop(context),
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: const Padding(
+                                    padding: EdgeInsets.all(10),
+                                    child: Icon(Icons.arrow_back_rounded, color: Colors.white, size: 22),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Text(
+                                  p.name,
+                                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-              child: Stack(children: [
-                Positioned(right: 16, top: 60, child: Icon(p.sector.icon, size: 120, color: Colors.white.withAlpha(40))),
-              ]),
             ),
-          ),
-        ),
-        SliverPadding(
-          padding: const EdgeInsets.all(16),
-          sliver: SliverList(
-            delegate: SliverChildListDelegate([
-              // Risk & Status Row
-              Row(
-                children: [
-                  _InfoChip(label: p.status.label, color: p.status.color, icon: Icons.info),
-                  const SizedBox(width: 12),
-                  _InfoChip(label: p.riskLevel.label, color: p.riskLevel.color, icon: Icons.warning),
-                  const Spacer(),
-                  Text(p.projectCode, style: theme.textTheme.titleMedium?.copyWith(color: colorScheme.outline)),
-                ],
-              ),
-              const SizedBox(height: 24),
 
-              // Budget Card
-              _DetailCard(
-                title: 'Imari',
-                icon: Icons.account_balance_wallet,
-                child: Column(
-                  children: [
-                    _BudgetRow(label: 'Yemewe', value: p.budgetFormatted),
-                    const SizedBox(height: 8),
-                    _BudgetRow(label: 'Yatanzwe', value: p.releasedFormatted),
-                    const SizedBox(height: 12),
-                    LinearProgressIndicator(value: p.releaseRatio.clamp(0.0, 1.0), minHeight: 8, borderRadius: BorderRadius.circular(4)),
-                    const SizedBox(height: 4),
-                    Align(alignment: Alignment.centerRight, child: Text('${(p.releaseRatio * 100).toStringAsFixed(1)}%')),
-                  ],
+              // Content
+              SliverPadding(
+                padding: EdgeInsets.all(isWide ? 24 : 16),
+                sliver: SliverToBoxAdapter(
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1000),
+                      child: Column(
+                        children: [
+                          // Status Row
+                          _buildStatusRow(theme, colorScheme, p),
+                          const SizedBox(height: 24),
+
+                          // Two-column layout for wide screens
+                          if (isWide)
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(child: _buildLeftColumn(theme, colorScheme, isDark, p)),
+                                const SizedBox(width: 24),
+                                Expanded(child: _buildRightColumn(theme, colorScheme, isDark, p)),
+                              ],
+                            )
+                          else
+                            Column(
+                              children: [
+                                _buildBudgetCard(theme, colorScheme, isDark, p),
+                                const SizedBox(height: 16),
+                                _buildLocationCard(theme, colorScheme, isDark, p),
+                                const SizedBox(height: 16),
+                                _buildDetailsCard(theme, colorScheme, isDark, p),
+                                const SizedBox(height: 16),
+                                _buildVerificationCard(theme, colorScheme, isDark, p),
+                              ],
+                            ),
+
+                          const SizedBox(height: 100), // Space for FAB
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(height: 16),
-
-              // Location Card
-              _DetailCard(
-                title: 'Ahantu',
-                icon: Icons.location_on,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (p.locationName != null) Text(p.locationName!, style: theme.textTheme.bodyLarge),
-                    if (p.gpsLatitude != null && p.gpsLongitude != null)
-                      Text('GPS: ${p.gpsLatitude!.toStringAsFixed(4)}, ${p.gpsLongitude!.toStringAsFixed(4)}', style: theme.textTheme.bodySmall),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Details Card
-              _DetailCard(
-                title: 'Amakuru',
-                icon: Icons.info_outline,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (p.description != null) ...[
-                      Text('Ibisobanuro:', style: theme.textTheme.labelMedium),
-                      Text(p.description!),
-                      const SizedBox(height: 12),
-                    ],
-                    if (p.implementingAgency != null) _InfoRow(label: 'Ishami', value: p.implementingAgency!),
-                    if (p.fundingSource != null) _InfoRow(label: "Inkomoko y'Imari", value: p.fundingSource!),
-                    if (p.expectedOutputs != null) _InfoRow(label: 'Ibizakorwa', value: p.expectedOutputs!),
-                    if (p.startDate != null) _InfoRow(label: 'Itariki Itangira', value: _formatDate(p.startDate!)),
-                    if (p.endDate != null) _InfoRow(label: 'Itariki Irangira', value: _formatDate(p.endDate!)),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Verification Stats Card
-              _DetailCard(
-                title: "Igenzura ry'Abaturage",
-                icon: Icons.verified_user,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _StatTile(value: '${p.verificationCount}', label: 'Bagenzuye'),
-                    _StatTile(value: '${p.verifiedPercentage}%', label: 'Igenzura'),
-                    _StatTile(value: '${p.riskScore}', label: 'Imiterere'),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 80),
-            ]),
-          ),
-        ),
-      ],
+            ],
+          );
+        },
+      ),
+      floatingActionButton: _buildVerifyButton(colorScheme),
     );
+  }
 
-    if (widget.embedded) {
-      return Stack(
+  Widget _buildStatusRow(ThemeData theme, ColorScheme colorScheme, Project p) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.outlineVariant.withAlpha(80)),
+      ),
+      child: Row(
         children: [
-          body,
-          Positioned(
-            right: 16,
-            bottom: 16,
-            child: FloatingActionButton.extended(
-              onPressed: _openVerification,
-              icon: const Icon(Icons.verified),
-              label: const Text('Genzura'),
+          _StatusChip(label: p.status.label, color: p.status.color, icon: Icons.flag_rounded),
+          const SizedBox(width: 12),
+          _StatusChip(label: p.riskLevel.label, color: p.riskLevel.color, icon: Icons.shield_rounded),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              p.projectCode,
+              style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold, color: ImboniColors.primary),
             ),
           ),
         ],
-      );
-    }
+      ),
+    );
+  }
 
-    return Scaffold(
-      body: body,
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openVerification,
-        icon: const Icon(Icons.verified),
-        label: const Text('Genzura Umushinga'),
+  Widget _buildLeftColumn(ThemeData theme, ColorScheme colorScheme, bool isDark, Project p) {
+    return Column(
+      children: [
+        _buildBudgetCard(theme, colorScheme, isDark, p),
+        const SizedBox(height: 20),
+        _buildLocationCard(theme, colorScheme, isDark, p),
+      ],
+    );
+  }
+
+  Widget _buildRightColumn(ThemeData theme, ColorScheme colorScheme, bool isDark, Project p) {
+    return Column(
+      children: [
+        _buildDetailsCard(theme, colorScheme, isDark, p),
+        const SizedBox(height: 20),
+        _buildVerificationCard(theme, colorScheme, isDark, p),
+      ],
+    );
+  }
+
+  Widget _buildBudgetCard(ThemeData theme, ColorScheme colorScheme, bool isDark, Project p) {
+    return _SectionCard(
+      isDark: isDark,
+      colorScheme: colorScheme,
+      icon: Icons.account_balance_wallet_rounded,
+      title: 'Imari',
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Yemewe', style: theme.textTheme.labelMedium?.copyWith(color: colorScheme.onSurface.withAlpha(180))),
+                  const SizedBox(height: 4),
+                  Text(p.budgetFormatted, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: ImboniColors.primary)),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('Yatanzwe', style: theme.textTheme.labelMedium?.copyWith(color: colorScheme.onSurface.withAlpha(180))),
+                  const SizedBox(height: 4),
+                  Text(p.releasedFormatted, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: p.releaseRatio.clamp(0.0, 1.0),
+              minHeight: 12,
+              backgroundColor: colorScheme.surfaceContainerHighest,
+              valueColor: AlwaysStoppedAnimation(ImboniColors.primary),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Igice cyatanzwe', style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurface.withAlpha(180))),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: ImboniColors.primary.withAlpha(20),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${(p.releaseRatio * 100).toStringAsFixed(1)}%',
+                  style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold, color: ImboniColors.primary),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLocationCard(ThemeData theme, ColorScheme colorScheme, bool isDark, Project p) {
+    return _SectionCard(
+      isDark: isDark,
+      colorScheme: colorScheme,
+      icon: Icons.location_on_rounded,
+      title: 'Ahantu',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (p.locationName != null)
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: ImboniColors.primary.withAlpha(20),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.place, size: 20, color: ImboniColors.primary),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(p.locationName!, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w500)),
+                ),
+              ],
+            ),
+          if (p.gpsLatitude != null && p.gpsLongitude != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerLowest,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.gps_fixed, size: 16, color: colorScheme.onSurface.withAlpha(180)),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${p.gpsLatitude!.toStringAsFixed(5)}, ${p.gpsLongitude!.toStringAsFixed(5)}',
+                    style: theme.textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailsCard(ThemeData theme, ColorScheme colorScheme, bool isDark, Project p) {
+    return _SectionCard(
+      isDark: isDark,
+      colorScheme: colorScheme,
+      icon: Icons.info_rounded,
+      title: 'Amakuru',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (p.description != null) ...[
+            Text(p.description!, style: theme.textTheme.bodyMedium),
+            const SizedBox(height: 16),
+            Divider(color: colorScheme.outlineVariant.withAlpha(80)),
+            const SizedBox(height: 12),
+          ],
+          if (p.implementingAgency != null)
+            _DetailRow(icon: Icons.apartment, label: 'Ishami', value: p.implementingAgency!),
+          if (p.fundingSource != null)
+            _DetailRow(icon: Icons.payments, label: 'Inkomoko', value: p.fundingSource!),
+          if (p.expectedOutputs != null)
+            _DetailRow(icon: Icons.checklist, label: 'Ibizakorwa', value: p.expectedOutputs!),
+          if (p.startDate != null)
+            _DetailRow(icon: Icons.calendar_today, label: 'Itangira', value: _formatDate(p.startDate!)),
+          if (p.endDate != null)
+            _DetailRow(icon: Icons.event_available, label: 'Irangira', value: _formatDate(p.endDate!)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVerificationCard(ThemeData theme, ColorScheme colorScheme, bool isDark, Project p) {
+    return _SectionCard(
+      isDark: isDark,
+      colorScheme: colorScheme,
+      icon: Icons.verified_user_rounded,
+      title: "Igenzura ry'Abaturage",
+      child: Row(
+        children: [
+          Expanded(child: _StatBox(value: '${p.verificationCount}', label: 'Bagenzuye', color: ImboniColors.info)),
+          const SizedBox(width: 12),
+          Expanded(child: _StatBox(value: '${p.verifiedPercentage}%', label: 'Byemejwe', color: ImboniColors.success)),
+          const SizedBox(width: 12),
+          Expanded(child: _StatBox(value: '${p.riskScore}', label: 'Imiterere', color: p.riskLevel.color)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVerifyButton(ColorScheme colorScheme) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: const LinearGradient(colors: [ImboniColors.primary, ImboniColors.primaryDark]),
+        boxShadow: [BoxShadow(color: ImboniColors.primary.withAlpha(60), blurRadius: 12, offset: const Offset(0, 4))],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _openVerification,
+          borderRadius: BorderRadius.circular(16),
+          child: const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.verified_rounded, color: Colors.white),
+                SizedBox(width: 10),
+                Text('Genzura', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -205,85 +422,122 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   String _formatDate(DateTime date) => '${date.day}/${date.month}/${date.year}';
 }
 
-class _DetailCard extends StatelessWidget {
-  final String title;
+class _SectionCard extends StatelessWidget {
   final IconData icon;
+  final String title;
   final Widget child;
-  const _DetailCard({required this.title, required this.icon, required this.child});
+  final bool isDark;
+  final ColorScheme colorScheme;
+
+  const _SectionCard({required this.icon, required this.title, required this.child, required this.isDark, required this.colorScheme});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(children: [Icon(icon, size: 20), const SizedBox(width: 8), Text(title, style: theme.textTheme.titleMedium)]),
-            const Divider(),
-            child,
-          ],
-        ),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: colorScheme.outlineVariant.withAlpha(80)),
+        boxShadow: isDark ? null : [BoxShadow(color: Colors.black.withAlpha(8), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: ImboniColors.primary.withAlpha(20), borderRadius: BorderRadius.circular(10)),
+                child: Icon(icon, size: 20, color: ImboniColors.primary),
+              ),
+              const SizedBox(width: 12),
+              Text(title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          child,
+        ],
       ),
     );
   }
 }
 
-class _InfoChip extends StatelessWidget {
+class _StatusChip extends StatelessWidget {
   final String label;
   final Color color;
   final IconData icon;
-  const _InfoChip({required this.label, required this.color, required this.icon});
+  const _StatusChip({required this.label, required this.color, required this.icon});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(color: color.withAlpha(30), borderRadius: BorderRadius.circular(20)),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 16, color: color), const SizedBox(width: 4), Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w500))]),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(color: color.withAlpha(25), borderRadius: BorderRadius.circular(12)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 6),
+          Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 13)),
+        ],
+      ),
     );
   }
 }
 
-class _BudgetRow extends StatelessWidget {
+class _DetailRow extends StatelessWidget {
+  final IconData icon;
   final String label;
   final String value;
-  const _BudgetRow({required this.label, required this.value});
+  const _DetailRow({required this.icon, required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
-    return Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(label), Text(value, style: const TextStyle(fontWeight: FontWeight.bold))]);
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  final String label;
-  final String value;
-  const _InfoRow({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        SizedBox(width: 120, child: Text('$label:', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.outline))),
-        Expanded(child: Text(value)),
-      ]),
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: colorScheme.onSurface.withAlpha(180)),
+          const SizedBox(width: 10),
+          SizedBox(width: 80, child: Text(label, style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurface.withAlpha(180)))),
+          const SizedBox(width: 8),
+          Expanded(child: Text(value, style: theme.textTheme.bodyMedium)),
+        ],
+      ),
     );
   }
 }
 
-class _StatTile extends StatelessWidget {
+class _StatBox extends StatelessWidget {
   final String value;
   final String label;
-  const _StatTile({required this.value, required this.label});
+  final Color color;
+  const _StatBox({required this.value, required this.label, required this.color});
 
   @override
   Widget build(BuildContext context) {
-    return Column(children: [
-      Text(value, style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
-      Text(label, style: Theme.of(context).textTheme.bodySmall),
-    ]);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withAlpha(15),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withAlpha(40)),
+      ),
+      child: Column(
+        children: [
+          Text(value, style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: color)),
+          const SizedBox(height: 4),
+          Text(label, style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurface.withAlpha(180))),
+        ],
+      ),
+    );
   }
 }
