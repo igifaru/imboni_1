@@ -77,20 +77,13 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
               SliverToBoxAdapter(
                 child: Container(
                   padding: EdgeInsets.fromLTRB(16, MediaQuery.of(context).padding.top + 16, 16, 24),
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [ImboniColors.primary, ImboniColors.primaryDark],
-                    ),
-                  ),
                   child: Stack(
                     children: [
                       // Background icon
                       Positioned(
                         right: 0,
                         top: 0,
-                        child: Icon(p.sector.icon, size: 100, color: Colors.white.withAlpha(25)),
+                        child: Icon(p.sector.icon, size: 100, color: colorScheme.primary.withAlpha(15)),
                       ),
                       // Content
                       Column(
@@ -100,14 +93,14 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                           Row(
                             children: [
                               Material(
-                                color: Colors.white.withAlpha(30),
+                                color: colorScheme.surfaceContainerHighest,
                                 borderRadius: BorderRadius.circular(12),
                                 child: InkWell(
                                   onTap: widget.embedded && widget.onBack != null ? widget.onBack : () => Navigator.pop(context),
                                   borderRadius: BorderRadius.circular(12),
-                                  child: const Padding(
-                                    padding: EdgeInsets.all(10),
-                                    child: Icon(Icons.arrow_back_rounded, color: Colors.white, size: 22),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(10),
+                                    child: Icon(Icons.arrow_back_rounded, color: colorScheme.onSurface, size: 22),
                                   ),
                                 ),
                               ),
@@ -115,7 +108,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                               Expanded(
                                 child: Text(
                                   p.name,
-                                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+                                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                 ),

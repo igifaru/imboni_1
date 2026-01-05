@@ -188,9 +188,9 @@ class _VerificationScreenState extends State<VerificationScreen> {
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      Icon(Icons.location_on, size: 14, color: colorScheme.outline),
+                      Icon(Icons.location_on, size: 14, color: Colors.grey[700]),
                       const SizedBox(width: 4),
-                      Text(widget.project.locationName!, style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.outline)),
+                      Text(widget.project.locationName!, style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[700])),
                     ],
                   ),
                 ],
@@ -327,7 +327,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
                       child: Icon(
                         rating <= _qualityRating ? Icons.star_rounded : Icons.star_outline_rounded,
                         size: 40,
-                        color: rating <= _qualityRating ? Colors.amber : colorScheme.outlineVariant,
+                        color: rating <= _qualityRating ? Colors.amber : Colors.grey[400],
                       ),
                     ),
                   );
@@ -368,7 +368,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
         style: theme.textTheme.bodyMedium,
         decoration: InputDecoration(
           hintText: 'Andika ibitekerezo byawe hano...',
-          hintStyle: TextStyle(color: colorScheme.outline),
+          hintStyle: TextStyle(color: Colors.grey[600]),
           filled: true,
           fillColor: colorScheme.surfaceContainerLowest,
           border: OutlineInputBorder(
@@ -405,7 +405,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
               color: _isAnonymous ? ImboniColors.primary.withAlpha(30) : colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(Icons.privacy_tip_rounded, color: _isAnonymous ? ImboniColors.primary : colorScheme.outline),
+            child: Icon(Icons.privacy_tip_rounded, color: _isAnonymous ? ImboniColors.primary : Colors.grey[700]),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -413,7 +413,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Ohereza mu ibanga', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
-                Text('Izina ryawe ntabwo rizerekanwa', style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.outline)),
+                Text('Izina ryawe ntabwo rizerekanwa', style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[700])),
               ],
             ),
           ),
