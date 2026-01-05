@@ -28,42 +28,30 @@ class ProjectCard extends StatelessWidget {
         onTap: onTap,
         child: LayoutBuilder(
           builder: (context, constraints) {
-            // Check if we have enough width for a 2-column internal layout
-            // This is useful if the grid item is wide or if used in a list view
-            final isWide = constraints.maxWidth > 500;
+            final hasBoundedHeight = constraints.maxHeight.isFinite;
+
+            final bodyContent = Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildInfoColumn(theme, colorScheme),
+                  Divider(height: 12, color: Colors.grey.withAlpha(50)),
+                  _buildStatsColumn(theme, colorScheme),
+                ],
+              ),
+            );
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min, // Important for ListView
               children: [
                 // Header
                 _buildHeader(theme, colorScheme, isDark),
 
-                // Body content
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: isWide
-                        ? Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(flex: 3, child: _buildInfoColumn(theme, colorScheme)),
-                              const SizedBox(width: 16),
-                              Container(width: 1, color: colorScheme.outlineVariant.withAlpha(50)),
-                              const SizedBox(width: 16),
-                              Expanded(flex: 2, child: _buildStatsColumn(theme, colorScheme)),
-                            ],
-                          )
-                        : Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildInfoColumn(theme, colorScheme),
-                              const Spacer(),
-                              const Divider(height: 24),
-                              _buildStatsColumn(theme, colorScheme),
-                            ],
-                          ),
-                  ),
-                ),
+                // Body content - use Expanded only if height is fixed (Grid), otherwise let it wrap (List)
+                if (hasBoundedHeight) Expanded(child: bodyContent) else bodyContent,
                 
                 // Footer
                 _buildFooter(theme, colorScheme),

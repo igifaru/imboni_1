@@ -257,20 +257,26 @@ class _PftcvHomeScreenState extends State<PftcvHomeScreen> {
           );
         }
 
-        return GridView.builder(
-          padding: const EdgeInsets.all(16),
-          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: 600,
-            mainAxisSpacing: 16,
-            crossAxisSpacing: 16,
-            childAspectRatio: 1.6,
-          ),
-          itemCount: provider.projects.length,
-          itemBuilder: (context, index) {
-            final project = provider.projects[index];
-            return ProjectCard(
-              project: project,
-              onTap: () => setState(() => _selectedProject = project),
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final aspectRatio = 1.0;
+
+            return GridView.builder(
+              padding: const EdgeInsets.all(16),
+              gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 600,
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 16,
+                childAspectRatio: aspectRatio,
+              ),
+              itemCount: provider.projects.length,
+              itemBuilder: (context, index) {
+                final project = provider.projects[index];
+                return ProjectCard(
+                  project: project,
+                  onTap: () => setState(() => _selectedProject = project),
+                );
+              },
             );
           },
         );
@@ -302,17 +308,26 @@ class _ProjectListPage extends StatelessWidget {
               const Text('Nta mushinga ubonetse'),
             ]));
           }
-          return ListView.builder(
-            padding: const EdgeInsets.all(12),
-            itemCount: provider.projects.length,
-            itemBuilder: (context, index) {
-              final project = provider.projects[index];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: ProjectCard(
-                  project: project,
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ProjectDetailScreen(projectId: project.id))),
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final aspectRatio = 1.0;
+              
+              return GridView.builder(
+                padding: const EdgeInsets.all(16),
+                gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: 600,
+                  mainAxisSpacing: 16,
+                  crossAxisSpacing: 16,
+                  childAspectRatio: aspectRatio,
                 ),
+                itemCount: provider.projects.length,
+                itemBuilder: (context, index) {
+                  final project = provider.projects[index];
+                  return ProjectCard(
+                    project: project,
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ProjectDetailScreen(projectId: project.id))),
+                  );
+                },
               );
             },
           );
