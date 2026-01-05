@@ -74,6 +74,10 @@ app.use('/api/admin', authMiddleware, adminRoutes);
 import { communityController } from '../../community-service/src/controllers/community.controller';
 app.use('/api/community', authMiddleware, communityController);
 
+// PFTCV routes - Public Fund Transparency & Citizen Verification
+import { pftcvController } from '../../pftcv-service/src/controllers/pftcv.controller';
+app.use('/api/projects', optionalAuthMiddleware, pftcvController);
+
 // Proxy to services (if running as gateway) - only for production with separate microservices
 if (config.isProduction) {
     // Case service proxy (override the inline mount above for true microservice mode if needed)
