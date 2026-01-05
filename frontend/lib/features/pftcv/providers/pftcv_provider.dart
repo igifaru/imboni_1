@@ -1,3 +1,4 @@
+import '../../../admin/services/admin_service.dart';
 // PFTCV Provider - State management for Public Fund Transparency
 import 'package:flutter/foundation.dart';
 import '../../../shared/services/auth_service.dart';
@@ -27,54 +28,93 @@ class PftcvProvider extends ChangeNotifier {
   String? get error => _error;
   List<LocationLevel> get userHierarchy => _userHierarchy;
 
-  /// Initialize user's location hierarchy from their profile
-  void initializeHierarchy() {
+  String _locationHeaderTitle = 'Aho Ntuye';
+  String get locationHeaderTitle => _locationHeaderTitle;
+
+  /// Initialize user's location hierarchy from their profile or jurisdiction
+  Future<void> initializeHierarchy() async {
     final user = authService.currentUser;
     if (user == null) return;
 
     _userHierarchy = [];
 
-    // Build hierarchy from user's location (village -> national)
-    // NOTE: We use the name as key since we don't have unit IDs in user profile
-    if (user.village != null && user.village!.isNotEmpty) {
-      _userHierarchy.add(LocationLevel(
-        level: 'VILLAGE',
-        name: user.village!,
-        title: 'Umudugudu Wanjye',
-        icon: 'home',
-      ));
-    }
-    if (user.cell != null && user.cell!.isNotEmpty) {
-      _userHierarchy.add(LocationLevel(
-        level: 'CELL',
-        name: user.cell!,
-        title: 'Akagari Kanjye',
-        icon: 'groups',
-      ));
-    }
-    if (user.sector != null && user.sector!.isNotEmpty) {
-      _userHierarchy.add(LocationLevel(
-        level: 'SECTOR',
-        name: user.sector!,
-        title: 'Umurenge Wanjye',
-        icon: 'apartment',
-      ));
-    }
-    if (user.district != null && user.district!.isNotEmpty) {
-      _userHierarchy.add(LocationLevel(
-        level: 'DISTRICT',
-        name: user.district!,
-        title: 'Akarere Kanjye',
-        icon: 'location_city',
-      ));
-    }
-    if (user.province != null && user.province!.isNotEmpty) {
-      _userHierarchy.add(LocationLevel(
-        level: 'PROVINCE',
-        name: user.province!,
-        title: 'Intara Yanjye',
-        icon: 'map',
-      ));
+    if (user.isLeader) {
+      _locationHeaderTitle = 'Aho Nkorera';
+      // Fetch jurisdiction for leader
+      try {
+        final context = await adminService.getMyJurisdiction();
+        if (context != null) {
+           final level = (context['level'] as String?)?.toUpperCase();
+           // Try 'name' or fallback to 'jurisdiction' (backend standard) or 'jurisdictionName'
+           final name = (context['name'] ?? context['jurisdiction'] ?? context['jurisdictionName'] ?? '') as String;
+           final id = (context['id'] ?? context['unitId']) as String?;
+           
+           if (level != null && name.isNotEmpty) {
+              String title = 'Aho Nkorera';
+              switch(level) {
+                 case 'VILLAGE': title = 'Umudugudu Wanjye'; break;
+                 case 'CELL': title = 'Akagari Kanjye'; break;
+                 case 'SECTOR': title = 'Umurenge Wanjye'; break;
+                 case 'DISTRICT': title = 'Akarere Kanjye'; break;
+                 case 'PROVINCE': title = 'Intara Yanjye'; break;
+              }
+
+              _userHierarchy.add(LocationLevel(
+                level: level,
+                name: name,
+                title: title,
+                icon: 'work',
+                unitId: id
+              ));
+           }
+        }
+      } catch (e) {
+        debugPrint('Error fetching leader jurisdiction: $e');
+      }
+    } else {
+      _locationHeaderTitle = 'Aho Ntuye';
+      // Build hierarchy from user's location (village -> national)
+      // NOTE: We use the name as key since we don't have unit IDs in user profile
+      if (user.village != null && user.village!.isNotEmpty) {
+        _userHierarchy.add(LocationLevel(
+          level: 'VILLAGE',
+          name: user.village!,
+          title: 'Umudugudu Wanjye',
+          icon: 'home',
+        ));
+      }
+      if (user.cell != null && user.cell!.isNotEmpty) {
+        _userHierarchy.add(LocationLevel(
+          level: 'CELL',
+          name: user.cell!,
+          title: 'Akagari Kanjye',
+          icon: 'groups',
+        ));
+      }
+      if (user.sector != null && user.sector!.isNotEmpty) {
+        _userHierarchy.add(LocationLevel(
+          level: 'SECTOR',
+          name: user.sector!,
+          title: 'Umurenge Wanjye',
+          icon: 'apartment',
+        ));
+      }
+      if (user.district != null && user.district!.isNotEmpty) {
+        _userHierarchy.add(LocationLevel(
+          level: 'DISTRICT',
+          name: user.district!,
+          title: 'Akarere Kanjye',
+          icon: 'location_city',
+        ));
+      }
+      if (user.province != null && user.province!.isNotEmpty) {
+        _userHierarchy.add(LocationLevel(
+          level: 'PROVINCE',
+          name: user.province!,
+          title: 'Intara Yanjye',
+          icon: 'map',
+        ));
+      }
     }
 
     // Add "All Projects" option

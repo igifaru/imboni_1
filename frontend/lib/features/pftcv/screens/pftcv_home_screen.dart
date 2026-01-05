@@ -111,7 +111,7 @@ class _PftcvHomeScreenState extends State<PftcvHomeScreen> {
         children: [
           const Icon(Icons.location_on, color: ImboniColors.primary, size: 20),
           const SizedBox(width: 8),
-          Text('Aho Ntuye', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          Text(context.watch<PftcvProvider>().locationHeaderTitle, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
         ],
       ),
     );
@@ -152,7 +152,9 @@ class _PftcvHomeScreenState extends State<PftcvHomeScreen> {
       case 'apartment': icon = Icons.apartment; break;
       case 'location_city': icon = Icons.location_city; break;
       case 'map': icon = Icons.map; break;
-      default: icon = Icons.public;
+      case 'work': icon = Icons.work; break;
+      case 'public': icon = Icons.public; break;
+      default: icon = Icons.location_on;
     }
 
     return Card(
