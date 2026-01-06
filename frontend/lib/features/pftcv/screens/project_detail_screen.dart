@@ -4,6 +4,7 @@ import '../../../shared/theme/colors.dart';
 import '../models/pftcv_models.dart';
 import '../services/pftcv_service.dart';
 import 'verification_screen.dart';
+import 'project_verifications_screen.dart';
 
 class ProjectDetailScreen extends StatefulWidget {
   final String projectId;
@@ -372,6 +373,10 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       colorScheme: colorScheme,
       icon: Icons.verified_user_rounded,
       title: "Igenzura ry'Abaturage",
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => ProjectVerificationsScreen(projectId: p.id, projectName: p.name)),
+      ),
       child: Row(
         children: [
           Expanded(child: _StatBox(value: '${p.verificationCount}', label: 'Bagenzuye', color: ImboniColors.info)),
@@ -421,38 +426,59 @@ class _SectionCard extends StatelessWidget {
   final Widget child;
   final bool isDark;
   final ColorScheme colorScheme;
+  final VoidCallback? onTap;
 
-  const _SectionCard({required this.icon, required this.title, required this.child, required this.isDark, required this.colorScheme});
+  const _SectionCard({
+    required this.icon,
+    required this.title,
+    required this.child,
+    required this.isDark,
+    required this.colorScheme,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: colorScheme.outlineVariant.withAlpha(80)),
         boxShadow: isDark ? null : [BoxShadow(color: Colors.black.withAlpha(8), blurRadius: 10, offset: const Offset(0, 4))],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: ImboniColors.primary.withAlpha(20), borderRadius: BorderRadius.circular(10)),
-                child: Icon(icon, size: 20, color: ImboniColors.primary),
-              ),
-              const SizedBox(width: 12),
-              Text(title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-            ],
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(color: ImboniColors.primary.withAlpha(20), borderRadius: BorderRadius.circular(10)),
+                      child: Icon(icon, size: 20, color: ImboniColors.primary),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                    if (onTap != null) ...[
+                      const Spacer(),
+                      Icon(Icons.arrow_forward_ios_rounded, size: 16, color: colorScheme.onSurface.withAlpha(100)),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 16),
+                child,
+              ],
+            ),
           ),
-          const SizedBox(height: 16),
-          child,
-        ],
+        ),
       ),
     );
   }

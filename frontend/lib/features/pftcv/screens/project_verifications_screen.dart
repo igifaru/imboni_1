@@ -1,0 +1,218 @@
+import 'package:flutter/material.dart';
+import '../../../shared/theme/colors.dart';
+import '../models/pftcv_models.dart';
+import '../services/pftcv_service.dart';
+
+class ProjectVerificationsScreen extends StatefulWidget {
+  final String projectId;
+  final String projectName;
+
+  const ProjectVerificationsScreen({
+    super.key,
+    required this.projectId,
+    required this.projectName,
+  });
+
+  @override
+  State<ProjectVerificationsScreen> createState() => _ProjectVerificationsScreenState();
+}
+
+class _ProjectVerificationsScreenState extends State<ProjectVerificationsScreen> {
+  List<CitizenVerification> _verifications = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVerifications();
+  }
+
+  Future<void> _loadVerifications() async {
+    setState(() => _isLoading = true);
+    try {
+      final verifications = await pftcvService.getProjectVerifications(widget.projectId);
+      if (mounted) setState(() => _verifications = verifications);
+    } catch (e) {
+      debugPrint('Error loading verifications: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Scaffold(
+      backgroundColor: colorScheme.surface,
+      appBar: AppBar(
+        title: const Text("Igenzura ry'Abaturage"),
+        centerTitle: true,
+        backgroundColor: colorScheme.surface,
+        elevation: 0,
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _verifications.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.comment_outlined, size: 64, color: colorScheme.outlineVariant),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Nta bitekerezo biratangwa',
+                        style: theme.textTheme.titleMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+                      ),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _verifications.length,
+                  itemBuilder: (context, index) {
+                    final verification = _verifications[index];
+                    return _VerificationCard(
+                      verification: verification,
+                      theme: theme,
+                      colorScheme: colorScheme,
+                      isDark: isDark,
+                    );
+                  },
+                ),
+    );
+  }
+}
+
+class _VerificationCard extends StatelessWidget {
+  final CitizenVerification verification;
+  final ThemeData theme;
+  final ColorScheme colorScheme;
+  final bool isDark;
+
+  const _VerificationCard({
+    required this.verification,
+    required this.theme,
+    required this.colorScheme,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.outlineVariant.withAlpha(80)),
+        boxShadow: isDark ? null : [BoxShadow(color: Colors.black.withAlpha(5), blurRadius: 8, offset: const Offset(0, 2))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: ImboniColors.primary.withAlpha(30),
+                    child: Icon(
+                      verification.isAnonymous ? Icons.person_outline : Icons.person,
+                      size: 18,
+                      color: ImboniColors.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    verification.isAnonymous ? 'Umuturage (Anonymous)' : 'Umuturage',
+                    style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              if (verification.qualityRating != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withAlpha(30),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.star_rounded, size: 16, color: Colors.amber),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${verification.qualityRating}/5',
+                        style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold, color: Colors.amber[900]),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (verification.comment != null && verification.comment!.isNotEmpty) ...[
+            Text(
+              verification.comment!,
+              style: theme.textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 12),
+          ],
+          Divider(color: colorScheme.outlineVariant.withAlpha(80)),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _StatusBadge(status: verification.deliveryStatus),
+              Text(
+                '${verification.completionPercent}% birangiye',
+                style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  final DeliveryStatus status;
+
+  const _StatusBadge({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    Color color;
+    switch (status) {
+      case DeliveryStatus.fullyDelivered:
+        color = ImboniColors.success;
+        break;
+      case DeliveryStatus.partiallyDelivered:
+        color = ImboniColors.warning;
+        break;
+      case DeliveryStatus.notDelivered:
+        color = ImboniColors.error;
+        break;
+      case DeliveryStatus.notStarted:
+        color = Colors.grey;
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withAlpha(25),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        status.label,
+        style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+}
