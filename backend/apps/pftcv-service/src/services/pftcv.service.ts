@@ -223,17 +223,24 @@ export class PftcvService {
         });
 
         // Handle evidence if provided
-        if (input.evidence && input.evidence.length > 0) {
-            await prisma.verificationEvidence.createMany({
-                data: input.evidence.map(e => ({
-                    verificationId: verification.id,
-                    type: e.type,
-                    url: e.url,
-                    fileName: e.fileName,
-                    fileSize: e.fileSize,
-                    mimeType: e.mimeType
-                }))
+        if (input.evidence) {
+            // Delete existing evidence to avoid duplication/orphans
+            await prisma.verificationEvidence.deleteMany({
+                where: { verificationId: verification.id }
             });
+
+            if (input.evidence.length > 0) {
+                await prisma.verificationEvidence.createMany({
+                    data: input.evidence.map(e => ({
+                        verificationId: verification.id,
+                        type: e.type,
+                        url: e.url,
+                        fileName: e.fileName,
+                        fileSize: e.fileSize,
+                        mimeType: e.mimeType
+                    }))
+                });
+            }
         }
 
         // Recalculate project risk score

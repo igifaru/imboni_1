@@ -107,6 +107,35 @@ router.post('/:id/verify', async (req: Request, res: Response, next: NextFunctio
 });
 
 /**
+ * PATCH /projects/:id/verify - Update citizen verification
+ */
+router.patch('/:id/verify', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { id } = req.params;
+        const userId = (req as any).user?.userId;
+        const { deliveryStatus, completionPercent, qualityRating, comment, isAnonymous, gpsLatitude, gpsLongitude, evidence } = req.body;
+
+        const verification = await pftcvService.updateVerification({
+            projectId: id,
+            verifierId: userId, // Must be logged in to update, or handle anonymous cookie logic if applicable (assume logged for edit)
+            isAnonymous: isAnonymous,
+            deliveryStatus,
+            completionPercent: completionPercent || 0,
+            qualityRating,
+            comment,
+            gpsLatitude,
+            gpsLongitude,
+            evidence
+        });
+
+        res.json({ success: true, data: verification, message: 'Verification updated successfully' });
+    } catch (error: any) {
+        logger.error('Failed to update verification', error);
+        next(error);
+    }
+});
+
+/**
  * GET /projects/:id/verifications - Get verifications for a project
  */
 router.get('/:id/verifications', async (req: Request, res: Response, next: NextFunction) => {
@@ -175,6 +204,12 @@ router.post('/upload',
 
             // Construct public URL
             const publicUrl = `/uploads/pftcv-evidence/${file.filename}`;
+
+            logger.info('File uploaded', {
+                filename: file.filename,
+                mimetype: file.mimetype,
+                size: file.size
+            });
 
             res.status(201).json({
                 success: true,
