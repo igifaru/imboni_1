@@ -104,6 +104,34 @@ class PftcvService {
     }
     return null;
   }
+
+  // Update citizen verification
+  Future<CitizenVerification?> updateVerification({
+    required String projectId,
+    required String deliveryStatus,
+    required int completionPercent,
+    int? qualityRating,
+    String? comment,
+    bool isAnonymous = false,
+    double? gpsLatitude,
+    double? gpsLongitude,
+  }) async {
+    final body = {
+      'deliveryStatus': deliveryStatus,
+      'completionPercent': completionPercent,
+      if (qualityRating != null) 'qualityRating': qualityRating,
+      if (comment != null && comment.isNotEmpty) 'comment': comment,
+      'isAnonymous': isAnonymous,
+      if (gpsLatitude != null) 'gpsLatitude': gpsLatitude,
+      if (gpsLongitude != null) 'gpsLongitude': gpsLongitude,
+    };
+
+    final response = await _apiClient.patch<dynamic>('/projects/$projectId/verify', body);
+    if (response.isSuccess && response.data != null) {
+      return CitizenVerification.fromJson(response.data as Map<String, dynamic>);
+    }
+    return null;
+  }
 }
 
 final pftcvService = PftcvService();

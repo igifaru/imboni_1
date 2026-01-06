@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import '../../../shared/theme/colors.dart';
 import '../models/pftcv_models.dart';
 import '../services/pftcv_service.dart';
+import '../../../shared/services/auth_service.dart';
+import 'verification_screen.dart';
 
 class ProjectVerificationsScreen extends StatefulWidget {
-  final String projectId;
-  final String projectName;
+  final Project project;
 
   const ProjectVerificationsScreen({
     super.key,
-    required this.projectId,
-    required this.projectName,
+    required this.project,
   });
 
   @override
@@ -30,7 +30,7 @@ class _ProjectVerificationsScreenState extends State<ProjectVerificationsScreen>
   Future<void> _loadVerifications() async {
     setState(() => _isLoading = true);
     try {
-      final verifications = await pftcvService.getProjectVerifications(widget.projectId);
+      final verifications = await pftcvService.getProjectVerifications(widget.project.id);
       if (mounted) setState(() => _verifications = verifications);
     } catch (e) {
       debugPrint('Error loading verifications: $e');
@@ -79,6 +79,19 @@ class _ProjectVerificationsScreenState extends State<ProjectVerificationsScreen>
                       theme: theme,
                       colorScheme: colorScheme,
                       isDark: isDark,
+                      isOwner: authService.currentUser?.id == verification.verifierId,
+                      onEdit: () async {
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => VerificationScreen(
+                              project: widget.project,
+                              existingVerification: verification,
+                            ),
+                          ),
+                        );
+                        if (result == true) _loadVerifications();
+                      },
                     );
                   },
                 ),
@@ -91,12 +104,16 @@ class _VerificationCard extends StatelessWidget {
   final ThemeData theme;
   final ColorScheme colorScheme;
   final bool isDark;
+  final bool isOwner;
+  final VoidCallback? onEdit;
 
   const _VerificationCard({
     required this.verification,
     required this.theme,
     required this.colorScheme,
     required this.isDark,
+    this.isOwner = false,
+    this.onEdit,
   });
 
   @override
@@ -134,24 +151,35 @@ class _VerificationCard extends StatelessWidget {
                   ),
                 ],
               ),
-              if (verification.qualityRating != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.withAlpha(30),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.star_rounded, size: 16, color: Colors.amber),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${verification.qualityRating}/5',
-                        style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold, color: Colors.amber[900]),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (verification.qualityRating != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withAlpha(30),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                    ],
-                  ),
-                ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.star_rounded, size: 16, color: Colors.amber),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${verification.qualityRating}/5',
+                            style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold, color: Colors.amber[900]),
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (isOwner)
+                    IconButton(
+                      icon: Icon(Icons.edit, size: 20, color: colorScheme.primary),
+                      onPressed: onEdit,
+                      tooltip: 'Vugurura',
+                    ),
+                ],
+              ),
             ],
           ),
           const SizedBox(height: 12),

@@ -375,7 +375,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       title: "Igenzura ry'Abaturage",
       onTap: () => Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => ProjectVerificationsScreen(projectId: p.id, projectName: p.name)),
+        MaterialPageRoute(builder: (_) => ProjectVerificationsScreen(project: p)),
       ),
       child: Row(
         children: [

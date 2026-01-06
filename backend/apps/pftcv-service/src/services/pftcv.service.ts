@@ -176,6 +176,38 @@ export class PftcvService {
     }
 
     /**
+     * Update citizen verification
+     */
+    async updateVerification(input: VerificationInput) {
+        // Find existing verification
+        const existing = await prisma.citizenVerification.findFirst({
+            where: { projectId: input.projectId, verifierId: input.verifierId! }
+        });
+
+        if (!existing) throw new Error('Verification not found');
+
+        const verification = await prisma.citizenVerification.update({
+            where: { id: existing.id },
+            data: {
+                isAnonymous: input.isAnonymous,
+                deliveryStatus: input.deliveryStatus,
+                completionPercent: input.completionPercent,
+                qualityRating: input.qualityRating,
+                comment: input.comment,
+                gpsLatitude: input.gpsLatitude,
+                gpsLongitude: input.gpsLongitude,
+                verifiedAt: new Date() // Update timestamp
+            }
+        });
+
+        // Update project risk score
+        await this.updateProjectRisk(input.projectId);
+
+        logger.info('Verification updated', { projectId: input.projectId, status: input.deliveryStatus });
+        return verification;
+    }
+
+    /**
      * Get verifications for a project
      */
     async getProjectVerifications(projectId: string) {

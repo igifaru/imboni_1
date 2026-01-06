@@ -6,7 +6,8 @@ import '../services/pftcv_service.dart';
 
 class VerificationScreen extends StatefulWidget {
   final Project project;
-  const VerificationScreen({super.key, required this.project});
+  final CitizenVerification? existingVerification;
+  const VerificationScreen({super.key, required this.project, this.existingVerification});
 
   @override
   State<VerificationScreen> createState() => _VerificationScreenState();
@@ -21,6 +22,18 @@ class _VerificationScreenState extends State<VerificationScreen> {
   bool _isSubmitting = false;
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.existingVerification != null) {
+      _selectedStatus = widget.existingVerification!.deliveryStatus;
+      _completionPercent = widget.existingVerification!.completionPercent;
+      _qualityRating = widget.existingVerification!.qualityRating ?? 3;
+      _commentController.text = widget.existingVerification!.comment ?? '';
+      _isAnonymous = widget.existingVerification!.isAnonymous;
+    }
+  }
+
+  @override
   void dispose() {
     _commentController.dispose();
     super.dispose();
@@ -30,25 +43,39 @@ class _VerificationScreenState extends State<VerificationScreen> {
     setState(() => _isSubmitting = true);
 
     try {
-      final result = await pftcvService.submitVerification(
-        projectId: widget.project.id,
-        deliveryStatus: switch (_selectedStatus) {
-          DeliveryStatus.fullyDelivered => 'FULLY_DELIVERED',
-          DeliveryStatus.partiallyDelivered => 'PARTIALLY_DELIVERED',
-          DeliveryStatus.notDelivered => 'NOT_DELIVERED',
-          DeliveryStatus.notStarted => 'NOT_STARTED',
-        },
-        completionPercent: _completionPercent,
-        qualityRating: _qualityRating,
-        comment: _commentController.text,
-        isAnonymous: _isAnonymous,
-      );
+      final result = widget.existingVerification != null
+          ? await pftcvService.updateVerification(
+              projectId: widget.project.id,
+              deliveryStatus: switch (_selectedStatus) {
+                DeliveryStatus.fullyDelivered => 'FULLY_DELIVERED',
+                DeliveryStatus.partiallyDelivered => 'PARTIALLY_DELIVERED',
+                DeliveryStatus.notDelivered => 'NOT_DELIVERED',
+                DeliveryStatus.notStarted => 'NOT_STARTED',
+              },
+              completionPercent: _completionPercent,
+              qualityRating: _qualityRating,
+              comment: _commentController.text,
+              isAnonymous: _isAnonymous,
+            )
+          : await pftcvService.submitVerification(
+              projectId: widget.project.id,
+              deliveryStatus: switch (_selectedStatus) {
+                DeliveryStatus.fullyDelivered => 'FULLY_DELIVERED',
+                DeliveryStatus.partiallyDelivered => 'PARTIALLY_DELIVERED',
+                DeliveryStatus.notDelivered => 'NOT_DELIVERED',
+                DeliveryStatus.notStarted => 'NOT_STARTED',
+              },
+              completionPercent: _completionPercent,
+              qualityRating: _qualityRating,
+              comment: _commentController.text,
+              isAnonymous: _isAnonymous,
+            );
 
       if (mounted) {
         if (result != null) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Row(children: [Icon(Icons.check_circle, color: Colors.white), SizedBox(width: 8), Text('Igenzura ryoherejwe neza!')]),
+              content: Row(children: [const Icon(Icons.check_circle, color: Colors.white), const SizedBox(width: 8), Text(widget.existingVerification != null ? 'Igenzura ryavuguruwe!' : 'Igenzura ryoherejwe neza!')]),
               backgroundColor: ImboniColors.success,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -90,7 +117,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
     return Scaffold(
       backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        title: const Text('Genzura Umushinga'),
+        title: Text(widget.existingVerification != null ? 'Vugurura Igenzura' : 'Genzura Umushinga'),
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.transparent,
@@ -485,12 +512,12 @@ class _VerificationScreenState extends State<VerificationScreen> {
           child: Center(
             child: _isSubmitting
                 ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                : const Row(
+                : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.send_rounded, color: Colors.white),
-                      SizedBox(width: 12),
-                      Text('Ohereza Igenzura', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                      const Icon(Icons.send_rounded, color: Colors.white),
+                      const SizedBox(width: 12),
+                      Text(widget.existingVerification != null ? 'Vugurura Igenzura' : 'Ohereza Igenzura', style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                     ],
                   ),
           ),
