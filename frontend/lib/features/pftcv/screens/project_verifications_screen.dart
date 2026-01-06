@@ -3,6 +3,8 @@ import '../../../shared/theme/colors.dart';
 import '../models/pftcv_models.dart';
 import '../services/pftcv_service.dart';
 import '../../../shared/services/auth_service.dart';
+import '../../../shared/services/api_client.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'verification_screen.dart';
 
 class ProjectVerificationsScreen extends StatefulWidget {
@@ -190,6 +192,71 @@ class _VerificationCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
           ],
+          
+          if (verification.evidence.isNotEmpty) ...[
+            SizedBox(
+              height: 80,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: verification.evidence.length,
+                separatorBuilder: (context, index) => const SizedBox(width: 8),
+                itemBuilder: (context, index) {
+                  final item = verification.evidence[index];
+                  if (item['url'] == null) return const SizedBox();
+                  debugPrint('Rendering Evidence Item: type=${item['type']}, url=${item['url']}, mime=${item['mimeType']}');
+                  
+                  final isImage = item['type'] == 'IMAGE';
+                  final url = ApiClient.baseUrl.replaceAll('/api', '') + item['url'];
+                  
+                  return GestureDetector(
+                    onTap: () {
+                      if (isImage) {
+                         showDialog(
+                          context: context,
+                          builder: (ctx) => Dialog(
+                            backgroundColor: Colors.transparent,
+                            insetPadding: EdgeInsets.zero,
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                InteractiveViewer(
+                                  child: Image.network(url),
+                                ),
+                                Positioned(
+                                  top: 40,
+                                  right: 20,
+                                  child: IconButton(
+                                    icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                                    onPressed: () => Navigator.pop(ctx),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      } else {
+                        launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                      }
+                    },
+                    child: Container(
+                      width: 80,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.black12,
+                        image: isImage ? DecorationImage(
+                          image: NetworkImage(url),
+                          fit: BoxFit.cover,
+                        ) : null,
+                      ),
+                      child: !isImage ? const Center(child: Icon(Icons.play_circle_fill, color: Colors.white70)) : null,
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+
           Divider(color: colorScheme.outlineVariant.withAlpha(80)),
           const SizedBox(height: 8),
           Row(
