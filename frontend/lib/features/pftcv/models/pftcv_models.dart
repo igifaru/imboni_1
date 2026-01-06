@@ -226,7 +226,10 @@ class CitizenVerification {
   final int completionPercent;
   final int? qualityRating;
   final String? comment;
+  final double? gpsLatitude;
+  final double? gpsLongitude;
   final DateTime verifiedAt;
+  final List<Map<String, dynamic>> evidence;
 
   CitizenVerification({
     required this.id,
@@ -237,7 +240,10 @@ class CitizenVerification {
     this.completionPercent = 0,
     this.qualityRating,
     this.comment,
+    this.gpsLatitude,
+    this.gpsLongitude,
     required this.verifiedAt,
+    this.evidence = const [],
   });
 
   factory CitizenVerification.fromJson(Map<String, dynamic> json) {
@@ -250,7 +256,10 @@ class CitizenVerification {
       completionPercent: json['completionPercent'] ?? 0,
       qualityRating: json['qualityRating'],
       comment: json['comment'],
+      gpsLatitude: (json['gpsLatitude'] as num?)?.toDouble(),
+      gpsLongitude: (json['gpsLongitude'] as num?)?.toDouble(),
       verifiedAt: DateTime.tryParse(json['verifiedAt'] ?? '') ?? DateTime.now(),
+      evidence: (json['evidence'] as List?)?.map((e) => e as Map<String, dynamic>).toList() ?? [],
     );
   }
 }
