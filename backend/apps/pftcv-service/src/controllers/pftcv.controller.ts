@@ -211,6 +211,20 @@ router.post('/upload',
                 size: file.size
             });
 
+            // Determine type based on mime type or extension fallback
+            let type: 'IMAGE' | 'VIDEO' | 'AUDIO' | 'DOCUMENT' = 'DOCUMENT';
+
+            if (file.mimetype.startsWith('image/')) type = 'IMAGE';
+            else if (file.mimetype.startsWith('video/')) type = 'VIDEO';
+            else if (file.mimetype.startsWith('audio/')) type = 'AUDIO';
+            else {
+                // Fallback to extension check
+                const ext = file.originalname.split('.').pop()?.toLowerCase();
+                if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic'].includes(ext || '')) type = 'IMAGE';
+                else if (['mp4', 'webm', 'mov', 'avi', 'mkv', '3gp'].includes(ext || '')) type = 'VIDEO';
+                else if (['mp3', 'wav', 'ogg', 'm4a', 'aac'].includes(ext || '')) type = 'AUDIO';
+            }
+
             res.status(201).json({
                 success: true,
                 data: {
@@ -218,9 +232,7 @@ router.post('/upload',
                     fileName: file.originalname,
                     mimeType: file.mimetype,
                     fileSize: file.size,
-                    type: file.mimetype.startsWith('image/') ? 'IMAGE' :
-                        file.mimetype.startsWith('video/') ? 'VIDEO' :
-                            file.mimetype.startsWith('audio/') ? 'AUDIO' : 'DOCUMENT'
+                    type: type
                 }
             });
         } catch (error) {

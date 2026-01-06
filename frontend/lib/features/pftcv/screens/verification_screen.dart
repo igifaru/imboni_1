@@ -500,39 +500,95 @@ class _VerificationScreenState extends State<VerificationScreen> {
                   if (item['url'] == null) return const SizedBox();
                   
                   final isImage = item['type'] == 'IMAGE';
+                  final url = ApiClient.baseUrl.replaceAll('/api', '') + item['url'];
+                    
+                  IconData icon;
+                  Color iconColor;
+                  String label;
+
+                  switch (item['type']) {
+                    case 'VIDEO':
+                      icon = Icons.play_circle_fill;
+                      iconColor = Colors.white;
+                      label = 'Video';
+                      break;
+                    case 'AUDIO':
+                      icon = Icons.audiotrack;
+                      iconColor = Colors.white;
+                      label = 'Audio';
+                      break;
+                    case 'DOCUMENT':
+                      icon = Icons.description;
+                      iconColor = Colors.white;
+                      label = 'Inyandiko';
+                      break;
+                    default:
+                      icon = Icons.insert_drive_file;
+                      iconColor = Colors.white;
+                      label = 'File';
+                  }
+
                   return Stack(
                     children: [
-                      Container(
-                        width: 100,
-                        height: 100,
-                        decoration: BoxDecoration(
-                          color: colorScheme.surface,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: colorScheme.outlineVariant),
-                          image: null,
-                        ),
-                        child: isImage
-                            ? ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: Image.network(
-                                  ApiClient.baseUrl.replaceAll('/api', '') + item['url'],
+                      GestureDetector(
+                        onTap: () => _viewMedia(item),
+                        child: Container(
+                          width: 100,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            color: colorScheme.surfaceContainerHighest,
+                            border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              if (isImage)
+                                Image.network(
+                                  url,
                                   fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    debugPrint('Error loading image: $error');
-                                    return const Center(child: Icon(Icons.broken_image, size: 30, color: Colors.grey));
-                                  },
                                   loadingBuilder: (context, child, loadingProgress) {
                                     if (loadingProgress == null) return child;
-                                    return const Center(child: CircularProgressIndicator());
+                                    return Center(
+                                      child: SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          value: loadingProgress.expectedTotalBytes != null
+                                              ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                              : null,
+                                        ),
+                                      ),
+                                    );
                                   },
+                                  errorBuilder: (_, __, ___) => Center(
+                                    child: Icon(Icons.broken_image_rounded, color: colorScheme.onSurfaceVariant),
+                                  ),
+                                )
+                              else
+                                Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: const BoxDecoration(
+                                        color: Colors.black26, 
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(icon, color: iconColor, size: 32),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      label,
+                                      style: Theme.of(context).textTheme.labelSmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
                                 ),
-                              )
-                            : const Center(child: Icon(Icons.play_circle_fill, size: 30, color: Colors.white70)),
-                        ),
-                      Positioned.fill(
-                        child: GestureDetector(
-                          onTap: () => _viewMedia(item),
-                          child: Container(color: Colors.transparent),
+                            ],
+                          ),
                         ),
                       ),
                       Positioned(
@@ -546,8 +602,12 @@ class _VerificationScreenState extends State<VerificationScreen> {
                           },
                           child: Container(
                             padding: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-                            child: const Icon(Icons.close, size: 12, color: Colors.white),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.6),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 1),
+                            ),
+                            child: const Icon(Icons.close, size: 14, color: Colors.white),
                           ),
                         ),
                       ),

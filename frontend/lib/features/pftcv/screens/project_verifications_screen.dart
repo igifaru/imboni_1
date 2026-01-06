@@ -195,66 +195,24 @@ class _VerificationCard extends StatelessWidget {
           
           if (verification.evidence.isNotEmpty) ...[
             SizedBox(
-              height: 80,
+              height: 100,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: verification.evidence.length,
-                separatorBuilder: (context, index) => const SizedBox(width: 8),
+                separatorBuilder: (context, index) => const SizedBox(width: 12),
                 itemBuilder: (context, index) {
                   final item = verification.evidence[index];
                   if (item['url'] == null) return const SizedBox();
-                  debugPrint('Rendering Evidence Item: type=${item['type']}, url=${item['url']}, mime=${item['mimeType']}');
                   
-                  final isImage = item['type'] == 'IMAGE';
-                  final url = ApiClient.baseUrl.replaceAll('/api', '') + item['url'];
-                  
-                  return GestureDetector(
-                    onTap: () {
-                      if (isImage) {
-                         showDialog(
-                          context: context,
-                          builder: (ctx) => Dialog(
-                            backgroundColor: Colors.transparent,
-                            insetPadding: EdgeInsets.zero,
-                            child: Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                InteractiveViewer(
-                                  child: Image.network(url),
-                                ),
-                                Positioned(
-                                  top: 40,
-                                  right: 20,
-                                  child: IconButton(
-                                    icon: const Icon(Icons.close, color: Colors.white, size: 30),
-                                    onPressed: () => Navigator.pop(ctx),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      } else {
-                        launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-                      }
-                    },
-                    child: Container(
-                      width: 80,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        color: Colors.black12,
-                        image: isImage ? DecorationImage(
-                          image: NetworkImage(url),
-                          fit: BoxFit.cover,
-                        ) : null,
-                      ),
-                      child: !isImage ? const Center(child: Icon(Icons.play_circle_fill, color: Colors.white70)) : null,
-                    ),
+                  return _MediaThumbnail(
+                    item: item,
+                    theme: theme,
+                    colorScheme: colorScheme,
                   );
                 },
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
           ],
 
           Divider(color: colorScheme.outlineVariant.withAlpha(80)),
@@ -270,6 +228,180 @@ class _VerificationCard extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _MediaThumbnail extends StatelessWidget {
+  final Map<String, dynamic> item;
+  final ThemeData theme;
+  final ColorScheme colorScheme;
+
+  const _MediaThumbnail({
+    required this.item,
+    required this.theme,
+    required this.colorScheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    var type = item['type'];
+    final url = ApiClient.baseUrl.replaceAll('/api', '') + item['url'];
+    
+    // Fallback if type is DOCUMENT but extension suggests otherwise
+    if (type == 'DOCUMENT') {
+      final String lowerUrl = url.toLowerCase();
+      if (lowerUrl.endsWith('.jpg') || lowerUrl.endsWith('.jpeg') || 
+          lowerUrl.endsWith('.png') || lowerUrl.endsWith('.webp')) {
+        type = 'IMAGE';
+      } else if (lowerUrl.endsWith('.mp4') || lowerUrl.endsWith('.mov') || 
+                 lowerUrl.endsWith('.avi') || lowerUrl.endsWith('.webm')) {
+        type = 'VIDEO';
+      }
+    }
+
+    final isImage = type == 'IMAGE';
+    
+    IconData icon;
+    Color iconColor;
+    String label;
+
+    switch (type) {
+      case 'VIDEO':
+        icon = Icons.play_circle_fill;
+        iconColor = Colors.white;
+        label = 'Video';
+        break;
+      case 'AUDIO':
+        icon = Icons.audiotrack;
+        iconColor = Colors.white;
+        label = 'Audio';
+        break;
+      case 'DOCUMENT':
+        icon = Icons.description;
+        iconColor = Colors.white;
+        label = 'Inyandiko';
+        break;
+      default:
+        icon = Icons.insert_drive_file;
+        iconColor = Colors.white;
+        label = 'File';
+    }
+
+    return GestureDetector(
+      onTap: () {
+        if (isImage) {
+          showDialog(
+            context: context,
+            builder: (ctx) => Dialog(
+              backgroundColor: Colors.black54,
+              insetPadding: EdgeInsets.zero,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  InteractiveViewer(
+                    child: Image.network(
+                      url,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return const Center(child: CircularProgressIndicator(color: Colors.white));
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                         return const Center(child: Icon(Icons.broken_image, color: Colors.white, size: 50));
+                      },
+                    ),
+                  ),
+                  Positioned(
+                    top: 40,
+                    right: 20,
+                    child: IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        } else {
+          launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+        }
+      },
+      child: Container(
+        width: 100,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: colorScheme.surfaceContainerHighest,
+          border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (isImage)
+              Image.network(
+                url,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Center(
+                    child: Icon(Icons.broken_image_rounded, color: colorScheme.onSurfaceVariant),
+                  );
+                },
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Center(
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        value: loadingProgress.expectedTotalBytes != null
+                            ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                            : null,
+                      ),
+                    ),
+                  );
+                },
+              )
+            else
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black26, 
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(icon, color: iconColor, size: 32),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    label,
+                    style: theme.textTheme.labelSmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+              
+            // Gradient Overlay for Images to make them look nicer
+             if (isImage)
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Colors.transparent, Colors.black.withOpacity(0.3)],
+                      stops: const [0.7, 1.0],
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
