@@ -31,6 +31,13 @@ interface VerificationInput {
     comment?: string;
     gpsLatitude?: number;
     gpsLongitude?: number;
+    evidence?: {
+        type: 'IMAGE' | 'VIDEO' | 'AUDIO' | 'DOCUMENT';
+        url: string;
+        fileName: string;
+        fileSize: number;
+        mimeType: string;
+    }[];
 }
 
 interface FundReleaseInput {
@@ -160,6 +167,21 @@ export class PftcvService {
             }
         });
 
+        // Handle evidence if provided (for update, we might want to Add new ones, typically)
+        // For now, let's just Append new evidence
+        if (input.evidence && input.evidence.length > 0) {
+            await prisma.verificationEvidence.createMany({
+                data: input.evidence.map(e => ({
+                    verificationId: verification.id,
+                    type: e.type,
+                    url: e.url,
+                    fileName: e.fileName,
+                    fileSize: e.fileSize,
+                    mimeType: e.mimeType
+                }))
+            });
+        }
+
         // Update project risk score
         await this.updateProjectRisk(input.projectId);
 
@@ -196,11 +218,25 @@ export class PftcvService {
                 comment: input.comment,
                 gpsLatitude: input.gpsLatitude,
                 gpsLongitude: input.gpsLongitude,
-                verifiedAt: new Date() // Update timestamp
+                verifiedAt: new Date(), // Update verifiedAt timestamp
             }
         });
 
-        // Update project risk score
+        // Handle evidence if provided
+        if (input.evidence && input.evidence.length > 0) {
+            await prisma.verificationEvidence.createMany({
+                data: input.evidence.map(e => ({
+                    verificationId: verification.id,
+                    type: e.type,
+                    url: e.url,
+                    fileName: e.fileName,
+                    fileSize: e.fileSize,
+                    mimeType: e.mimeType
+                }))
+            });
+        }
+
+        // Recalculate project risk score
         await this.updateProjectRisk(input.projectId);
 
         logger.info('Verification updated', { projectId: input.projectId, status: input.deliveryStatus });

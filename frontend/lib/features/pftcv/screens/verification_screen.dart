@@ -1,7 +1,9 @@
 // Citizen Verification Screen - Professional Premium Design
 import 'package:flutter/material.dart';
 import '../../../shared/theme/colors.dart';
+import '../../../shared/services/api_client.dart';
 import '../models/pftcv_models.dart';
+import 'package:file_picker/file_picker.dart';
 import '../services/pftcv_service.dart';
 
 class VerificationScreen extends StatefulWidget {
@@ -20,6 +22,8 @@ class _VerificationScreenState extends State<VerificationScreen> {
   final _commentController = TextEditingController();
   bool _isAnonymous = false;
   bool _isSubmitting = false;
+  final List<Map<String, dynamic>> _evidence = [];
+  bool _isUploading = false;
 
   @override
   void initState() {
@@ -56,6 +60,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
               qualityRating: _qualityRating,
               comment: _commentController.text,
               isAnonymous: _isAnonymous,
+              evidence: _evidence,
             )
           : await pftcvService.submitVerification(
               projectId: widget.project.id,
@@ -69,6 +74,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
               qualityRating: _qualityRating,
               comment: _commentController.text,
               isAnonymous: _isAnonymous,
+              evidence: _evidence,
             );
 
       if (mounted) {
@@ -162,6 +168,10 @@ class _VerificationScreenState extends State<VerificationScreen> {
 
                     // Comment Section - Full Width
                     _buildCommentSection(theme, colorScheme, isDark),
+                    const SizedBox(height: 24),
+
+                    // Evidence Upload Section
+                    _buildEvidenceSection(theme, colorScheme),
                     const SizedBox(height: 32),
 
                     // Submit Button
@@ -459,6 +469,161 @@ class _VerificationScreenState extends State<VerificationScreen> {
     );
   }
 
+  Widget _buildEvidenceSection(ThemeData theme, ColorScheme colorScheme) {
+    return _buildSectionCard(
+      theme: theme,
+      colorScheme: colorScheme,
+      isDark: false, // Force light shadow for consistency or pass proper isDark
+      icon: Icons.attach_file,
+      title: 'Ibimenyetso (Amafoto/Video)',
+      child: Column(
+        children: [
+          if (_evidence.isNotEmpty)
+            Container(
+              height: 120,
+              margin: const EdgeInsets.only(bottom: 16),
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: _evidence.length,
+                separatorBuilder: (context, index) => const SizedBox(width: 8),
+                itemBuilder: (context, index) {
+                  final item = _evidence[index];
+                  final isImage = item['type'] == 'IMAGE';
+                  return Stack(
+                    children: [
+                      Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          color: colorScheme.surface,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: colorScheme.outlineVariant),
+                          image: isImage ? DecorationImage(image: NetworkImage(ApiClient.baseUrl.replaceAll('/api', '') + item['url']), fit: BoxFit.cover) : null,
+                        ),
+                        child: !isImage
+                            ? const Center(child: Icon(Icons.videocam, size: 30))
+                            : null,
+                      ),
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _evidence.removeAt(index);
+                            });
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                            child: const Icon(Icons.close, size: 12, color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          
+          if (_isUploading)
+            const Padding(
+              padding: EdgeInsets.all(8.0),
+              child: CircularProgressIndicator(),
+            )
+          else
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildUploadButton(
+                  icon: Icons.camera_alt,
+                  label: 'Ifoto',
+                  onTap: () => _pickMedia(FileType.image),
+                  colorScheme: colorScheme,
+                ),
+                const SizedBox(width: 16),
+                _buildUploadButton(
+                  icon: Icons.attach_file,
+                  label: 'File',
+                  onTap: () => _pickMedia(FileType.any),
+                  colorScheme: colorScheme,
+                ),
+                const SizedBox(width: 16),
+                _buildUploadButton(
+                  icon: Icons.videocam,
+                  label: 'Video',
+                  onTap: () => _pickMedia(FileType.video),
+                  colorScheme: colorScheme,
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUploadButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    required ColorScheme colorScheme,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: colorScheme.primaryContainer.withAlpha(50),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: colorScheme.primary.withAlpha(100)),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: colorScheme.primary),
+            const SizedBox(height: 4),
+            Text(label, style: TextStyle(fontSize: 12, color: colorScheme.primary, fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickMedia(FileType type) async {
+    try {
+      final FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: type,
+        allowMultiple: false,
+      );
+
+      if (result != null && result.files.single.path != null) {
+        setState(() => _isUploading = true);
+        
+        final uploadResult = await pftcvService.uploadEvidence(result.files.single.path!);
+        
+        if (uploadResult != null) {
+          setState(() {
+            _evidence.add(uploadResult);
+          });
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Failed to upload file')),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error picking file: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isUploading = false);
+    }
+  }
   Widget _buildSectionCard({
     required ThemeData theme,
     required ColorScheme colorScheme,

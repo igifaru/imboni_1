@@ -3,6 +3,7 @@
  */
 import { Router, Request, Response, NextFunction } from 'express';
 import { pftcvService } from '../services/pftcv.service';
+import { uploadMiddleware } from '../middleware/upload.middleware';
 import { createServiceLogger } from '../../../../libs/logging/logger.service';
 
 const logger = createServiceLogger('pftcv-controller');
@@ -76,7 +77,7 @@ router.post('/:id/verify', async (req: Request, res: Response, next: NextFunctio
     try {
         const { id } = req.params;
         const userId = (req as any).user?.userId;
-        const { deliveryStatus, completionPercent, qualityRating, comment, isAnonymous, gpsLatitude, gpsLongitude } = req.body;
+        const { deliveryStatus, completionPercent, qualityRating, comment, isAnonymous, gpsLatitude, gpsLongitude, evidence } = req.body;
 
         if (!deliveryStatus) {
             return res.status(400).json({ success: false, error: 'Delivery status is required' });
@@ -91,7 +92,8 @@ router.post('/:id/verify', async (req: Request, res: Response, next: NextFunctio
             qualityRating,
             comment,
             gpsLatitude,
-            gpsLongitude
+            gpsLongitude,
+            evidence
         });
 
         res.status(201).json({ success: true, data: verification, message: 'Verification submitted successfully' });
@@ -157,5 +159,39 @@ router.post('/:id/releases', async (req: Request, res: Response, next: NextFunct
         next(error);
     }
 });
+
+/**
+ * POST /projects/upload - Upload evidence file
+ */
+router.post('/upload',
+    uploadMiddleware.single('file'),
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const file = req.file;
+
+            if (!file) {
+                return res.status(400).json({ success: false, error: 'No file provided' });
+            }
+
+            // Construct public URL
+            const publicUrl = `/uploads/pftcv-evidence/${file.filename}`;
+
+            res.status(201).json({
+                success: true,
+                data: {
+                    url: publicUrl,
+                    fileName: file.originalname,
+                    mimeType: file.mimetype,
+                    fileSize: file.size,
+                    type: file.mimetype.startsWith('image/') ? 'IMAGE' :
+                        file.mimetype.startsWith('video/') ? 'VIDEO' :
+                            file.mimetype.startsWith('audio/') ? 'AUDIO' : 'DOCUMENT'
+                }
+            });
+        } catch (error) {
+            logger.error('Failed to upload evidence', error);
+            next(error);
+        }
+    });
 
 export const pftcvController = router;

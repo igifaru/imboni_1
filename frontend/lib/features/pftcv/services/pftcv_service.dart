@@ -58,6 +58,7 @@ class PftcvService {
     bool isAnonymous = false,
     double? gpsLatitude,
     double? gpsLongitude,
+    List<Map<String, dynamic>>? evidence,
   }) async {
     final body = {
       'deliveryStatus': deliveryStatus,
@@ -67,6 +68,7 @@ class PftcvService {
       'isAnonymous': isAnonymous,
       if (gpsLatitude != null) 'gpsLatitude': gpsLatitude,
       if (gpsLongitude != null) 'gpsLongitude': gpsLongitude,
+      if (evidence != null) 'evidence': evidence,
     };
 
     final response = await _apiClient.post<dynamic>('/projects/$projectId/verify', body);
@@ -115,6 +117,7 @@ class PftcvService {
     bool isAnonymous = false,
     double? gpsLatitude,
     double? gpsLongitude,
+    List<Map<String, dynamic>>? evidence,
   }) async {
     final body = {
       'deliveryStatus': deliveryStatus,
@@ -124,12 +127,23 @@ class PftcvService {
       'isAnonymous': isAnonymous,
       if (gpsLatitude != null) 'gpsLatitude': gpsLatitude,
       if (gpsLongitude != null) 'gpsLongitude': gpsLongitude,
+      if (evidence != null) 'evidence': evidence,
     };
 
     final response = await _apiClient.patch<dynamic>('/projects/$projectId/verify', body);
     if (response.isSuccess && response.data != null) {
       return CitizenVerification.fromJson(response.data as Map<String, dynamic>);
     }
+    return null;
+  }
+
+  // Upload evidence file
+  Future<Map<String, dynamic>?> uploadEvidence(String filePath) async {
+    final response = await _apiClient.uploadFile<Map<String, dynamic>>('/projects/upload', filePath);
+    if (response.isSuccess && response.data != null) {
+      return response.data;
+    }
+    debugPrint('PftcvService: Upload failed. Status: ${response.isSuccess}, Error: ${response.error}, Data: ${response.data}');
     return null;
   }
 }

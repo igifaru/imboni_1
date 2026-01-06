@@ -33,6 +33,7 @@ app.use(generalRateLimiter);
 // Serve static files (uploads)
 import path from 'path';
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+app.use('/uploads/pftcv-evidence', express.static(path.join(process.cwd(), 'uploads/pftcv-evidence')));
 
 // Health check (no auth)
 app.get('/health', (req, res) => {

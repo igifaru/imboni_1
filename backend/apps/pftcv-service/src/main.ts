@@ -17,6 +17,9 @@ const app = express();
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
+// Serve static uploads
+import path from 'path';
+app.use('/uploads/pftcv-evidence', express.static(path.join(process.cwd(), 'uploads/pftcv-evidence')));
 
 // Health check
 app.get('/health', (req, res) => {
