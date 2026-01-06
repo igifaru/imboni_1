@@ -4,6 +4,7 @@ import '../../../shared/theme/colors.dart';
 import '../../../shared/services/api_client.dart';
 import '../models/pftcv_models.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/pftcv_service.dart';
 
 class VerificationScreen extends StatefulWidget {
@@ -61,6 +62,8 @@ class _VerificationScreenState extends State<VerificationScreen> {
               comment: _commentController.text,
               isAnonymous: _isAnonymous,
               evidence: _evidence,
+              gpsLatitude: widget.existingVerification?.gpsLatitude,
+              gpsLongitude: widget.existingVerification?.gpsLongitude,
             )
           : await pftcvService.submitVerification(
               projectId: widget.project.id,
@@ -99,13 +102,19 @@ class _VerificationScreenState extends State<VerificationScreen> {
           );
         }
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('Error submitting/updating verification: $e');
+      debugPrint('Stack trace: $stackTrace');
       if (mounted) {
+        // Assuming showCustomSnackBar and SnackBarType are defined elsewhere or imported
+        // For this example, I'll use a standard SnackBar as showCustomSnackBar is not provided.
+        // If showCustomSnackBar is a custom widget, it needs to be defined or imported.
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Ikosa: $e'),
-            backgroundColor: ImboniColors.error,
+            content: Text('Habaye ikibazo. Ongera ugerageze. Error: $e'),
+            backgroundColor: ImboniColors.error, // Assuming ImboniColors.error is the equivalent of SnackBarType.error
             behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         );
       }
@@ -488,6 +497,8 @@ class _VerificationScreenState extends State<VerificationScreen> {
                 separatorBuilder: (context, index) => const SizedBox(width: 8),
                 itemBuilder: (context, index) {
                   final item = _evidence[index];
+                  if (item['url'] == null) return const SizedBox();
+                  
                   final isImage = item['type'] == 'IMAGE';
                   return Stack(
                     children: [
@@ -498,11 +509,31 @@ class _VerificationScreenState extends State<VerificationScreen> {
                           color: colorScheme.surface,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: colorScheme.outlineVariant),
-                          image: isImage ? DecorationImage(image: NetworkImage(ApiClient.baseUrl.replaceAll('/api', '') + item['url']), fit: BoxFit.cover) : null,
+                          image: null,
                         ),
-                        child: !isImage
-                            ? const Center(child: Icon(Icons.videocam, size: 30))
-                            : null,
+                        child: isImage
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.network(
+                                  ApiClient.baseUrl.replaceAll('/api', '') + item['url'],
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    debugPrint('Error loading image: $error');
+                                    return const Center(child: Icon(Icons.broken_image, size: 30, color: Colors.grey));
+                                  },
+                                  loadingBuilder: (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return const Center(child: CircularProgressIndicator());
+                                  },
+                                ),
+                              )
+                            : const Center(child: Icon(Icons.play_circle_fill, size: 30, color: Colors.white70)),
+                        ),
+                      Positioned.fill(
+                        child: GestureDetector(
+                          onTap: () => _viewMedia(item),
+                          child: Container(color: Colors.transparent),
+                        ),
                       ),
                       Positioned(
                         top: 4,
@@ -622,6 +653,40 @@ class _VerificationScreenState extends State<VerificationScreen> {
       }
     } finally {
       if (mounted) setState(() => _isUploading = false);
+    }
+  }
+
+  void _viewMedia(Map<String, dynamic> item) {
+    final url = ApiClient.baseUrl.replaceAll('/api', '') + item['url'];
+    final isImage = item['type'] == 'IMAGE';
+
+    if (isImage) {
+      showDialog(
+        context: context,
+        builder: (ctx) => Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: EdgeInsets.zero,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              InteractiveViewer(
+                child: Image.network(url),
+              ),
+              Positioned(
+                top: 40, 
+                right: 20, 
+                child: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white, size: 30), 
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    } else {
+      // Open video/file in external app
+      launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     }
   }
   Widget _buildSectionCard({
