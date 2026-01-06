@@ -15,7 +15,7 @@ class ApiClient {
     
     // For Desktop (Linux, macOS, Windows): use localhost since both are on same machine
     if (Platform.isLinux || Platform.isMacOS || Platform.isWindows) {
-      return 'http://localhost:3000/api';
+      return 'http://127.0.0.1:3000/api';
     }
     
     // For Android Emulator: use 10.0.2.2 (standard loopback)
