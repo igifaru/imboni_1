@@ -7,10 +7,13 @@ import '../../shared/localization/app_localizations.dart';
 import '../../shared/widgets/countdown_timer.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:imboni/shared/services/api_client.dart';
+import 'package:imboni/shared/services/auth_service.dart'; // Import AuthService
 import 'resolution_dialog.dart';
 import 'manual_assignment_dialog.dart';
 import 'package:intl/intl.dart';
 import 'widgets/case_detail_card.dart';
+
+// ... imports remain the same
 
 class LeaderCaseDetailsScreen extends StatefulWidget {
   final CaseModel caseData;
@@ -34,6 +37,26 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
     _refreshCaseDetails();
     _fetchActions();
   }
+
+  @override
+  void dispose() {
+    _player.dispose();
+    super.dispose();
+  }
+
+  // CHECK: Can the current user perform actions?
+  bool get _canPerformActions {
+    // If case is closed/resolved, no actions
+    if (_case.status == 'RESOLVED') return false;
+    
+    // If Unassigned (OPEN), any leader in the unit can take/assign it
+    if (_case.assignedLeaderId == null) return true;
+
+    // If Assigned, ONLY the assigned leader can act
+    final currentUserId = authService.currentUser?.id;
+    return currentUserId == _case.assignedLeaderId;
+  }
+
 
   @override
   void dispose() {
@@ -1007,27 +1030,36 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
   }
 
   Widget _buildActionButtonsCard(ThemeData theme, AppLocalizations l10n, bool isDark, Color cardColor) {
+    // Check permissions first
+    if (!_canPerformActions) {
+      // If user can't perform actions, don't show the card at all (or show read-only/taken message)
+      return const SizedBox.shrink(); 
+    }
+
     final canTakeCase = _case.status == 'OPEN' || _case.status == 'ESCALATED';
     
     return CaseDetailCard(
       backgroundColor: cardColor,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final isBigScreen = constraints.maxWidth > 600;
+          final isBigScreen = constraints.maxWidth > 500; // Adjusted breakpoint
           
           final resolveButton = _buildResolveButton(l10n, canTakeCase);
-          final escalateButton = _case.status == 'IN_PROGRESS' 
+          
+          final escalateButton = (_case.status == 'IN_PROGRESS') 
               ? _buildEscalateButton(l10n) 
               : null;
+              
           final assignButton = (canTakeCase || _case.status == 'IN_PROGRESS')
               ? _buildAssignButton(l10n, theme)
               : null;
-          final extendButton = _case.status == 'IN_PROGRESS'
+              
+          final extendButton = (_case.status == 'IN_PROGRESS')
               ? _buildExtendButton(l10n, theme)
               : null;
               
           if (isBigScreen) {
-            return Row(
+             return Row(
               children: [
                 Expanded(child: resolveButton),
                 if (escalateButton != null) ...[
