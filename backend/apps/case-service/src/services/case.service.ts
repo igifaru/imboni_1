@@ -553,7 +553,9 @@ export class CaseService {
             }
         });
 
-        return this.toResponseDto(caseData, newDeadline.toISOString());
+        // 7. Re-fetch case to get fresh data with updated assignment
+        const updatedCase = await this.repository.findById(caseId);
+        return this.toResponseDto(updatedCase!);
     }
 
     async updateCase(caseId: string, dto: UpdateCaseDto, userId: string): Promise<CaseResponseDto> {

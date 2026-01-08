@@ -37,20 +37,9 @@ class ProfessionalCaseCard extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
-        child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Left Colored Strip
-              Container(
-                width: 6,
-                color: statusColor,
-              ),
-
-              // Content Area
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -176,27 +165,11 @@ class ProfessionalCaseCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Container(
-                            height: 36, width: 36,
-                            decoration: BoxDecoration(
-                              border: Border.all(color: theme.dividerColor),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: IconButton(
-                              icon: Icon(Icons.more_vert, size: 18, color: theme.colorScheme.onSurfaceVariant),
-                              onPressed: () {},
-                              padding: EdgeInsets.zero,
-                            ),
-                          ),
                         ],
                       ),
                     ],
                   ),
-                ),
-              ),
-            ],
-          ),
+        ),
       ),
     );
   }
