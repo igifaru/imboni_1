@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../admin/services/admin_service.dart';
 import '../../../shared/services/case_service.dart';
+import '../../../shared/services/auth_service.dart';
 import '../../../shared/models/models.dart';
 import '../../../shared/theme/colors.dart';
 
@@ -43,14 +44,43 @@ class _ManualAssignmentDialogState extends State<ManualAssignmentDialog> {
       // Fetch leaders for this specific unit
       // Note: This relies on adminService.getUsers supporting unitId filter
       final response = await adminService.getUsers(
-        role: 'LEADER',
+        role: 'LEADER,ADMIN,OVERSIGHT',
         unitId: widget.administrativeUnitId,
         limit: 100, // Fetch all reasonable leaders for the unit
       );
       
       if (mounted) {
         setState(() {
-          _leaders = response.data;
+          var list = response.data;
+          final currentUser = authService.currentUser;
+
+          if (currentUser != null) {
+            // 1. Remove self
+            list = list.where((u) => u.id != currentUser.id).toList();
+
+            // 2. If Staff (LEADER), hide Head (ADMIN/OVERSIGHT) and by Title
+            if (currentUser.role == 'LEADER') {
+              list = list.where((u) {
+                // Remove if explicit Admin/Oversight role
+                if (u.role == 'ADMIN' || u.role == 'OVERSIGHT') return false;
+                
+                // Remove if Title indicates Head/Chief
+                final title = u.positionTitle?.toLowerCase() ?? '';
+                const headKeywords = [
+                  'head of', 'executive', 'manager', 'director', 
+                  'umuyobozi w', 'ukuru w', 'perezida', 'chief'
+                ];
+                
+                for (final keyword in headKeywords) {
+                  if (title.contains(keyword)) return false;
+                }
+                
+                return true;
+              }).toList();
+            }
+          }
+
+          _leaders = list;
           _isLoadingLeaders = false;
         });
       }
