@@ -132,17 +132,20 @@ class _LeaderDashboardScreenState extends State<LeaderDashboardScreen> {
             ),
             const SizedBox(height: 8),
             ..._buildNavItems(theme, isDark, showRegister, l10n),
-            const Spacer(),
-            const Divider(),
-            ListTile(
-              leading: Icon(Icons.settings_outlined, color: theme.colorScheme.onSurfaceVariant),
-              title: Text(l10n.settings, style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
-              onTap: () => Navigator.push(
-                context, 
-                MaterialPageRoute(builder: (_) => const LeaderSettingsScreen()),
+            const SizedBox(height: 8),
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              child: ListTile(
+                leading: Icon(Icons.settings_outlined, color: theme.colorScheme.onSurfaceVariant, size: 22),
+                title: Text(l10n.settings, style: TextStyle(color: theme.colorScheme.onSurface)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                onTap: () => Navigator.push(
+                  context, 
+                  MaterialPageRoute(builder: (_) => const LeaderSettingsScreen()),
+                ),
               ),
             ),
-            const SizedBox(height: 16),
+            const Spacer(),
           ]),
         ),
         Expanded(child: screens[_currentIndex]),
