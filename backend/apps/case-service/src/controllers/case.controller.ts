@@ -156,6 +156,33 @@ router.get('/track/:reference', async (req: Request, res: Response, next: NextFu
 });
 
 /**
+ * GET /cases/jurisdiction - Get all cases in leader's jurisdiction with assignment info
+ * This includes cases assigned to subordinate/peer leaders, matching dashboard stats
+ */
+router.get('/jurisdiction', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const userId = (req as any).user?.userId;
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 50;
+        const status = req.query.status as string | undefined;
+
+        if (!userId) {
+            return res.status(401).json({ error: 'Authentication required' });
+        }
+
+        const result = await caseService.getJurisdictionCases(userId, { page, limit, status });
+
+        res.json({
+            success: true,
+            data: result,
+        });
+    } catch (error) {
+        logger.error('Failed to get jurisdiction cases', error);
+        next(error);
+    }
+});
+
+/**
  * GET /cases/assigned - Get assigned cases for logged-in leader
  */
 router.get('/assigned', async (req: Request, res: Response, next: NextFunction) => {

@@ -66,7 +66,10 @@ class _LeaderDashboardScreenState extends State<LeaderDashboardScreen> {
     const showRegister = true; // Enabled for all levels including VILLAGE (for staff)
 
     final screens = [
-      _DashboardHome(currentLevel: _currentLevel),
+      _DashboardHome(
+        currentLevel: _currentLevel,
+        onNavigateToTab: (index) => setState(() => _currentIndex = index),
+      ),
       const CommunityHomeScreen(), // Community Tab 
       const PftcvHomeScreen(), // PFTCV Tab
       const AssignedCasesScreen(),
@@ -179,8 +182,9 @@ class _LeaderDashboardScreenState extends State<LeaderDashboardScreen> {
 }
 class _DashboardHome extends StatefulWidget {
   final String? currentLevel;
+  final void Function(int tabIndex)? onNavigateToTab;
 
-  const _DashboardHome({this.currentLevel});
+  const _DashboardHome({this.currentLevel, this.onNavigateToTab});
 
   @override
   State<_DashboardHome> createState() => _DashboardHomeState();
@@ -475,23 +479,31 @@ class _DashboardHomeState extends State<_DashboardHome> {
                   const SizedBox(height: 32),
                   if (isDesktop)
                     Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      // Left: Rwanda Map
+                      // Left: Rwanda Map + Case Table below it
                       Expanded(
                         flex: 5,
-                        child: RwandaMapWidget(
-                          casesByDistrict: _casesByDistrict,
-                          onDistrictSelected: (d) => debugPrint('Selected District: $d'),
-                          mapTitle: _selectedLocationName ?? _rootLocationName ?? 'National "God View" Dashboard',
-                          focusProvince: _focusProvince,
-                          focusDistrict: _focusDistrict,
-                          focusSector: _focusSector,
-                          focusCell: _focusCell,
-                          focusVillage: _focusVillage,
-                          allowFullMapToggle: _currentLevel != 'NATIONAL' && _currentLevel != 'PROVINCE',
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            RwandaMapWidget(
+                              casesByDistrict: _casesByDistrict,
+                              onDistrictSelected: (d) => debugPrint('Selected District: $d'),
+                              mapTitle: _selectedLocationName ?? _rootLocationName ?? 'National "God View" Dashboard',
+                              focusProvince: _focusProvince,
+                              focusDistrict: _focusDistrict,
+                              focusSector: _focusSector,
+                              focusCell: _focusCell,
+                              focusVillage: _focusVillage,
+                              allowFullMapToggle: _currentLevel != 'NATIONAL' && _currentLevel != 'PROVINCE',
+                            ),
+                            const SizedBox(height: 16),
+                            // Case search and table UNDER the map
+                            _buildSearchAndTable(theme, isDark),
+                          ],
                         ),
                       ),
                       const SizedBox(width: 24),
-                      // Right: Districts in Province with case counts
+                      // Right: Districts/Sectors/Cells list (scrollable independently)
                       Expanded(
                         flex: 3,
                         child: Column(
@@ -537,10 +549,10 @@ class _DashboardHomeState extends State<_DashboardHome> {
                       onUnitSelected: _handleUnitSelected,
                       currentMetrics: _metrics, // Pass metrics for mobile too
                     ),
+                    const SizedBox(height: 16),
+                    // Case search and table for mobile
+                    _buildSearchAndTable(theme, isDark),
                   ],
-                  const SizedBox(height: 32),
-                  // Case search and table below
-                  _buildSearchAndTable(theme, isDark),
                 ]),
               ),
       ),
@@ -594,12 +606,35 @@ class _DashboardHomeState extends State<_DashboardHome> {
     final activeCount = _metrics?.pendingCases ?? 0;
     final escalatedCount = _metrics?.escalatedCases ?? 0;
 
+    // Tab index 3 is AssignedCasesScreen (Ibibazo)
+    void navigateToCases() {
+      widget.onNavigateToTab?.call(3);
+    }
+
     return Row(children: [
-      Expanded(child: StatCard(icon: Icons.warning_amber_rounded, iconColor: ImboniColors.urgencyEmergency, label: 'Urgent (+24h):', value: '$urgentCount')),
+      Expanded(child: StatCard(
+        icon: Icons.warning_amber_rounded, 
+        iconColor: ImboniColors.urgencyEmergency, 
+        label: 'Urgent (+24h):', 
+        value: '$urgentCount',
+        onTap: navigateToCases,
+      )),
       const SizedBox(width: 24),
-      Expanded(child: StatCard(icon: Icons.cases_outlined, iconColor: ImboniColors.info, label: 'Active Cases:', value: '$activeCount')),
+      Expanded(child: StatCard(
+        icon: Icons.cases_outlined, 
+        iconColor: ImboniColors.info, 
+        label: 'Active Cases:', 
+        value: '$activeCount',
+        onTap: navigateToCases,
+      )),
       const SizedBox(width: 24),
-      Expanded(child: StatCard(icon: Icons.trending_up, iconColor: ImboniColors.warning, label: 'Escalated:', value: '$escalatedCount')),
+      Expanded(child: StatCard(
+        icon: Icons.trending_up, 
+        iconColor: ImboniColors.warning, 
+        label: 'Escalated:', 
+        value: '$escalatedCount',
+        onTap: navigateToCases,
+      )),
     ]);
   }
 
@@ -649,7 +684,7 @@ class _DashboardHomeState extends State<_DashboardHome> {
           DataColumn(label: Text('Title', style: TextStyle(fontWeight: FontWeight.bold))),
           DataColumn(label: Text('Status', style: TextStyle(fontWeight: FontWeight.bold))),
           DataColumn(label: Text('Urgency', style: TextStyle(fontWeight: FontWeight.bold))),
-          DataColumn(label: Text('Age', style: TextStyle(fontWeight: FontWeight.bold))),
+          DataColumn(label: Text('Time', style: TextStyle(fontWeight: FontWeight.bold))),
         ],
         rows: cases.take(10).map((c) => DataRow(
           onSelectChanged: (_) => _openCaseDetails(c),

@@ -198,6 +198,32 @@ class CaseService {
     return ApiResponse.success([]);
   }
 
+  /// Get all cases in leader's jurisdiction (includes cases assigned to other leaders)
+  /// This matches the dashboard stats count
+  Future<ApiResponse<List<CaseModel>>> getJurisdictionCases({int limit = 50, String? status}) async {
+    String endpoint = '/cases/jurisdiction?limit=$limit';
+    if (status != null && status != 'All') endpoint += '&status=$status';
+    
+    final response = await apiClient.get(endpoint);
+    debugPrint('CaseService: getJurisdictionCases response.data type: ${response.data.runtimeType}');
+    if (response.isSuccess && response.data != null) {
+      final List<dynamic> casesJson;
+      final data = response.data;
+      if (data is Map && data['cases'] is List) {
+        casesJson = data['cases'];
+      } else if (data is Map && data['data'] is List) {
+        casesJson = data['data'];
+      } else if (data is List) {
+        casesJson = data;
+      } else {
+        casesJson = [];
+      }
+      final cases = casesJson.map((json) => CaseModel.fromJson(json)).toList();
+      return ApiResponse.success(cases);
+    }
+    return ApiResponse.success([]);
+  }
+
   /// Get ALL cases (for Admin)
   Future<ApiResponse<List<CaseModel>>> getAllCases({int page = 1, int limit = 50, String? query, String? locationId}) async {
     String endpoint = '/cases?page=$page&limit=$limit';

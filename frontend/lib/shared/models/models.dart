@@ -20,6 +20,9 @@ class CaseModel {
   final String? locationName;
   final String? administrativeUnitCode;
   final String administrativeUnitId; // Added for assignment logic
+  final String? assignedLeaderId;
+  final String? assignedLeaderName;
+  final String? assignedLeaderPhone;
 
   const CaseModel({
     required this.id,
@@ -41,6 +44,9 @@ class CaseModel {
     this.locationName,
     this.administrativeUnitCode,
     required this.administrativeUnitId,
+    this.assignedLeaderId,
+    this.assignedLeaderName,
+    this.assignedLeaderPhone,
   });
 
   factory CaseModel.fromJson(Map<String, dynamic> json) {
@@ -67,6 +73,9 @@ class CaseModel {
       administrativeUnitCode: json['administrativeUnit']?['code'] as String?,
       administrativeUnitId: (json['administrativeUnitId'] as String?) ?? 
                            (json['administrativeUnit']?['id'] as String?) ?? '',
+      assignedLeaderId: json['assignedLeaderId'] as String?,
+      assignedLeaderName: json['assignedLeaderName'] as String?,
+      assignedLeaderPhone: json['assignedLeaderPhone'] as String?,
     );
   }
 

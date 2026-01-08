@@ -312,6 +312,7 @@ class AppLocalizations {
   String get priority => get('priority'); // Reusing urgency_title if appropriate, but priority is used for sorting
   String get submitted => get('submitted');
   String get categoryLabel => get('category_label');
+  String get assignedTo => get('assigned_to');
   
   String get escalationIn => get('escalation_in');
   String get overdue => get('overdue');
@@ -453,6 +454,7 @@ const Map<String, Map<String, String>> _translations = {
     'priority': 'Uburemere',
     'submitted': 'Yatanzwe',
     'category_label': 'Icyiciro',
+    'assigned_to': 'Yatanzwe kuri',
 
     'my_cases': 'Ibibazo',
     'alerts': 'Imburira',
@@ -862,6 +864,7 @@ const Map<String, Map<String, String>> _translations = {
     'priority': 'Priority',
     'submitted': 'Submitted',
     'category_label': 'Category',
+    'assigned_to': 'Assigned To',
 
     // Submit Case Screen EN
     'processing': 'Processing...',

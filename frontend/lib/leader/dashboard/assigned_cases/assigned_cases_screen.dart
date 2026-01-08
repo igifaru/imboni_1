@@ -32,7 +32,9 @@ class _AssignedCasesScreenState extends State<AssignedCasesScreen> {
   Future<void> _loadCases() async {
     setState(() => _isLoading = true);
     try {
-      final response = await caseService.getAssignedCases(limit: 50);
+      // Use getJurisdictionCases to fetch all cases in leader's jurisdiction
+      // This matches the dashboard stats and includes cases assigned to other leaders
+      final response = await caseService.getJurisdictionCases(limit: 50);
       if (mounted) {
         setState(() {
           _cases = response.data ?? [];

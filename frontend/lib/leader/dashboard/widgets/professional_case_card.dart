@@ -136,6 +136,23 @@ class ProfessionalCaseCard extends StatelessWidget {
                         ],
                       ),
 
+                      // Assigned Leader Row (if assigned to another leader)
+                      if (caseData.assignedLeaderName != null) ...[
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildDetailItem(
+                                context: context,
+                                label: l10n.assignedTo,
+                                value: caseData.assignedLeaderName!,
+                                icon: Icons.person_outline,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+
                       const Spacer(),
                       const SizedBox(height: 8),
                       Divider(height: 1, color: theme.dividerColor),

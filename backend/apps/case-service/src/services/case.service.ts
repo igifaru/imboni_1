@@ -251,6 +251,92 @@ export class CaseService {
     }
 
     /**
+     * Get all cases in leader's jurisdiction with assignment info
+     * This matches the dashboard stats by using the same jurisdiction-based query
+     */
+    async getJurisdictionCases(leaderId: string, options: { page: number; limit: number; status?: string }) {
+        const { page, limit, status } = options;
+        const skip = (page - 1) * limit;
+
+        // 1. Get leader's jurisdiction (same logic as getPerformanceMetrics)
+        const leadership = await prisma.leaderAssignment.findFirst({
+            where: { userId: leaderId, isActive: true },
+            include: { administrativeUnit: true }
+        });
+
+        let whereClause: any = {};
+
+        if (leadership) {
+            // Filter by jurisdiction using hierarchical code prefix
+            whereClause.administrativeUnit = {
+                code: { startsWith: leadership.administrativeUnit.code }
+            };
+        } else {
+            // Check if user is ADMIN - they see all cases
+            const user = await prisma.user.findUnique({ where: { id: leaderId } });
+            if (user?.role !== 'ADMIN') {
+                logger.warn('No jurisdiction for non-admin user', { leaderId });
+                return { cases: [], total: 0, page, limit };
+            }
+            // Admin sees all cases - no filter
+        }
+
+        // Apply status filter if provided
+        if (status && status !== 'All') {
+            whereClause.status = status.toUpperCase().replace(' ', '_');
+        }
+
+        // 2. Fetch cases with assignments including leader info
+        const [cases, total] = await Promise.all([
+            prisma.case.findMany({
+                where: whereClause,
+                include: {
+                    administrativeUnit: true,
+                    evidence: true,
+                    submitter: { select: { id: true, name: true } },
+                    assignments: {
+                        where: { isActive: true },
+                        include: {
+                            leader: { select: { id: true, name: true, phone: true } }
+                        }
+                    }
+                },
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: limit
+            }),
+            prisma.case.count({ where: whereClause })
+        ]);
+
+        // 3. Transform to response with assigned leader info
+        const caseDtos = cases.map((c: any) => {
+            const activeAssignment = c.assignments?.[0]; // First active assignment
+            const assignedLeader = activeAssignment?.leader;
+            const deadline = activeAssignment?.deadlineAt?.toISOString();
+
+            return {
+                ...this.toResponseDto(c as any, deadline),
+                assignedLeaderId: assignedLeader?.id || null,
+                assignedLeaderName: assignedLeader?.name || null,
+                assignedLeaderPhone: assignedLeader?.phone || null,
+            };
+        });
+
+        logger.info('Jurisdiction cases fetched', {
+            leaderId,
+            total,
+            jurisdictionCode: leadership?.administrativeUnit.code || 'NATIONAL'
+        });
+
+        return {
+            cases: caseDtos,
+            total,
+            page,
+            limit
+        };
+    }
+
+    /**
      * Get all cases (Admin only)
      */
     async getAllCases(page = 1, limit = 50, search?: string, locationId?: string) {
