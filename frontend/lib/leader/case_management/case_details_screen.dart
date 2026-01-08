@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:imboni/shared/models/models.dart';
 import 'package:imboni/shared/services/case_service.dart';
 import '../../shared/theme/colors.dart';
@@ -674,9 +675,28 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
       children: (_case.evidence ?? []).map((e) {
         final isImage = e.mimeType.startsWith('image/');
         final isAudio = e.mimeType.startsWith('audio/');
+        final isVideo = e.mimeType.startsWith('video/');
+        final isPdf = e.mimeType == 'application/pdf';
+        
+        final url = '${ApiClient.storageUrl}${e.url}';
+        
+        // Extract extension for label (e.g. JPG, PDF, MP4)
+        String ext = 'FILE';
+        if (e.fileName.contains('.')) {
+          ext = e.fileName.split('.').last.toUpperCase();
+          if (ext.length > 4) ext = 'FILE'; 
+        }
 
         return GestureDetector(
-          onTap: isImage ? () => _openLightbox(e) : null,
+          onTap: () {
+              if (isImage) {
+                  _openLightbox(e);
+              } else if (isAudio) {
+                  _player.play(UrlSource(url));
+              } else {
+                  launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+              }
+          },
           child: Container(
             width: 80,
             height: 80,
@@ -691,33 +711,30 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(12),
                       child: Image.network(
-                        '${ApiClient.storageUrl}${e.url}',
+                        url,
                         fit: BoxFit.cover,
                         errorBuilder: (c, e, s) => const Icon(Icons.broken_image),
                       ),
                     ),
                   )
-                : isAudio
-                    ? InkWell(
-                        onTap: () => _player.play(UrlSource('${ApiClient.storageUrl}${e.url}')),
-                        borderRadius: BorderRadius.circular(12),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.play_circle_fill, size: 28, color: ImboniColors.primary),
-                            const SizedBox(height: 4),
-                            Text('Audio', style: TextStyle(fontSize: 10, color: isDark ? Colors.white54 : Colors.grey[600])),
-                          ],
-                        ),
-                      )
-                    : Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.insert_drive_file, size: 28, color: isDark ? Colors.white54 : Colors.grey[600]),
-                          const SizedBox(height: 4),
-                          Text('File', style: TextStyle(fontSize: 10, color: isDark ? Colors.white54 : Colors.grey[600])),
-                        ],
+                : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        isAudio ? Icons.audiotrack :
+                        isVideo ? Icons.videocam :
+                        isPdf ? Icons.picture_as_pdf :
+                        Icons.insert_drive_file,
+                        size: 28,
+                        color: isDark ? Colors.white54 : Colors.grey[600],
                       ),
+                      const SizedBox(height: 4),
+                      Text(
+                        isAudio ? 'Audio' : ext, // Show extension for files/video
+                        style: TextStyle(fontSize: 10, color: isDark ? Colors.white54 : Colors.grey[600]),
+                      ),
+                    ],
+                  ),
           ),
         );
       }).toList(),
