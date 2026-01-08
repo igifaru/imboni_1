@@ -204,6 +204,9 @@ class AppLocalizations {
   String get caseViewed => get('case_viewed');
   String get caseAssigned => get('case_assigned');
   String get caseAccepted => get('case_accepted');
+  String get caseStatusUpdate => get('case_status_update');
+  String get caseAssignment => get('case_assignment');
+
   String get takeCase => get('take_case');
   String get resolveCase => get('resolve_case');
   String get escalate => get('escalate');
@@ -337,6 +340,18 @@ class AppLocalizations {
   String get extensionSuccess => get('extension_success');
   String get extensionReasonLabel => get('extension_reason_label');
   String get extensionReasonHint => get('extension_reason_hint');
+  
+  // Timeline Notes
+  String get noteManualAssignment => get('note_manual_assignment');
+  String get noteDeadlineExtended => get('note_deadline_extended'); // Expects argument replacement in UI logic
+  String get noteReason => get('note_reason');
+  String get noteExtensionCount => get('note_extension_count');
+
+  String get daySingular => get('day_singular');
+  String get dayPlural => get('day_plural');
+  String get assignToStaff => get('assign_to_staff');
+
+
 
 
 
@@ -532,6 +547,9 @@ const Map<String, Map<String, String>> _translations = {
     'case_viewed': 'Cyarebwe',
     'case_assigned': 'Cyatanzwe',
     'case_accepted': 'Cyemejwe',
+    'case_status_update': 'Ivugururwa rya Status',
+    'case_assignment': 'Igikorwa cyo Gutanga',
+
     'take_case': 'Fata Iyi Dosiye',
     'resolve_case': 'Kemura Burundu',
     'escalate': 'Ohereza hejuru',
@@ -656,6 +674,17 @@ const Map<String, Map<String, String>> _translations = {
     'extension_success': 'Igihe cyongerewe neza',
     'extension_reason_label': 'Impamvu yo kongera',
     'extension_reason_hint': 'Sobanura impamvu ukeneye kongera igihe...',
+
+    'note_manual_assignment': 'Yatanzwe n\'umuyobozi',
+    'note_deadline_extended': 'Igihe cyongereweho iminsi',
+    'note_reason': 'Impamvu',
+    'note_extension_count': 'Inshuro',
+
+    'day_singular': 'Umunsi',
+    'day_plural': 'Iminsi',
+    'assign_to_staff': 'Tanga ku Bakozi',
+
+
 
 
   },
@@ -815,6 +844,9 @@ const Map<String, Map<String, String>> _translations = {
     'case_viewed': 'Viewed',
     'case_assigned': 'Assigned',
     'case_accepted': 'Accepted',
+    'case_status_update': 'Status Update',
+    'case_assignment': 'Assignment',
+
     'take_case': 'Take This Case',
     'resolve_case': 'Mark Resolved',
     'escalate': 'Escalate',
@@ -951,6 +983,17 @@ const Map<String, Map<String, String>> _translations = {
     'extension_success': 'Deadline extended successfully',
     'extension_reason_label': 'Reason for extension',
     'extension_reason_hint': 'Explain why you need more time...',
+
+    'note_manual_assignment': 'Manually assigned to specific leader',
+    'note_deadline_extended': 'Deadline extended by',
+    'note_reason': 'Reason',
+    'note_extension_count': 'Extension',
+
+    'day_singular': 'Day',
+    'day_plural': 'Days',
+    'assign_to_staff': 'Assign to Staff',
+
+
 
 
   },
@@ -1106,6 +1149,9 @@ const Map<String, Map<String, String>> _translations = {
     'case_viewed': 'Consulté',
     'case_assigned': 'Assigné',
     'case_accepted': 'Accepté',
+    'case_status_update': 'Mise à jour du statut',
+    'case_assignment': 'Assignation',
+
     'take_case': 'Prendre ce Cas',
     'resolve_case': 'Marquer Résolu',
     'escalate': 'Escalader',
@@ -1233,6 +1279,17 @@ const Map<String, Map<String, String>> _translations = {
     'extension_success': 'Délai prolongé avec succès',
     'extension_reason_label': 'Raison de la prolongation',
     'extension_reason_hint': 'Expliquez pourquoi vous avez besoin de plus de temps...',
+
+    'note_manual_assignment': 'Assigné manuellement à un chef spécifique',
+    'note_deadline_extended': 'Délai prolongé de',
+    'note_reason': 'Raison',
+    'note_extension_count': 'Extension',
+
+    'day_singular': 'Jour',
+    'day_plural': 'Jours',
+    'assign_to_staff': 'Assigner au Personnel',
+
+
 
 
   },

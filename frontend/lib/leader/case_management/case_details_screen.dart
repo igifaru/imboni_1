@@ -918,14 +918,13 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
               ),
             ],
           ),
-          
           // Notes if any
           if (action.notes != null && action.notes!.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text(
-              action.notes!,
+              _formatActionNotes(l10n, action.notes!),
               style: TextStyle(fontSize: 10, color: textColor, fontStyle: FontStyle.italic),
-              maxLines: 2,
+              maxLines: 4, // Increased lines for better readability of detailed notes
               overflow: TextOverflow.ellipsis,
             ),
           ],
@@ -954,8 +953,45 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
       case 'VIEWED': return l10n.caseViewed;
       case 'ASSIGNED': return l10n.caseAssigned;
       case 'ACCEPTED': return l10n.caseAccepted;
+      case 'STATUS_UPDATE': return l10n.caseStatusUpdate;
+      case 'ASSIGNMENT': return l10n.caseAssignment;
       default: return type;
     }
+  }
+
+  // Helper to parse backend English strings and localize them
+  String _formatActionNotes(AppLocalizations l10n, String note) {
+    // 1. Check for Manual Assignment
+    if (note.contains('Manually assigned to specific leader')) {
+      return l10n.noteManualAssignment;
+    }
+
+    // 2. Check for Deadline Extension
+    // Pattern: "Deadline extended by {days} days. Reason: "{reason}". Extension {count}/2."
+    if (note.contains('Deadline extended by')) {
+      try {
+        final daysMatch = RegExp(r'extended by (\d+) days').firstMatch(note);
+        final reasonMatch = RegExp(r'Reason: "([^"]+)"').firstMatch(note);
+        final extMatch = RegExp(r'Extension (\d+/\d+)').firstMatch(note);
+
+        String result = '';
+        if (daysMatch != null) {
+          result += '${l10n.noteDeadlineExtended} ${daysMatch.group(1)}. ';
+        }
+        if (reasonMatch != null) {
+          result += '${l10n.noteReason}: "${reasonMatch.group(1)}". ';
+        }
+        if (extMatch != null) {
+          result += '(${l10n.noteExtensionCount}: ${extMatch.group(1)})';
+        }
+        
+        return result.isNotEmpty ? result : note;
+      } catch (e) {
+        return note; // Fallback to original if parsing fails
+      }
+    }
+
+    return note;
   }
 
   Color _getActionColor(String type) {
@@ -1165,7 +1201,7 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
           Icon(Icons.person_add_outlined, size: 18, color: color),
           const SizedBox(width: 8),
           Text(
-            'Assign to Staff', // Could use l10n.assign if available, defaulting to string to avoid break
+            l10n.assignToStaff,
             style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 14,
@@ -1263,7 +1299,7 @@ class _ExtendDeadlineDialogState extends State<_ExtendDeadlineDialog> {
                         foregroundColor: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurface,
                       ),
                       child: Text(
-                        '$d ${d == 1 ? 'Day' : 'Days'}',
+                        '$d ${d == 1 ? l10n.daySingular : l10n.dayPlural}',
                         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                     ),
