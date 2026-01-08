@@ -368,6 +368,34 @@ class AppLocalizations {
   String get publicFunds => get('public_funds');
   String get publicFundsSubtitle => get('public_funds_subtitle');
 
+  // Performance Analytics
+  String get performanceAnalytics => get('performance_analytics');
+  String get performanceSubtitle => get('performance_subtitle');
+  String get resolutionRate => get('resolution_rate');
+  String get avgResponseTime => get('avg_response_time');
+  String get escalationRate => get('escalation_rate');
+  String get overdueCases => get('overdue_cases');
+  String get weeklyPerformance => get('weekly_performance');
+  String get newVsResolved => get('new_vs_resolved');
+  String get casesByCategory => get('cases_by_category');
+  String get regionalBreakdown => get('regional_breakdown');
+  String get timeRange => get('time_range');
+  String get allLocations => get('all_locations');
+  String get allCategories => get('all_categories');
+  String get exportReport => get('export_report');
+  String get target => get('target');
+  String get exceededSla => get('exceeded_sla');
+  String get failingResolution => get('failing_resolution');
+  String get newCases => get('new_cases');
+  String get noDataAvailable => get('no_data_available');
+  String get noActivityLastWeek => get('no_activity_last_week');
+  String get onTrack => get('on_track');
+  String get atRisk => get('at_risk');
+  String get region => get('region');
+  String get totalCases => get('total_cases');
+  String get resRate => get('res_rate');
+  String get avgTime => get('avg_time');
+
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
@@ -686,8 +714,33 @@ const Map<String, Map<String, String>> _translations = {
     'assign_to_staff': 'Ohereza ku mukozi',
     'extensions_remaining': 'Inshuro zisigaye',
 
-
-
+    // Performance Analytics RW
+    'performance_analytics': 'Isesengura ry\'Imikorere',
+    'performance_subtitle': 'Ibipimo by\'imikorere n\'ubushobozi bw\'abayobozi',
+    'resolution_rate': 'Igipimo cy\'Ibisobanuro',
+    'avg_response_time': 'Igihe cy\'Igisubizo',
+    'escalation_rate': 'Igipimo cy\'Izamura',
+    'overdue_cases': 'Ibibazo Byarenze',
+    'weekly_performance': 'Imikorere y\'Icyumweru',
+    'new_vs_resolved': 'Bishya vs Byakemutse',
+    'cases_by_category': 'Ibibazo ku Cyiciro',
+    'regional_breakdown': 'Isesengura ry\'Uturere',
+    'time_range': 'Igihe',
+    'all_locations': 'Ahantu hose',
+    'all_categories': 'Ibyiciro byose',
+    'export_report': 'Kuramo Raporo',
+    'target': 'Intego',
+    'exceeded_sla': 'Byarenze igihe',
+    'failing_resolution': 'Bitakemuka',
+    'new_cases': 'Ibibazo bishya',
+    'no_data_available': 'Nta makuru ahari',
+    'no_activity_last_week': 'Nta bikorwa muri iki cyumweru',
+    'on_track': 'Bigenda neza',
+    'at_risk': 'Biri mu kaga',
+    'region': 'Akarere',
+    'total_cases': 'Ibibazo byose',
+    'res_rate': 'Igipimo',
+    'avg_time': 'Igihe',
 
   },
   'en': {
@@ -996,8 +1049,33 @@ const Map<String, Map<String, String>> _translations = {
     'assign_to_staff': 'Assign to Staff',
     'extensions_remaining': 'Extensions Remaining',
 
-
-
+    // Performance Analytics EN
+    'performance_analytics': 'Performance Analytics',
+    'performance_subtitle': 'System-wide metrics and leader effectiveness',
+    'resolution_rate': 'Resolution Rate',
+    'avg_response_time': 'Avg Response Time',
+    'escalation_rate': 'Escalation Rate',
+    'overdue_cases': 'Overdue Cases',
+    'weekly_performance': 'Weekly Performance',
+    'new_vs_resolved': 'New vs Resolved cases',
+    'cases_by_category': 'Cases by Category',
+    'regional_breakdown': 'Regional Breakdown',
+    'time_range': 'Time Range',
+    'all_locations': 'All Locations',
+    'all_categories': 'All Categories',
+    'export_report': 'Export Report',
+    'target': 'Target',
+    'exceeded_sla': 'Exceeded SLA',
+    'failing_resolution': 'Failing Resolution',
+    'new_cases': 'New Cases',
+    'no_data_available': 'No data available',
+    'no_activity_last_week': 'No activity in last 7 days',
+    'on_track': 'On Track',
+    'at_risk': 'At Risk',
+    'region': 'Region',
+    'total_cases': 'Total Cases',
+    'res_rate': 'Res. Rate',
+    'avg_time': 'Avg Time',
 
   },
   'fr': {
@@ -1293,8 +1371,33 @@ const Map<String, Map<String, String>> _translations = {
     'assign_to_staff': 'Assigner au Personnel',
     'extensions_remaining': 'Extensions restantes',
 
-
-
+    // Performance Analytics FR
+    'performance_analytics': 'Analyse de Performance',
+    'performance_subtitle': 'Métriques du système et efficacité des leaders',
+    'resolution_rate': 'Taux de Résolution',
+    'avg_response_time': 'Temps de Réponse Moyen',
+    'escalation_rate': 'Taux d\'Escalade',
+    'overdue_cases': 'Affaires en Retard',
+    'weekly_performance': 'Performance Hebdomadaire',
+    'new_vs_resolved': 'Nouveaux vs Résolus',
+    'cases_by_category': 'Affaires par Catégorie',
+    'regional_breakdown': 'Répartition Régionale',
+    'time_range': 'Période',
+    'all_locations': 'Tous les Emplacements',
+    'all_categories': 'Toutes les Catégories',
+    'export_report': 'Exporter le Rapport',
+    'target': 'Objectif',
+    'exceeded_sla': 'SLA Dépassé',
+    'failing_resolution': 'Échec de Résolution',
+    'new_cases': 'Nouvelles Affaires',
+    'no_data_available': 'Aucune donnée disponible',
+    'no_activity_last_week': 'Aucune activité les 7 derniers jours',
+    'on_track': 'En bonne voie',
+    'at_risk': 'À risque',
+    'region': 'Région',
+    'total_cases': 'Total Affaires',
+    'res_rate': 'Taux Rés.',
+    'avg_time': 'Temps Moyen',
 
   },
 };

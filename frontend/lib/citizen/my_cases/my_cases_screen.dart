@@ -1364,12 +1364,8 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
         
         // Parse localized notes if applicable
         String? displayNotes = action.notes;
-        if (displayNotes != null && displayNotes.startsWith('Status changed to ')) {
-           final statusPart = displayNotes.replaceFirst('Status changed to ', '');
-           // Try to find status enum matching key
-           // Use raw string first as _getStatusLabel handles the translation map
-           // We might need to handle mapped values if the backend stores something else
-           displayNotes = '${l10n.statusChangedTo} ${_getStatusLabel(l10n, statusPart)}';
+        if (displayNotes != null && displayNotes.isNotEmpty) {
+           displayNotes = _formatActionNotes(l10n, displayNotes);
         }
 
         timelineItems.add(_TimelineData(
@@ -1719,12 +1715,59 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
       case 'RESOLVED': return l10n.caseResolved;
       case 'VIEWED': return l10n.caseViewed;
       case 'ASSIGNED': return l10n.caseAssigned;
+      case 'ASSIGNMENT': return l10n.caseAssignment;
       case 'ACCEPTED': return l10n.caseAccepted;
       case 'STATUS_UPDATE': return l10n.statusUpdate;
       case 'RESOLUTION': return l10n.resolution;
       case 'PENDING_CONFIRMATION': return l10n.pendingConfirmation;
       default: return type.replaceAll('_', ' ').toLowerCase().split(' ').map((s) => s.isNotEmpty ? '${s[0].toUpperCase()}${s.substring(1)}' : '').join(' ');
     }
+  }
+
+  // Helper to parse backend English strings and localize them
+  String _formatActionNotes(AppLocalizations l10n, String note) {
+    // 1. Check for Manual Assignment
+    if (note.contains('Manually assigned to specific leader')) {
+      return l10n.noteManualAssignment;
+    }
+
+    // 2. Check for Deadline Extension
+    // Pattern: "Deadline extended by {days} days. Reason: "{reason}". Extension {count}/2."
+    if (note.contains('Deadline extended by')) {
+      try {
+        final daysMatch = RegExp(r'extended by (\d+) days').firstMatch(note);
+        final reasonMatch = RegExp(r'Reason: "([^"]+)"').firstMatch(note);
+        final extMatch = RegExp(r'Extension (\d+/\d+)').firstMatch(note);
+
+        String result = '';
+        if (daysMatch != null) {
+          result += '${l10n.noteDeadlineExtended} ${daysMatch.group(1)}. ';
+        }
+        if (reasonMatch != null) {
+          result += '${l10n.noteReason}: "${reasonMatch.group(1)}". ';
+        }
+        if (extMatch != null) {
+          result += '(${l10n.noteExtensionCount}: ${extMatch.group(1)})';
+        }
+        
+        return result.isNotEmpty ? result : note;
+      } catch (e) {
+        return note; // Fallback to original if parsing fails
+      }
+    }
+
+    // 3. Check for status change notes
+    if (note.startsWith('Status changed to ')) {
+      final statusPart = note.replaceFirst('Status changed to ', '');
+      return '${l10n.statusChangedTo} ${_getStatusLabel(l10n, statusPart)}';
+    }
+
+    // 4. Check for citizen confirmation
+    if (note.contains('Citizen confirmed resolution')) {
+      return l10n.caseResolved;
+    }
+
+    return note;
   }
 
   Color _getActionColor(String type) {
@@ -1734,6 +1777,7 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
       case 'RESOLVED': return ImboniColors.success;
       case 'VIEWED': return Colors.grey;
       case 'ASSIGNED': return ImboniColors.secondary;
+      case 'ASSIGNMENT': return ImboniColors.secondary;
       case 'ACCEPTED': return ImboniColors.primary;
       case 'STATUS_UPDATE': return ImboniColors.statusInProgress;
       case 'RESOLUTION': return ImboniColors.success;
@@ -1749,6 +1793,7 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
       case 'RESOLVED': return Icons.check_circle_outline;
       case 'VIEWED': return Icons.visibility;
       case 'ASSIGNED': return Icons.person_add;
+      case 'ASSIGNMENT': return Icons.assignment_ind;
       case 'ACCEPTED': return Icons.thumb_up_alt_outlined;
       case 'STATUS_UPDATE': return Icons.update;
       case 'RESOLUTION': return Icons.task_alt;

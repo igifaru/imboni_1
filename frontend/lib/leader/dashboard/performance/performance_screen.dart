@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../../shared/theme/colors.dart';
 import '../../../shared/models/models.dart';
 import '../../../shared/services/case_service.dart';
+import '../../../shared/localization/app_localizations.dart';
 
 /// Performance Screen - Professional Analytics Dashboard
 class PerformanceScreen extends StatefulWidget {
@@ -35,6 +36,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context);
 
     if (_isInitialLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -47,7 +49,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Performance Analytics', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(l10n.performanceAnalytics, style: const TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: theme.scaffoldBackgroundColor,
         foregroundColor: theme.colorScheme.onSurface,
         elevation: 0,
@@ -55,7 +57,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
           IconButton(
             icon: const Icon(Icons.download_outlined),
             onPressed: () {},
-            tooltip: 'Export Report',
+            tooltip: l10n.exportReport,
           ),
           const SizedBox(width: 8),
         ],
@@ -66,7 +68,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-                Text('System-wide metrics and leader effectiveness.', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                Text(l10n.performanceSubtitle, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
                 const SizedBox(height: 16),
                                 // Filters Row (Refined)
                   SizedBox(
@@ -113,15 +115,15 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                 const SizedBox(height: 24),
 
                 // Top Key Metrics Grid
-                _buildMetricsGrid(theme, width, metrics, isDark),
+                _buildMetricsGrid(theme, width, metrics, isDark, l10n),
 
                 const SizedBox(height: 24),
 
                 // Charts Section
-                _buildChartsSection(theme, width, isWide, metrics, isDark),
+                _buildChartsSection(theme, width, isWide, metrics, isDark, l10n),
                 
                 const SizedBox(height: 24),
-                _buildRegionalBreakdownTable(theme, metrics, isDark),
+                _buildRegionalBreakdownTable(theme, metrics, isDark, l10n),
                 
                 const SizedBox(height: 40), // Extra space at bottom
             ],
@@ -170,47 +172,49 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
       );
   }
 
-  Widget _buildMetricsGrid(ThemeData theme, double width, PerformanceMetrics metrics, bool isDark) {
+  Widget _buildMetricsGrid(ThemeData theme, double width, PerformanceMetrics metrics, bool isDark, AppLocalizations l10n) {
+    final formattedAvgTime = metrics.avgResponseTimeHours.toStringAsFixed(1);
+    
     if (width < 600) {
         return Column(
             children: [
-                _buildMetricCard(theme, 'Resolution Rate', '${metrics.resolutionRate.toInt()}%', 'Target: 85%', Icons.check_circle_outline, ImboniColors.success, isDark),
+                _buildMetricCard(theme, l10n.resolutionRate, '${metrics.resolutionRate.toInt()}%', '${l10n.target}: 85%', Icons.check_circle_outline, ImboniColors.success, isDark),
                 const SizedBox(height: 16),
-                _buildMetricCard(theme, 'Avg Response Time', '${metrics.avgResponseTimeHours}h', 'Target: < 4h', Icons.timer_outlined, ImboniColors.info, isDark),
+                _buildMetricCard(theme, l10n.avgResponseTime, '${formattedAvgTime}h', '${l10n.target}: < 4h', Icons.timer_outlined, ImboniColors.info, isDark),
                 const SizedBox(height: 16),
-                _buildMetricCard(theme, 'Escalation Rate', '${metrics.escalationRate}%', 'Cases failing local resolution', Icons.arrow_upward_rounded, ImboniColors.warning, isDark),
+                _buildMetricCard(theme, l10n.escalationRate, '${metrics.escalationRate}%', l10n.failingResolution, Icons.arrow_upward_rounded, ImboniColors.warning, isDark),
                 const SizedBox(height: 16),
-                _buildMetricCard(theme, 'Overdue Cases', '${metrics.overdueCases}', 'Exceeded SLA deadline', Icons.notification_important_outlined, ImboniColors.error, isDark),
+                _buildMetricCard(theme, l10n.overdueCases, '${metrics.overdueCases}', l10n.exceededSla, Icons.notification_important_outlined, ImboniColors.error, isDark),
             ],
         );
     }
 
     return Row(
       children: [
-        Expanded(child: _buildMetricCard(theme, 'Resolution Rate', '${metrics.resolutionRate.toInt()}%', 'Target: 85%', Icons.check_circle_outline, ImboniColors.success, isDark)),
+        Expanded(child: _buildMetricCard(theme, l10n.resolutionRate, '${metrics.resolutionRate.toInt()}%', '${l10n.target}: 85%', Icons.check_circle_outline, ImboniColors.success, isDark)),
         const SizedBox(width: 16),
-        Expanded(child: _buildMetricCard(theme, 'Avg Response', '${metrics.avgResponseTimeHours}h', 'Target: < 4h', Icons.timer_outlined, ImboniColors.info, isDark)),
+        Expanded(child: _buildMetricCard(theme, l10n.avgResponseTime, '${formattedAvgTime}h', '${l10n.target}: < 4h', Icons.timer_outlined, ImboniColors.info, isDark)),
         const SizedBox(width: 16),
-        Expanded(child: _buildMetricCard(theme, 'Escalation Rate', '${metrics.escalationRate}%', 'Failing resolution', Icons.arrow_upward_rounded, ImboniColors.warning, isDark)),
+        Expanded(child: _buildMetricCard(theme, l10n.escalationRate, '${metrics.escalationRate}%', l10n.failingResolution, Icons.arrow_upward_rounded, ImboniColors.warning, isDark)),
         const SizedBox(width: 16),
-        Expanded(child: _buildMetricCard(theme, 'Overdue Cases', '${metrics.overdueCases}', 'Exceeded SLA', Icons.notification_important_outlined, ImboniColors.error, isDark)),
+        Expanded(child: _buildMetricCard(theme, l10n.overdueCases, '${metrics.overdueCases}', l10n.exceededSla, Icons.notification_important_outlined, ImboniColors.error, isDark)),
       ],
     );
   }
 
-  Widget _buildChartsSection(ThemeData theme, double width, bool isWide, PerformanceMetrics metrics, bool isDark) {
+  Widget _buildChartsSection(ThemeData theme, double width, bool isWide, PerformanceMetrics metrics, bool isDark, AppLocalizations l10n) {
     if (isWide) {
       return Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
             flex: 2,
-            child: _buildTrendsChart(theme, metrics, isDark),
+            child: _buildTrendsChart(theme, metrics, isDark, l10n),
           ),
           const SizedBox(width: 24),
           Expanded(
              flex: 1,
-             child: _buildCategoryChart(theme, metrics, isDark),
+             child: _buildCategoryChart(theme, metrics, isDark, l10n),
           ),
         ],
       );
@@ -219,21 +223,21 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
         children: [
           SizedBox(
             width: width,
-            child: _buildTrendsChart(theme, metrics, isDark),
+            child: _buildTrendsChart(theme, metrics, isDark, l10n),
           ),
           const SizedBox(height: 24),
           SizedBox(
             width: width,
-            child: _buildCategoryChart(theme, metrics, isDark),
+            child: _buildCategoryChart(theme, metrics, isDark, l10n),
           ),
         ],
       );
     }
   }
 
-  Widget _buildCategoryChart(ThemeData theme, PerformanceMetrics m, bool isDark) {
+  Widget _buildCategoryChart(ThemeData theme, PerformanceMetrics m, bool isDark, AppLocalizations l10n) {
     if (m.totalCases == 0 || m.casesByCategory.isEmpty) {
-        return _buildEmptyChart(theme, 'No category data available', isDark);
+        return _buildEmptyChart(theme, l10n.noDataAvailable, isDark);
     }
 
     final categoryColors = {
@@ -257,7 +261,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-               Text('Cases by Category', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+               Text(l10n.casesByCategory, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                Icon(Icons.pie_chart_outline, size: 20, color: theme.colorScheme.onSurfaceVariant),
             ],
           ),
@@ -309,9 +313,9 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
     );
   }
 
-  Widget _buildTrendsChart(ThemeData theme, PerformanceMetrics m, bool isDark) {
+  Widget _buildTrendsChart(ThemeData theme, PerformanceMetrics m, bool isDark, AppLocalizations l10n) {
     if (m.weeklyTrends.isEmpty || m.weeklyTrends.every((t) => t.newCases == 0 && t.resolvedCases == 0)) {
-        return _buildEmptyChart(theme, 'No activity in last 7 days', isDark);
+        return _buildEmptyChart(theme, l10n.noActivityLastWeek, isDark);
     }
 
     final trendData = m.weeklyTrends;
@@ -332,14 +336,14 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Weekly Performance', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                  Text('New vs Resolved cases', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                  Text(l10n.weeklyPerformance, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                  Text(l10n.newVsResolved, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
                 ],
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(color: theme.colorScheme.primary.withAlpha(10), borderRadius: BorderRadius.circular(8)),
-                child: Text('${m.totalCases} Total', style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.bold, fontSize: 12)),
+                child: Text('${m.totalCases} ${l10n.total}', style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.bold, fontSize: 12)),
               )
             ],
           ),
@@ -378,9 +382,9 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
            Row(
              mainAxisAlignment: MainAxisAlignment.center,
              children: [
-               _buildLegendItem('New Cases', isDark ? Colors.white30 : Colors.grey.shade400),
+               _buildLegendItem(l10n.newCases, isDark ? Colors.white30 : Colors.grey.shade400),
                const SizedBox(width: 16),
-               _buildLegendItem('Resolved', ImboniColors.primary),
+               _buildLegendItem(l10n.resolvedCases, ImboniColors.primary),
              ],
            )
         ],
@@ -388,7 +392,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
     );
   }
   
-  Widget _buildRegionalBreakdownTable(ThemeData theme, PerformanceMetrics m, bool isDark) {
+  Widget _buildRegionalBreakdownTable(ThemeData theme, PerformanceMetrics m, bool isDark, AppLocalizations l10n) {
     return Container(
        decoration: BoxDecoration(
         color: theme.cardColor,
@@ -400,7 +404,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
          children: [
             Padding(
               padding: const EdgeInsets.all(16),
-              child: Text('Detailed Regional Breakdown', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+              child: Text(l10n.regionalBreakdown, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             ),
             const Divider(height: 1),
             // Header
@@ -408,11 +412,11 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                child: Row(
                  children: [
-                    Expanded(flex: 3, child: Text('Region', style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold))),
-                    Expanded(flex: 2, child: Text('Total Cases', style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold))),
-                    Expanded(flex: 2, child: Text('Res. Rate', style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold))),
-                    Expanded(flex: 2, child: Text('Avg Time', style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold))),
-                    Expanded(flex: 2, child: Text('Status', style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold))),
+                    Expanded(flex: 3, child: Text(l10n.region, style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold))),
+                    Expanded(flex: 2, child: Text(l10n.totalCases, style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold))),
+                    Expanded(flex: 2, child: Text(l10n.resRate, style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold))),
+                    Expanded(flex: 2, child: Text(l10n.avgTime, style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold))),
+                    Expanded(flex: 2, child: Text(l10n.status, style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold))),
                  ],
                ),
             ),

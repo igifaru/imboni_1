@@ -960,6 +960,7 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
       case 'CREATED': return Icons.add_circle_outline;
       case 'ESCALATED': return Icons.arrow_upward;
       case 'RESOLVED': return Icons.check_circle_outline;
+      case 'RESOLUTION': return Icons.task_alt;
       case 'VIEWED': return Icons.visibility;
       case 'ASSIGNED': return Icons.person_add;
       case 'ACCEPTED': return Icons.thumb_up_alt_outlined;
@@ -972,6 +973,7 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
       case 'CREATED': return l10n.caseCreated;
       case 'ESCALATED': return l10n.caseEscalated;
       case 'RESOLVED': return l10n.caseResolved;
+      case 'RESOLUTION': return l10n.resolution;
       case 'VIEWED': return l10n.caseViewed;
       case 'ASSIGNED': return l10n.caseAssigned;
       case 'ACCEPTED': return l10n.caseAccepted;
