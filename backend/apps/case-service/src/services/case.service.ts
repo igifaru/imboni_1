@@ -264,7 +264,7 @@ export class CaseService {
             include: { administrativeUnit: true }
         });
 
-        let whereClause: any = {};
+        const whereClause: any = {};
 
         if (leadership) {
             // Filter by jurisdiction using hierarchical code prefix
@@ -495,6 +495,65 @@ export class CaseService {
 
         const updated = await this.repository.findById(caseId);
         return this.toResponseDto(updated!);
+    }
+
+    /**
+     * Extend Deadline ("On Hold")
+     * Max 2 extensions allowed per assignment.
+     * Max 3 days per extension.
+     */
+    async extendDeadline(caseId: string, leaderId: string, days: number, reason: string): Promise<CaseResponseDto> {
+        // 1. Validate inputs
+        if (days < 1 || days > 3) {
+            throw new Error('Extension cannot exceed 3 days.');
+        }
+
+        const caseData = await this.repository.findById(caseId);
+        if (!caseData) throw new Error('Case not found');
+
+        // 2. Find Active Assignment
+        const activeAssignment = await prisma.caseAssignment.findFirst({
+            where: {
+                caseId,
+                leaderId,
+                isActive: true
+            }
+        });
+
+        if (!activeAssignment) {
+            throw new Error('You do not have an active assignment for this case.');
+        }
+
+        // 3. Validate Limit (Max 2 extensions)
+        if (activeAssignment.extensionCount >= 2) {
+            throw new Error('Maximum extension limit (2) reached for this assignment.');
+        }
+
+        // 4. Calculate New Deadline
+        const newDeadline = new Date(activeAssignment.deadlineAt);
+        newDeadline.setDate(newDeadline.getDate() + days);
+
+        // 5. Update Assignment
+        await prisma.caseAssignment.update({
+            where: { id: activeAssignment.id },
+            data: {
+                deadlineAt: newDeadline,
+                extensionCount: { increment: 1 },
+                extensionReason: reason
+            }
+        });
+
+        // 6. Log Action
+        await prisma.caseAction.create({
+            data: {
+                caseId,
+                performedBy: leaderId,
+                actionType: 'STATUS_UPDATE',
+                notes: `Deadline extended by ${days} days. Reason: "${reason}". Extension ${activeAssignment.extensionCount + 1}/2.`
+            }
+        });
+
+        return this.toResponseDto(caseData, newDeadline.toISOString());
     }
 
     async updateCase(caseId: string, dto: UpdateCaseDto, userId: string): Promise<CaseResponseDto> {

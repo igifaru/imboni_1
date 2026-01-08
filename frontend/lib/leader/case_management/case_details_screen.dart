@@ -180,6 +180,39 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
   Color get _textColor => _isDark ? Theme.of(context).colorScheme.onSurface : Colors.black87;
   Color get _subTextColor => _isDark ? Theme.of(context).colorScheme.onSurfaceVariant : Colors.grey[700]!;
 
+  Future<void> _extendDeadline() async {
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (ctx) => _ExtendDeadlineDialog(caseStatus: _case.status),
+    );
+
+    if (result != null) {
+      final days = result['days'] as int;
+      final reason = result['reason'] as String;
+
+      if (mounted) setState(() => _isLoading = true);
+      try {
+        final apiResult = await CaseService.instance.extendDeadline(_case.id, days, reason);
+        if (apiResult.isSuccess && apiResult.data != null) {
+          if (mounted) {
+            setState(() => _case = apiResult.data!);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(AppLocalizations.of(context).extensionSuccess), backgroundColor: ImboniColors.success),
+            );
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(apiResult.error ?? 'Error'), backgroundColor: ImboniColors.error),
+            );
+          }
+        }
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -953,6 +986,9 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
           final assignButton = (canTakeCase || _case.status == 'IN_PROGRESS')
               ? _buildAssignButton(l10n, theme)
               : null;
+          final extendButton = _case.status == 'IN_PROGRESS'
+              ? _buildExtendButton(l10n, theme)
+              : null;
               
           if (isBigScreen) {
             return Row(
@@ -961,6 +997,10 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
                 if (escalateButton != null) ...[
                   const SizedBox(width: 16),
                   Expanded(child: escalateButton),
+                ],
+                if (extendButton != null) ...[
+                  const SizedBox(width: 16),
+                  Expanded(child: extendButton),
                 ],
                 if (assignButton != null) ...[
                    const SizedBox(width: 16),
@@ -982,6 +1022,10 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
                   ],
                 ],
               ),
+              if (extendButton != null) ...[
+                const SizedBox(height: 12),
+                 SizedBox(width: double.infinity, child: extendButton),
+              ],
               if (assignButton != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 12.0),
@@ -994,6 +1038,34 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
           );
         },
       ),
+    );
+  }
+
+  Widget _buildExtendButton(AppLocalizations l10n, ThemeData theme) {
+    final color = ImboniColors.warning;
+    return OutlinedButton(
+      onPressed: _extendDeadline,
+      style: OutlinedButton.styleFrom(
+        foregroundColor: color,
+        side: BorderSide(color: color, width: 1.5),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        padding: const EdgeInsets.symmetric(vertical: 16),
+      ),
+      child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.access_time_filled, size: 18, color: color),
+            const SizedBox(width: 8),
+            Text(
+              l10n.extendDeadline,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                color: color,
+              ),
+            ),
+          ],
+        ),
     );
   }
 
@@ -1111,5 +1183,170 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
 
   String _formatTime(DateTime date) {
     return DateFormat('HH:mm').format(date);
+  }
+}
+
+class _ExtendDeadlineDialog extends StatefulWidget {
+  final String? caseStatus;
+  const _ExtendDeadlineDialog({this.caseStatus});
+
+  @override
+  State<_ExtendDeadlineDialog> createState() => _ExtendDeadlineDialogState();
+}
+
+class _ExtendDeadlineDialogState extends State<_ExtendDeadlineDialog> {
+  int? _selectedDays;
+  final _reasonController = TextEditingController();
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    if (_selectedDays != null && _reasonController.text.trim().isNotEmpty) {
+      Navigator.pop(context, {
+        'days': _selectedDays,
+        'reason': _reasonController.text.trim(),
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      backgroundColor: theme.colorScheme.surface,
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        constraints: const BoxConstraints(maxWidth: 600), // WIDER as requested
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Text(
+              l10n.extendDeadlineTitle,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // 1. Day Selection
+            Text(
+              l10n.daysLabel,
+              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [1, 2, 3].map((d) {
+                final isSelected = _selectedDays == d;
+                return Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    child: OutlinedButton(
+                      onPressed: () => setState(() => _selectedDays = d),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        side: BorderSide(
+                          color: isSelected ? theme.colorScheme.primary : theme.colorScheme.outlineVariant,
+                          width: isSelected ? 2 : 1,
+                        ),
+                        backgroundColor: isSelected ? theme.colorScheme.primary.withAlpha(20) : null,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        foregroundColor: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurface,
+                      ),
+                      child: Text(
+                        '$d ${d == 1 ? 'Day' : 'Days'}',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            
+            const SizedBox(height: 24),
+
+            // 2. Reason Input
+            Text(
+              l10n.extensionReasonLabel,
+              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _reasonController,
+              maxLines: 3,
+              decoration: InputDecoration(
+                hintText: l10n.extensionReasonHint,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                filled: true,
+                fillColor: theme.colorScheme.surfaceContainerLow,
+              ),
+              onChanged: (_) => setState(() {}), // Refresh UI to update confirm button state
+            ),
+
+            const SizedBox(height: 24),
+
+            // Warning
+             if (widget.caseStatus == 'IN_PROGRESS')
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: ImboniColors.warning.withAlpha(30),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: ImboniColors.warning.withAlpha(100)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline, size: 20, color: ImboniColors.warning),
+                     const SizedBox(width: 12),
+                     Expanded(
+                       child: Text(
+                         l10n.extensionLimitError,
+                         style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface),
+                       ),
+                     ),
+                  ],
+                ),
+              ),
+
+             const SizedBox(height: 24),
+
+             // Footer Buttons
+             Row(
+               mainAxisAlignment: MainAxisAlignment.end,
+               children: [
+                 TextButton(
+                   onPressed: () => Navigator.pop(context),
+                   style: TextButton.styleFrom(
+                     foregroundColor: theme.colorScheme.onSurfaceVariant,
+                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                   ),
+                   child: Text(l10n.cancel),
+                 ),
+                 const SizedBox(width: 16),
+                 FilledButton(
+                   onPressed: (_selectedDays != null && _reasonController.text.trim().isNotEmpty) 
+                       ? _submit 
+                       : null,
+                   style: FilledButton.styleFrom(
+                     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                   ),
+                   child: Text(l10n.confirm),
+                 ),
+               ],
+             )
+          ],
+        ),
+      ),
+    );
   }
 }

@@ -8,7 +8,7 @@ import { authMiddleware, roleMiddleware } from '../auth/jwt.middleware';
 
 const logger = createServiceLogger('admin-routes');
 const router = Router();
-console.log("--- ADMIN ROUTES LOADED (Version: Fix Province Mapping) ---");
+logger.info("--- ADMIN ROUTES LOADED (Version: Fix Province Mapping) ---");
 
 /**
  * Hierarchy mapping: Registrar Level -> Subordinate Level

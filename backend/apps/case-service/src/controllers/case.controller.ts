@@ -581,4 +581,31 @@ router.post('/:id/evidence',
         }
     });
 
-export const caseController = router;
+router.post('/:id/assignments/extend', async (req: Request, res: Response) => {
+    try {
+        const leaderId = (req as any).user?.userId;
+        if (!leaderId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+        const caseId = req.params.id;
+        const { days, reason } = req.body;
+
+        if (!days || typeof days !== 'number') {
+            return res.status(400).json({ success: false, error: 'Invalid extension days' });
+        }
+        if (!reason || typeof reason !== 'string') {
+            return res.status(400).json({ success: false, error: 'Reason is required' });
+        }
+
+        const result = await caseService.extendDeadline(caseId, leaderId, days, reason);
+
+        res.json({
+            success: true,
+            data: result
+        });
+    } catch (error: any) {
+        logger.error('Failed to extend deadline', error);
+        res.status(400).json({ success: false, error: error.message });
+    }
+});
+
+export { router as caseController };

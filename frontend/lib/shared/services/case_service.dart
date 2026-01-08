@@ -118,16 +118,30 @@ class CaseService {
     return ApiResponse.error(response.error ?? 'Failed to review case');
   }
 
-  /// Resolve case (for leaders)
-  Future<ApiResponse<CaseModel>> resolveCase(String caseId, String resolution, {String? attachmentId}) async {
+  /// Resolve case  /// Resolve case
+  Future<ApiResponse<CaseModel>> resolveCase(String caseId, String notes, String? evidenceId) async {
     final response = await apiClient.post('/cases/$caseId/resolve', {
-      'notes': resolution, 
-      'attachmentId': attachmentId,
+      'notes': notes,
+      'evidenceId': evidenceId,
     });
     if (response.isSuccess && response.data != null) {
       return ApiResponse.success(CaseModel.fromJson(response.data));
     }
     return ApiResponse.error(response.error ?? 'Failed to resolve case');
+  }
+
+  /// Extend the deadline for an assigned case
+  Future<ApiResponse<CaseModel>> extendDeadline(String caseId, int days, String reason) async {
+    final response = await apiClient.post('/cases/$caseId/assignments/extend', {
+      'days': days,
+      'reason': reason,
+    });
+    if (response.isSuccess && response.data != null) {
+      // Backend returns { success: true, data: { ...case } }
+      final data = response.data['data'] ?? response.data;
+      return ApiResponse.success(CaseModel.fromJson(data));
+    }
+    return ApiResponse.error(response.error ?? 'Failed to extend deadline');
   }
 
   /// Escalate case (for leaders)

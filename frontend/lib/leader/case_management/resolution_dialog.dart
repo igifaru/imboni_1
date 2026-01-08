@@ -66,7 +66,7 @@ class _ResolutionDialogState extends State<ResolutionDialog> {
       }
 
       // 2. Resolve case
-      final result = await CaseService.instance.resolveCase(widget.caseId, _notesController.text, attachmentId: attachmentId);
+      final result = await CaseService.instance.resolveCase(widget.caseId, _notesController.text, attachmentId);
       
       if (mounted) {
         if (result.isSuccess) {

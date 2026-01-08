@@ -194,6 +194,8 @@ model CaseAssignment {
   completedAt          DateTime?          @map("completed_at")
   escalationReason     String?            @map("escalation_reason")
   isActive             Boolean            @default(true) @map("is_active")
+  extensionCount       Int                @default(0) @map("extension_count")
+  extensionReason      String?            @map("extension_reason") // Added to track latest extension reason
   administrativeUnit   AdministrativeUnit @relation(fields: [administrativeUnitId], references: [id])
   case                 Case               @relation(fields: [caseId], references: [id])
   leader               User               @relation("AssignedLeader", fields: [leaderId], references: [id])

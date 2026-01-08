@@ -329,6 +329,17 @@ class AppLocalizations {
   String get assignBtn => get('assign_btn');
   String get selectDateTime => get('select_date_time');
 
+  // Extend Deadline
+  String get extendDeadline => get('extend_deadline');
+  String get extendDeadlineTitle => get('extend_deadline_title');
+  String get daysLabel => get('days_label');
+  String get extensionLimitError => get('extension_limit_error');
+  String get extensionSuccess => get('extension_success');
+  String get extensionReasonLabel => get('extension_reason_label');
+  String get extensionReasonHint => get('extension_reason_hint');
+
+
+
   
   // Community
   String get communityTitle => get('community_title');
@@ -636,6 +647,17 @@ const Map<String, Map<String, String>> _translations = {
     'no_active_leaders_error': 'Nta muyobozi wabonetse muri uru rwego',
     'assign_btn': 'Tanga',
     'select_date_time': 'Hitamo Itariki n\'Igihe',
+
+    // Extend Deadline RW
+    'extend_deadline': 'Kongera Igihe',
+    'extend_deadline_title': 'Kongera Igihe Ntarengwa',
+    'days_label': 'Iminsi (Max 3)',
+    'extension_limit_error': 'Ntushobora kongera igihe kurenza inshuro 2',
+    'extension_success': 'Igihe cyongerewe neza',
+    'extension_reason_label': 'Impamvu yo kongera',
+    'extension_reason_hint': 'Sobanura impamvu ukeneye kongera igihe...',
+
+
   },
   'en': {
     'app_name': 'Imboni',
@@ -920,6 +942,17 @@ const Map<String, Map<String, String>> _translations = {
     'no_active_leaders_error': 'No active leaders found in this unit',
     'assign_btn': 'Assign',
     'select_date_time': 'Select Date & Time',
+
+    // Extend Deadline EN
+    'extend_deadline': 'Extend Deadline',
+    'extend_deadline_title': 'Extend Deadline',
+    'days_label': 'Days (Max 3)',
+    'extension_limit_error': 'Cannot extend more than 2 times',
+    'extension_success': 'Deadline extended successfully',
+    'extension_reason_label': 'Reason for extension',
+    'extension_reason_hint': 'Explain why you need more time...',
+
+
   },
   'fr': {
     'app_name': 'Imboni',
@@ -1191,5 +1224,16 @@ const Map<String, Map<String, String>> _translations = {
     'no_active_leaders_error': 'Aucun chef actif trouvé dans cette unité',
     'assign_btn': 'Assigner',
     'select_date_time': 'Sélectionner Date et Heure',
+
+    // Extend Deadline FR
+    'extend_deadline': 'Prolonger le délai',
+    'extend_deadline_title': 'Prolonger l\'échéance',
+    'days_label': 'Jours (Max 3)',
+    'extension_limit_error': 'Impossible de prolonger plus de 2 fois',
+    'extension_success': 'Délai prolongé avec succès',
+    'extension_reason_label': 'Raison de la prolongation',
+    'extension_reason_hint': 'Expliquez pourquoi vous avez besoin de plus de temps...',
+
+
   },
 };
