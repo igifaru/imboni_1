@@ -320,6 +320,16 @@ class AppLocalizations {
   String get resolutionActionDesc => get('resolution_action_desc');
   String get statusChangedTo => get('status_changed_to');
   
+  // Manual Assignment Dialog
+  String get assignCaseTitle => get('assign_case_title');
+  String get selectLeaderLabel => get('select_leader_label');
+  String get chooseLeaderHint => get('choose_leader_hint');
+  String get setDeadlineLabel => get('set_deadline_label');
+  String get noActiveLeadersError => get('no_active_leaders_error');
+  String get assignBtn => get('assign_btn');
+  String get selectDateTime => get('select_date_time');
+
+  
   // Community
   String get communityTitle => get('community_title');
   String get channels => get('channels');
@@ -618,6 +628,14 @@ const Map<String, Map<String, String>> _translations = {
     // PFTCV RW
     'public_funds': 'Imari ya Leta',
     'public_funds_subtitle': 'Genzura imishinga ya Leta',
+    // Assignment Dialog RW
+    'assign_case_title': 'Gutanga Ikibazo',
+    'select_leader_label': 'Hitamo Umuyobozi',
+    'choose_leader_hint': 'Hitamo umuyobozi muri uru rwego',
+    'set_deadline_label': 'Hitamo Igihe Ntarengwa',
+    'no_active_leaders_error': 'Nta muyobozi wabonetse muri uru rwego',
+    'assign_btn': 'Tanga',
+    'select_date_time': 'Hitamo Itariki n\'Igihe',
   },
   'en': {
     'app_name': 'Imboni',
@@ -894,6 +912,14 @@ const Map<String, Map<String, String>> _translations = {
     // PFTCV EN
     'public_funds': 'Public Funds',
     'public_funds_subtitle': 'Verify government projects',
+    // Assignment Dialog EN
+    'assign_case_title': 'Assign Case',
+    'select_leader_label': 'Select Leader',
+    'choose_leader_hint': 'Choose a leader from this unit',
+    'set_deadline_label': 'Set Deadline',
+    'no_active_leaders_error': 'No active leaders found in this unit',
+    'assign_btn': 'Assign',
+    'select_date_time': 'Select Date & Time',
   },
   'fr': {
     'app_name': 'Imboni',
@@ -1157,5 +1183,13 @@ const Map<String, Map<String, String>> _translations = {
     'save_tracking_hint': 'Enregistrez ce numéro pour suivre votre cas.',
     'ok': 'D\'accord',
     'failed': 'Échoué',
+    // Assignment Dialog FR
+    'assign_case_title': 'Assigner le Cas',
+    'select_leader_label': 'Sélectionner un Chef',
+    'choose_leader_hint': 'Choisir un chef de cette unité',
+    'set_deadline_label': 'Définir l\'échéance',
+    'no_active_leaders_error': 'Aucun chef actif trouvé dans cette unité',
+    'assign_btn': 'Assigner',
+    'select_date_time': 'Sélectionner Date et Heure',
   },
 };

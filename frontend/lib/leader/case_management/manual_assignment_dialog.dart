@@ -4,6 +4,7 @@ import '../../../shared/services/case_service.dart';
 import '../../../shared/services/auth_service.dart';
 import '../../../shared/models/models.dart';
 import '../../../shared/theme/colors.dart';
+import '../../../shared/localization/app_localizations.dart';
 
 
 class ManualAssignmentDialog extends StatefulWidget {
@@ -155,7 +156,7 @@ class _ManualAssignmentDialogState extends State<ManualAssignmentDialog> {
 
   @override
   Widget build(BuildContext context) {
-    // final l10n = AppLocalizations.of(context); // Note: Assuming standard l10n context available
+    final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
 
     // Hardcoded strings for now for speed, ideally localized ("Assign Case", "Select Leader", etc.)
@@ -165,14 +166,14 @@ class _ManualAssignmentDialogState extends State<ManualAssignmentDialog> {
       backgroundColor: theme.colorScheme.surface,
       child: Container(
         padding: const EdgeInsets.all(24),
-        constraints: const BoxConstraints(maxWidth: 400),
+        constraints: const BoxConstraints(maxWidth: 550),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Header
             Text(
-              'Assign Case',
+              l10n.assignCaseTitle,
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: theme.colorScheme.onSurface,
@@ -201,7 +202,7 @@ class _ManualAssignmentDialogState extends State<ManualAssignmentDialog> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Select Leader',
+                            Text(l10n.selectLeaderLabel,
                                 style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
                             const SizedBox(height: 8),
                             DropdownButtonFormField<String>(
@@ -209,7 +210,7 @@ class _ManualAssignmentDialogState extends State<ManualAssignmentDialog> {
               initialValue: _selectedLeaderId,
                               dropdownColor: theme.colorScheme.surfaceContainerHighest,
                               decoration: InputDecoration(
-                                hintText: 'Choose a leader from this unit',
+                                hintText: l10n.chooseLeaderHint,
                                 prefixIcon: const Icon(Icons.person_outline),
                                 filled: true,
                                 fillColor: theme.colorScheme.surfaceContainerLow,
@@ -234,10 +235,10 @@ class _ManualAssignmentDialogState extends State<ManualAssignmentDialog> {
                                 );
                               }).toList(),
                               onChanged: (val) => setState(() => _selectedLeaderId = val),
-                              validator: (val) => val == null ? 'Please select a leader' : null,
+                              validator: (val) => val == null ? l10n.selectLeaderLabel : null,
                             ),
                             const SizedBox(height: 16),
-                            Text('Set Deadline',
+                            Text(l10n.setDeadlineLabel,
                                 style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
                             const SizedBox(height: 8),
                             InkWell(
@@ -258,7 +259,7 @@ class _ManualAssignmentDialogState extends State<ManualAssignmentDialog> {
                                       child: Text(
                                         _selectedDeadline != null
                                             ? '${_selectedDeadline!.year}-${_selectedDeadline!.month}-${_selectedDeadline!.day} ${_selectedDeadline!.hour}:${_selectedDeadline!.minute.toString().padLeft(2, '0')}'
-                                            : 'Select Date & Time',
+                                            : l10n.selectDateTime,
                                         style: theme.textTheme.bodyMedium?.copyWith(
                                           color: _selectedDeadline != null
                                               ? theme.colorScheme.onSurface
@@ -285,7 +286,7 @@ class _ManualAssignmentDialogState extends State<ManualAssignmentDialog> {
                                       const SizedBox(width: 12),
                                       Expanded(
                                         child: Text(
-                                          'No active leaders found in this unit.',
+                                          l10n.noActiveLeadersError,
                                           style: TextStyle(
                                               fontSize: 12, color: theme.colorScheme.onErrorContainer),
                                         ),
@@ -310,16 +311,16 @@ class _ManualAssignmentDialogState extends State<ManualAssignmentDialog> {
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       foregroundColor: theme.colorScheme.onSurfaceVariant,
                     ),
-                    child: const Text('Cancel'),
+                    child: Text(l10n.cancel),
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: (_isSubmitting || _leaders.isEmpty) ? null : _submit,
+                    onPressed: _leaders.isEmpty ? null : _submit,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.colorScheme.primary,
-                      foregroundColor: theme.colorScheme.onPrimary,
+                      backgroundColor: ImboniColors.primary,
+                      foregroundColor: Colors.white,
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
@@ -331,8 +332,8 @@ class _ManualAssignmentDialogState extends State<ManualAssignmentDialog> {
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
-                                color: theme.colorScheme.onPrimary, strokeWidth: 2))
-                        : const Text('Assign', style: TextStyle(fontWeight: FontWeight.bold)),
+                                color: Colors.white, strokeWidth: 2))
+                        : Text(l10n.assignBtn, style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
