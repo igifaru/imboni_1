@@ -44,7 +44,15 @@ export class CaseRepository {
     async findById(id: string): Promise<CaseEntity | null> {
         const result = await prisma.case.findUnique({
             where: { id },
-            include: { evidence: true, administrativeUnit: true, submitter: true },
+            include: {
+                evidence: true,
+                administrativeUnit: true,
+                submitter: true,
+                assignments: {
+                    where: { isActive: true },
+                    include: { leader: true }
+                }
+            },
         });
         return result as unknown as CaseEntity | null;
     }
@@ -55,7 +63,15 @@ export class CaseRepository {
     async findByReference(caseReference: string): Promise<CaseEntity | null> {
         const result = await prisma.case.findUnique({
             where: { caseReference },
-            include: { evidence: true, administrativeUnit: true, submitter: true },
+            include: {
+                evidence: true,
+                administrativeUnit: true,
+                submitter: true,
+                assignments: {
+                    where: { isActive: true },
+                    include: { leader: true }
+                }
+            },
         });
         return result as unknown as CaseEntity | null;
     }
@@ -76,7 +92,15 @@ export class CaseRepository {
                         },
                     },
                 },
-                include: { evidence: true, administrativeUnit: true, submitter: true, assignments: true },
+                include: {
+                    evidence: true,
+                    administrativeUnit: true,
+                    submitter: true,
+                    assignments: {
+                        where: { isActive: true },
+                        include: { leader: true }
+                    }
+                },
                 skip,
                 take: limit,
                 orderBy: { createdAt: 'desc' },
@@ -212,7 +236,14 @@ export class CaseRepository {
                 skip,
                 take: limit,
                 orderBy: { createdAt: 'desc' },
-                include: { assignments: true, administrativeUnit: true, evidence: true }, // Include assignments for context
+                include: {
+                    administrativeUnit: true,
+                    evidence: true,
+                    assignments: {
+                        where: { isActive: true },
+                        include: { leader: true }
+                    }
+                },
             }),
             prisma.case.count({ where }),
         ]);

@@ -350,6 +350,7 @@ class AppLocalizations {
   String get daySingular => get('day_singular');
   String get dayPlural => get('day_plural');
   String get assignToStaff => get('assign_to_staff');
+  String get extensionsRemaining => get('extensions_remaining');
 
 
 

@@ -598,6 +598,12 @@ export class CaseService {
     /**
      * Review case (Accept/Reject/Info)
      */
+    /**
+     * Extend deadline for a case assignment
+     */
+    /**
+     * Review case (Accept/Reject)
+     */
     async reviewCase(caseId: string, action: 'ACCEPT' | 'REJECT' | 'REQUEST_INFO', userId: string, notes?: string): Promise<CaseResponseDto> {
         let status: 'IN_PROGRESS' | 'CLOSED' | 'OPEN' | undefined;
 
@@ -606,6 +612,8 @@ export class CaseService {
 
         return this.updateCase(caseId, { status: status as any, notes }, userId);
     }
+
+
 
     /**
      * Resolve case
