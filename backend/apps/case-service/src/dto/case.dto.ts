@@ -55,6 +55,10 @@ export interface CaseResponseDto {
         fileName: string;
     }[];
     administrativeUnitId?: string;
+    assignedLeaderId?: string;
+    assignedLeaderName?: string;
+    assignedLeaderPhone?: string;
+    extensionCount?: number;
     administrativeUnit?: {
         id: string;
         name: string;

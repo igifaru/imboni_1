@@ -1385,6 +1385,9 @@ export class CaseService {
      * Transform entity to response DTO
      */
     private toResponseDto(entity: CaseEntity, deadline?: string): CaseResponseDto {
+        // Find active assignment if available
+        const activeAssignment = (entity as any).assignments?.find((a: any) => a.isActive);
+
         return {
             id: entity.id,
             caseReference: entity.caseReference,
@@ -1399,9 +1402,13 @@ export class CaseService {
             citizenName: entity.submittedAnonymously ? null : (entity as any).submitter?.name,
             createdAt: entity.createdAt.toISOString(),
             resolvedAt: entity.resolvedAt?.toISOString() || null,
-            deadline: deadline || null, // Populated from assignment if passed
+            deadline: deadline || activeAssignment?.deadlineAt?.toISOString() || null, // Populated from assignment if passed or found
             daysRemaining: null,
             administrativeUnitId: entity.administrativeUnitId,
+            assignedLeaderId: activeAssignment?.leaderId, // Map from active assignment
+            assignedLeaderName: activeAssignment?.leader?.name,
+            assignedLeaderPhone: activeAssignment?.leader?.phone,
+            extensionCount: activeAssignment?.extensionCount, // Added extension count
             evidence: entity.evidence?.map(e => ({
                 id: e.id,
                 type: e.type,

@@ -23,6 +23,7 @@ class CaseModel {
   final String? assignedLeaderId;
   final String? assignedLeaderName;
   final String? assignedLeaderPhone;
+  final int? extensionCount; // Added for extension tracking
 
   const CaseModel({
     required this.id,
@@ -47,6 +48,7 @@ class CaseModel {
     this.assignedLeaderId,
     this.assignedLeaderName,
     this.assignedLeaderPhone,
+    this.extensionCount,
   });
 
   factory CaseModel.fromJson(Map<String, dynamic> json) {
@@ -76,6 +78,7 @@ class CaseModel {
       assignedLeaderId: json['assignedLeaderId'] as String?,
       assignedLeaderName: json['assignedLeaderName'] as String?,
       assignedLeaderPhone: json['assignedLeaderPhone'] as String?,
+      extensionCount: json['extensionCount'] as int?,
     );
   }
 
@@ -96,6 +99,7 @@ class CaseModel {
     'imageUrl': imageUrl,
     'citizenName': citizenName,
     'administrativeUnitId': administrativeUnitId,
+    'extensionCount': extensionCount,
   };
 }
 

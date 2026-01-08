@@ -682,7 +682,8 @@ const Map<String, Map<String, String>> _translations = {
 
     'day_singular': 'Umunsi',
     'day_plural': 'Iminsi',
-    'assign_to_staff': 'Tanga ku Bakozi',
+    'assign_to_staff': 'Ohereza ku mukozi',
+    'extensions_remaining': 'Inshuro zisigaye',
 
 
 
@@ -992,6 +993,7 @@ const Map<String, Map<String, String>> _translations = {
     'day_singular': 'Day',
     'day_plural': 'Days',
     'assign_to_staff': 'Assign to Staff',
+    'extensions_remaining': 'Extensions Remaining',
 
 
 
@@ -1288,6 +1290,7 @@ const Map<String, Map<String, String>> _translations = {
     'day_singular': 'Jour',
     'day_plural': 'Jours',
     'assign_to_staff': 'Assigner au Personnel',
+    'extensions_remaining': 'Extensions restantes',
 
 
 

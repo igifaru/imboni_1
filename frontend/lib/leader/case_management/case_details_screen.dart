@@ -50,7 +50,7 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
     if (_case.status == 'RESOLVED') return false;
     
     // If Unassigned (OPEN), any leader in the unit can take/assign it
-    if (_case.assignedLeaderId == null) return true;
+    if (_case.assignedLeaderId == null || _case.assignedLeaderId!.isEmpty) return true;
 
     // If Assigned, ONLY the assigned leader can act
     final currentUserId = authService.currentUser?.id;
@@ -58,11 +58,7 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
   }
 
 
-  @override
-  void dispose() {
-    _player.dispose();
-    super.dispose();
-  }
+
 
   Future<void> _refreshCaseDetails() async {
     final result = await CaseService.instance.getCaseById(_case.id);
@@ -206,7 +202,10 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
   Future<void> _extendDeadline() async {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (ctx) => _ExtendDeadlineDialog(caseStatus: _case.status),
+      builder: (ctx) => _ExtendDeadlineDialog(
+        caseStatus: _case.status,
+        extensionCount: _case.extensionCount ?? 0,
+      ),
     );
 
     if (result != null) {
@@ -1256,7 +1255,9 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
 
 class _ExtendDeadlineDialog extends StatefulWidget {
   final String? caseStatus;
-  const _ExtendDeadlineDialog({this.caseStatus});
+  final int extensionCount;
+
+  const _ExtendDeadlineDialog({this.caseStatus, this.extensionCount = 0});
 
   @override
   State<_ExtendDeadlineDialog> createState() => _ExtendDeadlineDialogState();
@@ -1307,9 +1308,31 @@ class _ExtendDeadlineDialogState extends State<_ExtendDeadlineDialog> {
             const SizedBox(height: 24),
 
             // 1. Day Selection
-            Text(
-              l10n.daysLabel,
-              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  l10n.daysLabel,
+                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: (widget.extensionCount >= 2) 
+                        ? ImboniColors.error.withAlpha(20) 
+                        : ImboniColors.primary.withAlpha(20),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '${l10n.extensionsRemaining}: ${2 - widget.extensionCount}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: (widget.extensionCount >= 2) ? ImboniColors.error : ImboniColors.primary,
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 12),
             Row(
