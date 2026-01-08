@@ -858,7 +858,7 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
 
   Widget _buildTimelineItem(AppLocalizations l10n, CaseAction action, Color color, bool isDark, Color textColor, Color subTextColor) {
     return Container(
-      width: 140,
+      width: 200, // Increased from 140 to accommodate longer localized text
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: color.withAlpha(isDark ? 38 : 20),
@@ -888,7 +888,7 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
                     fontWeight: FontWeight.w600,
                     color: color,
                   ),
-                  maxLines: 1,
+                  maxLines: 2, // Allow title to wrap
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
