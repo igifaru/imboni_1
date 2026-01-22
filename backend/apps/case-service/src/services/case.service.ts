@@ -7,6 +7,7 @@ import { CaseEntity } from '../entities/case.entity';
 import { publishEvent, CHANNELS } from '../../../../libs/messaging/messaging.service';
 import { createServiceLogger } from '../../../../libs/logging/logger.service';
 import { prisma } from '../../../../libs/database/prisma.service';
+import { findNearestLeader } from '../../../../libs/database/assignment.utils';
 import { config } from '../../../../libs/config/config.service';
 import { AdministrativeLevel, CaseStatus } from '@prisma/client';
 
@@ -94,6 +95,28 @@ function getChildrenFromJson(path: any[], data: any): string[] {
     }
 
     return [];
+}
+
+/**
+ * Build the full location path by traversing parent chain
+ * Returns: "Province → District → Sector → Cell → Village"
+ */
+async function buildLocationPath(unitId: string): Promise<string> {
+    const path: string[] = [];
+    let currentId: string | null = unitId;
+
+    while (currentId) {
+        const unit: { id: string; name: string; parentId: string | null; level: string } | null = await prisma.administrativeUnit.findUnique({
+            where: { id: currentId },
+            select: { id: true, name: true, parentId: true, level: true }
+        });
+
+        if (!unit) break;
+        path.unshift(unit.name);
+        currentId = unit.parentId;
+    }
+
+    return path.join(' → ');
 }
 
 export class CaseService {
@@ -184,7 +207,7 @@ export class CaseService {
             return null;
         }
 
-        return this.toResponseDto(foundCase);
+        return this.toResponseDtoWithPath(foundCase);
     }
 
     /**
@@ -197,7 +220,7 @@ export class CaseService {
             return null;
         }
 
-        return this.toResponseDto(foundCase);
+        return this.toResponseDtoWithPath(foundCase);
     }
 
     /**
@@ -223,8 +246,18 @@ export class CaseService {
             prisma.case.count({ where })
         ]);
 
+        // Build location paths for all cases
+        const caseDtos = await Promise.all(
+            cases.map(async (c: any) => {
+                const locationPath = c.administrativeUnitId
+                    ? await buildLocationPath(c.administrativeUnitId)
+                    : undefined;
+                return this.toResponseDto(c, undefined, locationPath);
+            })
+        );
+
         return {
-            cases: cases.map((c: any) => this.toResponseDto(c)),
+            cases: caseDtos,
             total
         };
     }
@@ -308,19 +341,24 @@ export class CaseService {
             prisma.case.count({ where: whereClause })
         ]);
 
-        // 3. Transform to response with assigned leader info
-        const caseDtos = cases.map((c: any) => {
-            const activeAssignment = c.assignments?.[0]; // First active assignment
-            const assignedLeader = activeAssignment?.leader;
-            const deadline = activeAssignment?.deadlineAt?.toISOString();
+        // 3. Transform to response with assigned leader info and location paths
+        const caseDtos = await Promise.all(
+            cases.map(async (c: any) => {
+                const activeAssignment = c.assignments?.[0];
+                const assignedLeader = activeAssignment?.leader;
+                const deadline = activeAssignment?.deadlineAt?.toISOString();
+                const locationPath = c.administrativeUnitId
+                    ? await buildLocationPath(c.administrativeUnitId)
+                    : undefined;
 
-            return {
-                ...this.toResponseDto(c as any, deadline),
-                assignedLeaderId: assignedLeader?.id || null,
-                assignedLeaderName: assignedLeader?.name || null,
-                assignedLeaderPhone: assignedLeader?.phone || null,
-            };
-        });
+                return {
+                    ...this.toResponseDto(c as any, deadline, locationPath),
+                    assignedLeaderId: assignedLeader?.id || null,
+                    assignedLeaderName: assignedLeader?.name || null,
+                    assignedLeaderPhone: assignedLeader?.phone || null,
+                };
+            })
+        );
 
         logger.info('Jurisdiction cases fetched', {
             leaderId,
@@ -397,25 +435,40 @@ export class CaseService {
             }
         });
 
-        // 5. Create new Assignment for the Parent Unit Leader
-        const parentLeader = await prisma.leaderAssignment.findFirst({
-            where: { administrativeUnitId: unit.parentId!, isActive: true }
-        });
 
-        if (parentLeader) {
+        // 5. Create new Assignment for the Parent Unit Leader
+        const assignedLeader = await findNearestLeader(prisma, unit.parentId!);
+
+        if (assignedLeader) {
             const now = new Date();
             const deadline = this.getDeadlineForUrgency(existingCase.urgency);
+
+            // Deactivate any assignments the found leader might already have for this case 
+            // (unlikely if strictly going up, but safe)
 
             await prisma.caseAssignment.create({
                 data: {
                     caseId: caseId,
-                    administrativeUnitId: unit.parentId!,
-                    leaderId: parentLeader.userId, // Link to the user
+                    administrativeUnitId: assignedLeader.administrativeUnitId,
+                    leaderId: assignedLeader.userId, // Link to the user
                     assignedAt: now,
                     deadlineAt: deadline,
                     escalationReason: reason,
                     isActive: true
                 }
+            });
+
+            // Notify the new owner
+            await publishEvent(CHANNELS.NOTIFICATION_SEND, {
+                userId: assignedLeader.userId,
+                caseId: caseId,
+                channel: 'PUSH',
+                message: `Case escalated to you: ${existingCase.title}`,
+            });
+        } else {
+            logger.warn('Escalated case has no leader found in upstream hierarchy', {
+                caseId,
+                startParentId: unit.parentId
             });
         }
 
@@ -440,17 +493,39 @@ export class CaseService {
         const existingCase = await this.repository.findById(caseId);
         if (!existingCase) throw new Error('Case not found');
 
-        // 1. Verify Target Leader is assigned to the SAME administrative unit
+        // 1. Verify Target Leader has jurisdiction
         const targetAssignment = await prisma.leaderAssignment.findFirst({
             where: {
                 userId: targetLeaderId,
-                administrativeUnitId: existingCase.administrativeUnitId,
                 isActive: true
-            }
+            },
+            include: { administrativeUnit: true }
         });
 
         if (!targetAssignment) {
-            throw new Error('Target leader is not active in this administrative unit.');
+            throw new Error('Target leader is not active.');
+        }
+
+        // Get Case Unit
+        const caseUnit = await prisma.administrativeUnit.findUnique({
+            where: { id: existingCase.administrativeUnitId },
+            select: { code: true }
+        });
+
+        if (!caseUnit) throw new Error('Case location invalid');
+
+        // Check if case is within leader's jurisdiction
+        // Case Code: 010101 (Village), Leader Code: 0101 (Sector) -> StartsWith? Yes.
+        // Leader Code: 01 (Province) -> StartsWith? Yes.
+        // Note: Leader Code could be longer if assigning DOWN? 
+        // Usually we assign to someone who manages that area.
+        // If I assign to a Village Leader (010101) a case in the Village (010101), it matches.
+
+        // Allow if case code starts with leader code (Leader covers the area)
+        // OR if leader code starts with case code (Leader is in a sub-unit? - Rare/Maybe disallowed)
+
+        if (!caseUnit.code.startsWith(targetAssignment.administrativeUnit.code)) {
+            throw new Error('Target leader does not have jurisdiction over this case.');
         }
 
         // 2. Deactivate previous assignments for this unit
@@ -677,16 +752,14 @@ export class CaseService {
      * Create assignment to leader of administrative unit
      */
     private async createAssignment(caseData: CaseEntity): Promise<void> {
-        // Find the leader for the administrative unit
-        const leader = await prisma.leaderAssignment.findFirst({
-            where: {
-                administrativeUnitId: caseData.administrativeUnitId,
-                isActive: true,
-            },
-        });
+        const assignedLeader = await findNearestLeader(prisma, caseData.administrativeUnitId);
 
-        if (!leader) {
-            logger.warn('No leader found for unit', { unitId: caseData.administrativeUnitId });
+        if (!assignedLeader) {
+            logger.warn('No leader found for unit or any parent in hierarchy', {
+                initialUnitId: caseData.administrativeUnitId
+            });
+            // Consider assigning to a default system admin or leaving unassigned but flagged?
+            // For now, return - system will show as unassigned but visible in jurisdiction
             return;
         }
 
@@ -698,8 +771,8 @@ export class CaseService {
         await prisma.caseAssignment.create({
             data: {
                 caseId: caseData.id,
-                administrativeUnitId: caseData.administrativeUnitId,
-                leaderId: leader.userId,
+                administrativeUnitId: assignedLeader.administrativeUnitId, // Assign to the unit where the leader was found
+                leaderId: assignedLeader.userId,
                 deadlineAt,
                 isActive: true,
             },
@@ -707,10 +780,17 @@ export class CaseService {
 
         // Send notification to leader
         await publishEvent(CHANNELS.NOTIFICATION_SEND, {
-            userId: leader.userId,
+            userId: assignedLeader.userId,
             caseId: caseData.id,
             channel: 'PUSH',
             message: `New case assigned: ${caseData.title}`,
+        });
+
+        logger.info('Case assigned via hierarchy fallback', {
+            caseId: caseData.id,
+            originalUnit: caseData.administrativeUnitId,
+            assignedUnit: assignedLeader.administrativeUnitId,
+            leaderId: assignedLeader.userId
         });
     }
 
@@ -1460,8 +1540,9 @@ export class CaseService {
 
     /**
      * Transform entity to response DTO
+     * @param locationPath Optional pre-computed location path
      */
-    private toResponseDto(entity: CaseEntity, deadline?: string): CaseResponseDto {
+    private toResponseDto(entity: CaseEntity, deadline?: string, locationPath?: string): CaseResponseDto {
         // Find active assignment if available
         const activeAssignment = (entity as any).assignments?.find((a: any) => a.isActive);
 
@@ -1474,18 +1555,19 @@ export class CaseService {
             description: entity.description,
             currentLevel: entity.currentLevel,
             locationName: (entity as any).administrativeUnit?.name || 'Unknown Location',
+            locationPath: locationPath, // Full hierarchical path
             status: entity.status,
             submittedAnonymously: entity.submittedAnonymously,
             citizenName: entity.submittedAnonymously ? null : (entity as any).submitter?.name,
             createdAt: entity.createdAt.toISOString(),
             resolvedAt: entity.resolvedAt?.toISOString() || null,
-            deadline: deadline || activeAssignment?.deadlineAt?.toISOString() || null, // Populated from assignment if passed or found
+            deadline: deadline || activeAssignment?.deadlineAt?.toISOString() || null,
             daysRemaining: null,
             administrativeUnitId: entity.administrativeUnitId,
-            assignedLeaderId: activeAssignment?.leaderId, // Map from active assignment
+            assignedLeaderId: activeAssignment?.leaderId,
             assignedLeaderName: activeAssignment?.leader?.name,
             assignedLeaderPhone: activeAssignment?.leader?.phone,
-            extensionCount: activeAssignment?.extensionCount, // Added extension count
+            extensionCount: activeAssignment?.extensionCount,
             evidence: entity.evidence?.map(e => ({
                 id: e.id,
                 type: e.type,
@@ -1500,6 +1582,16 @@ export class CaseService {
                 level: (entity as any).administrativeUnit.level,
             } : undefined
         };
+    }
+
+    /**
+     * Transform entity to response DTO with location path (async)
+     */
+    private async toResponseDtoWithPath(entity: CaseEntity, deadline?: string): Promise<CaseResponseDto> {
+        const locationPath = entity.administrativeUnitId
+            ? await buildLocationPath(entity.administrativeUnitId)
+            : undefined;
+        return this.toResponseDto(entity, deadline, locationPath);
     }
 }
 

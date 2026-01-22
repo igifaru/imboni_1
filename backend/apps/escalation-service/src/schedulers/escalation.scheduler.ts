@@ -15,6 +15,7 @@ import {
     getEmergencyNotificationLevels,
     AdministrativeLevel,
 } from '../rules/escalation.rules';
+import { findNearestLeader } from '../../../../libs/database/assignment.utils';
 
 const logger = createServiceLogger('escalation-scheduler');
 
@@ -138,22 +139,18 @@ export class EscalationScheduler {
                 });
 
                 if (currentUnit?.parentId) {
-                    // 5. Find leader at parent level
-                    const parentLeader = await tx.leaderAssignment.findFirst({
-                        where: {
-                            administrativeUnitId: currentUnit.parentId,
-                            isActive: true,
-                        },
-                    });
+                    // 5. Find nearest active leader in hierarchy (recursive up)
+                    // We use the transaction client 'tx' for consistency
+                    const parentLeader = await findNearestLeader(tx, currentUnit.parentId);
 
                     if (parentLeader) {
-                        // 6. Create new assignment at parent level
+                        // 6. Create new assignment at parent level (or nearest available)
                         const newDeadline = calculateNewDeadline(caseData.urgency);
 
                         await tx.caseAssignment.create({
                             data: {
                                 caseId: caseData.id,
-                                administrativeUnitId: currentUnit.parentId,
+                                administrativeUnitId: parentLeader.administrativeUnitId, // Use the unit where leader was found
                                 leaderId: parentLeader.userId,
                                 deadlineAt: newDeadline,
                                 isActive: true,
@@ -166,9 +163,25 @@ export class EscalationScheduler {
                                 userId: parentLeader.userId,
                                 caseId: caseData.id,
                                 channel: 'PUSH',
-                                message: `Case escalated to you: ${caseData.title}`,
+                                message: `Case escalated to you (Time Expired): ${caseData.title}`,
                             },
                         });
+
+                        // 8. Update case location to match the leader's unit (optional but good for consistency)
+                        await tx.case.update({
+                            where: { id: caseData.id },
+                            data: {
+                                administrativeUnitId: parentLeader.administrativeUnitId
+                                // Note: We might want to keep original location? 
+                                // But 'case.administrativeUnitId' usually tracks where the case IS currently.
+                                // The original location is preserved in historical path if needed?
+                                // Actually, usually we move the case UP.
+                            }
+                        });
+
+                    } else {
+                        // Log warn: Escaled but no leader found
+                        logger.warn(`Case ${caseData.id} escalated to ${nextLevel} but no leader found in upstream hierarchy!`);
                     }
                 }
             });

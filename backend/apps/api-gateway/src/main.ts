@@ -103,17 +103,24 @@ app.use((req, res) => {
     res.status(404).json({ error: 'Not found' });
 });
 
+// Escalation Scheduler
+import { escalationScheduler } from '../../escalation-service/src/schedulers/escalation.scheduler';
+
 // Start server
 const PORT = config.ports.apiGateway;
 
 app.listen(PORT, () => {
     logger.info(`🚀 API Gateway running on port ${PORT}`);
     logger.info(`   Environment: ${config.nodeEnv}`);
+
+    // Start background schedulers
+    escalationScheduler.start();
 });
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
     logger.info('Shutting down...');
+    escalationScheduler.stop();
     await disconnectPrisma();
     process.exit(0);
 });
