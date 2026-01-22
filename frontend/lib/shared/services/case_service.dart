@@ -35,7 +35,24 @@ class CaseService {
     return ApiResponse.error(response.error ?? 'Failed to upload evidence');
   }
 
-// ... (existing code) ...
+  /// Update case (for citizens) - allows editing title, description, urgency
+  /// Only OPEN cases owned by the user can be edited
+  Future<ApiResponse<CaseModel>> updateCase(String caseId, {
+    String? title,
+    String? description,
+    String? urgency,
+  }) async {
+    final body = <String, dynamic>{};
+    if (title != null) body['title'] = title;
+    if (description != null) body['description'] = description;
+    if (urgency != null) body['urgency'] = urgency;
+
+    final response = await apiClient.put('/cases/$caseId/citizen-update', body);
+    if (response.isSuccess && response.data != null) {
+      return ApiResponse.success(CaseModel.fromJson(response.data));
+    }
+    return ApiResponse.error(response.error ?? 'Failed to update case');
+  }
 
 
 
