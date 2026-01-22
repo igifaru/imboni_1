@@ -164,7 +164,7 @@ export class CaseRepository {
             where: { id },
             data: {
                 currentLevel: newLevel,
-                status: 'ESCALATED',
+                status: 'IN_PROGRESS',
             },
         });
         return result as unknown as CaseEntity;
@@ -259,7 +259,7 @@ export class CaseRepository {
             prisma.case.count(),
             prisma.case.count({ where: { status: { in: ['OPEN', 'IN_PROGRESS', 'ESCALATED'] } } }),
             prisma.case.count({ where: { urgency: { in: ['HIGH', 'EMERGENCY'] }, status: { not: 'RESOLVED' } } }),
-            prisma.case.count({ where: { status: 'ESCALATED' } }),
+            prisma.case.count({ where: { currentLevel: { not: 'VILLAGE' }, status: { in: ['OPEN', 'IN_PROGRESS'] } } }),
             prisma.case.groupBy({
                 by: ['status'],
                 _count: { status: true },

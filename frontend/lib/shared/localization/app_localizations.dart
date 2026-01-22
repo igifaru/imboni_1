@@ -60,6 +60,7 @@ class AppLocalizations {
   String get statusInProgress => get('status_in_progress');
   String get statusResolved => get('status_resolved');
   String get statusEscalated => get('status_escalated');
+  String get statusClosed => get('status_closed');
 
   // Levels
   String get levelVillage => get('level_village');
@@ -451,6 +452,7 @@ const Map<String, Map<String, String>> _translations = {
     'status_in_progress': 'Gikorwaho',
     'status_resolved': 'Cyakemutse',
     'status_escalated': 'Cyazamutse',
+    'status_closed': 'Cyafunzwe',
     'level_village': 'Umudugudu',
     'level_cell': 'Akagari',
     'level_sector': 'Umurenge',
@@ -792,6 +794,7 @@ const Map<String, Map<String, String>> _translations = {
     'status_in_progress': 'In Progress',
     'status_resolved': 'Resolved',
     'status_escalated': 'Escalated',
+    'status_closed': 'Closed',
     'level_village': 'Village',
     'level_cell': 'Cell',
     'level_sector': 'Sector',

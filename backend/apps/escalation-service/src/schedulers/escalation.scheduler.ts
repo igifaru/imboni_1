@@ -118,7 +118,7 @@ export class EscalationScheduler {
                     where: { id: caseData.id },
                     data: {
                         currentLevel: nextLevel,
-                        status: 'ESCALATED',
+                        status: 'IN_PROGRESS',
                     },
                 });
 

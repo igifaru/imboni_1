@@ -66,7 +66,7 @@ class ProfessionalCaseCard extends StatelessWidget {
                             ),
                             const SizedBox(width: 6),
                           ],
-                          _buildStatusChip(caseData.status, statusColor),
+                          _buildStatusChip(context, caseData.status, statusColor),
                         ],
                       ),
                       
@@ -175,8 +175,30 @@ class ProfessionalCaseCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusChip(String status, Color color) {
-    String label = status.replaceAll('_', ' ');
+  Widget _buildStatusChip(BuildContext context, String status, Color color) {
+    String label = status;
+    final l10n = AppLocalizations.of(context);
+    
+    switch (status) {
+      case 'OPEN':
+        label = l10n.statusOpen; // Assuming keys exist
+        break;
+      case 'IN_PROGRESS':
+        label = l10n.statusInProgress;
+        break;
+      case 'RESOLVED':
+        label = l10n.statusResolved;
+        break;
+      case 'CLOSED':
+        label = l10n.statusClosed;
+        break;
+      case 'ESCALATED':
+        label = l10n.statusEscalated;
+        break;
+      default:
+        label = status.replaceAll('_', ' ');
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(

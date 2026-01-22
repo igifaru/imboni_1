@@ -469,7 +469,7 @@ export class CaseService {
             where: { id: caseId },
             data: {
                 currentLevel: nextLevel,
-                status: 'ESCALATED',
+                status: 'IN_PROGRESS',
             }
         });
 
