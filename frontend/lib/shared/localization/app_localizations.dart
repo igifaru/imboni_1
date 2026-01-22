@@ -396,6 +396,14 @@ class AppLocalizations {
   String get resRate => get('res_rate');
   String get avgTime => get('avg_time');
 
+  // Case Edit
+  String get editCase => get('edit_case');
+  String get editCaseTitle => get('edit_case_title');
+  String get editCaseDescription => get('edit_case_description');
+  String get caseUpdatedSuccess => get('case_updated_success');
+  String get cannotEditCase => get('cannot_edit_case');
+  String get caseMustBeOpen => get('case_must_be_open');
+
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
@@ -741,6 +749,13 @@ const Map<String, Map<String, String>> _translations = {
     'total_cases': 'Ibibazo byose',
     'res_rate': 'Igipimo',
     'avg_time': 'Igihe',
+    // Case Edit
+    'edit_case': 'Hindura Ikibazo',
+    'edit_case_title': 'Hindura Umutwe',
+    'edit_case_description': 'Hindura Ibisobanuro',
+    'case_updated_success': 'Ikibazo cyahinduwe neza',
+    'cannot_edit_case': 'Ntushobora guhindura iki kibazo',
+    'case_must_be_open': 'Ikibazo kigomba kuba gifunguye kugirango uhindure',
 
   },
   'en': {
@@ -1076,6 +1091,13 @@ const Map<String, Map<String, String>> _translations = {
     'total_cases': 'Total Cases',
     'res_rate': 'Res. Rate',
     'avg_time': 'Avg Time',
+    // Case Edit
+    'edit_case': 'Edit Case',
+    'edit_case_title': 'Edit Title',
+    'edit_case_description': 'Edit Description',
+    'case_updated_success': 'Case updated successfully',
+    'cannot_edit_case': 'Cannot edit this case',
+    'case_must_be_open': 'Case must be open to edit',
 
   },
   'fr': {
@@ -1398,6 +1420,13 @@ const Map<String, Map<String, String>> _translations = {
     'total_cases': 'Total Affaires',
     'res_rate': 'Taux Rés.',
     'avg_time': 'Temps Moyen',
+    // Case Edit
+    'edit_case': 'Modifier l\'Affaire',
+    'edit_case_title': 'Modifier le Titre',
+    'edit_case_description': 'Modifier la Description',
+    'case_updated_success': 'Affaire modifiée avec succès',
+    'cannot_edit_case': 'Impossible de modifier cette affaire',
+    'case_must_be_open': 'L\'affaire doit être ouverte pour la modifier',
 
   },
 };
