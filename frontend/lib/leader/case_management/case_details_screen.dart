@@ -520,7 +520,7 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
               Expanded(
                 child: Column(
                   children: [
-                    _buildInfoItem(Icons.location_on_outlined, l10n.location, _case.locationName ?? 'Unknown', isDark, subTextColor, textColor),
+                    _buildInfoItem(Icons.location_on_outlined, l10n.location, _case.locationPath ?? _case.locationName ?? 'Unknown', isDark, subTextColor, textColor),
                     const SizedBox(height: 16),
                     _buildInfoItem(Icons.layers_outlined, l10n.level, _getLevelLabel(l10n, _case.currentLevel), isDark, subTextColor, textColor),
                   ],

@@ -18,6 +18,7 @@ class CaseModel {
   final String? citizenName;
   final List<EvidenceModel>? evidence;
   final String? locationName;
+  final String? locationPath; // Full hierarchical path: "Province → District → ..."  
   final String? administrativeUnitCode;
   final String administrativeUnitId; // Added for assignment logic
   final String? assignedLeaderId;
@@ -43,6 +44,7 @@ class CaseModel {
     this.citizenName,
     this.evidence,
     this.locationName,
+    this.locationPath,
     this.administrativeUnitCode,
     required this.administrativeUnitId,
     this.assignedLeaderId,
@@ -72,6 +74,7 @@ class CaseModel {
           ? (json['evidence'] as List).map((e) => EvidenceModel.fromJson(e)).toList() 
           : null,
       locationName: json['locationName'] as String?,
+      locationPath: json['locationPath'] as String?,
       administrativeUnitCode: json['administrativeUnit']?['code'] as String?,
       administrativeUnitId: (json['administrativeUnitId'] as String?) ?? 
                            (json['administrativeUnit']?['id'] as String?) ?? '',

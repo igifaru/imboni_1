@@ -1335,7 +1335,7 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
               Expanded(
                 child: Column(
                   children: [
-                    _buildInfoItem(Icons.location_on_outlined, l10n.location, caseModel.locationName ?? 'Unknown', isDark, subTextColor, textColor),
+                    _buildInfoItem(Icons.location_on_outlined, l10n.location, caseModel.locationPath ?? caseModel.locationName ?? 'Unknown', isDark, subTextColor, textColor),
                     const SizedBox(height: 16),
                     _buildInfoItem(Icons.layers_outlined, l10n.level, _getLevelLabel(l10n, caseModel.currentLevel), isDark, subTextColor, textColor),
                   ],

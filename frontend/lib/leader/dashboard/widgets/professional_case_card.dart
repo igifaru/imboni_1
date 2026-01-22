@@ -108,7 +108,7 @@ class ProfessionalCaseCard extends StatelessWidget {
                             child: _buildDetailItem(
                               context: context,
                               label: l10n.location,
-                              value: caseData.locationName ?? 'Unknown',
+                              value: caseData.locationPath ?? caseData.locationName ?? 'Unknown',
                               icon: Icons.location_on_outlined,
                             ),
                           ),

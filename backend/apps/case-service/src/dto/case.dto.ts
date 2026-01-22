@@ -50,6 +50,7 @@ export interface CaseResponseDto {
     description: string;
     currentLevel: string;
     locationName: string;
+    locationPath?: string; // Full hierarchical path: "Province → District → Sector → Cell → Village"
     status: string;
     submittedAnonymously: boolean;
     citizenName: string | null;
