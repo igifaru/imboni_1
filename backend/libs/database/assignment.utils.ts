@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, AdministrativeLevel } from '@prisma/client';
 
 /**
  * Find nearest active leader in hierarchy (recursive up)
@@ -31,6 +31,37 @@ export async function findNearestLeader(
 
         if (!unit || !unit.parentId) break;
         currentUnitId = unit.parentId;
+    }
+
+    return null;
+    return null;
+}
+
+/**
+ * Find ancestor unit at specific level
+ * Used for escalation to determine target unit from origin
+ */
+export async function getAncestorAtLevel(
+    prisma: PrismaClient | any,
+    startUnitId: string,
+    targetLevel: AdministrativeLevel
+): Promise<{ id: string, parentId: string | null } | null> {
+    let currentUnitId: string | null = startUnitId;
+
+    while (currentUnitId) {
+        const unit: { id: string; parentId: string | null; level: AdministrativeLevel } | null = await prisma.administrativeUnit.findUnique({
+            where: { id: currentUnitId },
+            select: { id: true, parentId: true, level: true }
+        });
+
+        if (!unit) return null;
+
+        if (unit.level === targetLevel) {
+            return unit;
+        }
+
+        currentUnitId = unit.parentId;
+        if (!currentUnitId) break;
     }
 
     return null;

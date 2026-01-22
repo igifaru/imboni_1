@@ -7,7 +7,8 @@ import { CaseEntity } from '../entities/case.entity';
 import { publishEvent, CHANNELS } from '../../../../libs/messaging/messaging.service';
 import { createServiceLogger } from '../../../../libs/logging/logger.service';
 import { prisma } from '../../../../libs/database/prisma.service';
-import { findNearestLeader } from '../../../../libs/database/assignment.utils';
+import { findNearestLeader, getAncestorAtLevel } from '../../../../libs/database/assignment.utils';
+import { getNextEscalationLevel } from '../../../escalation-service/src/rules/escalation.rules';
 import { config } from '../../../../libs/config/config.service';
 import { AdministrativeLevel, CaseStatus } from '@prisma/client';
 
@@ -102,7 +103,7 @@ function getChildrenFromJson(path: any[], data: any): string[] {
  * Returns: "Province → District → Sector → Cell → Village"
  */
 async function buildLocationPath(unitId: string): Promise<string> {
-    const path: string[] = [];
+    const parts: string[] = [];
     let currentId: string | null = unitId;
 
     while (currentId) {
@@ -112,11 +113,65 @@ async function buildLocationPath(unitId: string): Promise<string> {
         });
 
         if (!unit) break;
-        path.unshift(unit.name);
+
+        // Format: "Level (Name)" similar to escalation path logic
+        const levelDisplay = unit.level.charAt(0).toUpperCase() + unit.level.slice(1).toLowerCase();
+        parts.push(`${levelDisplay} (${unit.name})`);
+
+        // Stop at National level to avoid redundancy or if we just want up to District/Province
+        if (unit.level === 'NATIONAL') break;
+
         currentId = unit.parentId;
     }
 
-    return path.join(' → ');
+    return parts.join(' → ');
+}
+
+/**
+ * Build custom escalation path: Village (Name) -> Cell (Name) -> ... -> CurrentLevel (Name)
+ */
+async function buildEscalationPath(originUnitId: string, currentLevel: string): Promise<string> {
+    const parts: string[] = [];
+    let currentId: string | null = originUnitId;
+
+    // 1. Traverse up from Origin
+    // We want Bottom-Up: Village -> Cell -> Sector ...
+    // So we push to array and join with ->
+
+    // We need to stop when we reach the `currentLevel`? 
+    // Or do we show the full history up to current?
+    // User wants: village(name) -> cell(name) -> sector(current)
+
+    // Map of Levels to Order for comparison
+    const levels = ['VILLAGE', 'CELL', 'SECTOR', 'DISTRICT', 'PROVINCE', 'NATIONAL'];
+
+    while (currentId) {
+        const unit: { id: string; name: string; parentId: string | null; level: string } | null = await prisma.administrativeUnit.findUnique({
+            where: { id: currentId },
+            select: { id: true, name: true, parentId: true, level: true }
+        });
+
+        if (!unit) break;
+
+        // Format: "Level (Name)"
+        // Convert Level to Title Case for better display? Or use as is.
+        // User said: "village( village name)" -> lowercase/titlecase
+        const levelDisplay = unit.level.charAt(0).toUpperCase() + unit.level.slice(1).toLowerCase();
+        parts.push(`${levelDisplay} (${unit.name})`);
+
+        // If we reached the current level of the case, stops?
+        // Actually, originUnitId is the bottom. We keep going up until we hit the case's current level.
+        if (unit.level === currentLevel) {
+            break;
+        }
+
+        // Safety break for top
+        if (unit.level === 'NATIONAL') break;
+
+        currentId = unit.parentId;
+    }
+
+    return parts.join(' → ');
 }
 
 export class CaseService {
@@ -249,10 +304,7 @@ export class CaseService {
         // Build location paths for all cases
         const caseDtos = await Promise.all(
             cases.map(async (c: any) => {
-                const locationPath = c.administrativeUnitId
-                    ? await buildLocationPath(c.administrativeUnitId)
-                    : undefined;
-                return this.toResponseDto(c, undefined, locationPath);
+                return this.toResponseDtoWithPath(c);
             })
         );
 
@@ -268,12 +320,12 @@ export class CaseService {
     async getLeaderCases(leaderId: string, page = 1, limit = 20) {
         const result = await this.repository.findByLeader(leaderId, page, limit);
 
-        const cases = result.cases.map((c) => {
+        const cases = await Promise.all(result.cases.map(async (c) => {
             // Find assignment for this leader
             const assignment = (c as any).assignments?.find((a: any) => a.leaderId === leaderId && a.isActive);
             const deadline = assignment?.deadlineAt ? assignment.deadlineAt.toISOString() : undefined;
-            return this.toResponseDto(c, deadline);
-        });
+            return this.toResponseDtoWithPath(c, deadline);
+        }));
 
         return {
             cases,
@@ -345,18 +397,8 @@ export class CaseService {
         const caseDtos = await Promise.all(
             cases.map(async (c: any) => {
                 const activeAssignment = c.assignments?.[0];
-                const assignedLeader = activeAssignment?.leader;
                 const deadline = activeAssignment?.deadlineAt?.toISOString();
-                const locationPath = c.administrativeUnitId
-                    ? await buildLocationPath(c.administrativeUnitId)
-                    : undefined;
-
-                return {
-                    ...this.toResponseDto(c as any, deadline, locationPath),
-                    assignedLeaderId: assignedLeader?.id || null,
-                    assignedLeaderName: assignedLeader?.name || null,
-                    assignedLeaderPhone: assignedLeader?.phone || null,
-                };
+                return this.toResponseDtoWithPath(c, deadline);
             })
         );
 
@@ -379,8 +421,9 @@ export class CaseService {
      */
     async getAllCases(page = 1, limit = 50, search?: string, locationId?: string) {
         const result = await this.repository.findAll(page, limit, search, locationId);
+        const cases = await Promise.all(result.cases.map(c => this.toResponseDtoWithPath(c)));
         return {
-            cases: result.cases.map(c => this.toResponseDto(c)),
+            cases,
             total: result.total,
             page,
             limit
@@ -401,14 +444,15 @@ export class CaseService {
         const existingCase = await this.repository.findById(caseId);
         if (!existingCase) throw new Error('Case not found');
 
-        // 1. Get current unit and parent
-        const unit = await prisma.administrativeUnit.findUnique({
-            where: { id: existingCase.administrativeUnitId },
-            include: { parent: true }
-        });
+        // 1. Determine next level and target unit
+        const nextLevel = getNextEscalationLevel(existingCase.currentLevel);
+        if (!nextLevel) throw new Error('Cannot escalate: Already at maximum level');
 
-        if (!unit || !unit.parent) {
-            throw new Error('Cannot escalate: No higher administrative level');
+        // Find the unit at the next level that is an ancestor of the origin unit
+        const targetUnit = await getAncestorAtLevel(prisma, existingCase.administrativeUnitId, nextLevel);
+
+        if (!targetUnit) {
+            throw new Error(`Cannot escalate: No ancestor found at level ${nextLevel}`);
         }
 
         // 2. Validate current leader assignment (optional security check)
@@ -420,24 +464,18 @@ export class CaseService {
             data: { isActive: false, completedAt: new Date() } // Marked as completed at this level
         });
 
-        // 4. Update Case Location
+        // 4. Update Case Level (Keep administrativeUnitId as Origin)
         const updatedCase = await prisma.case.update({
             where: { id: caseId },
             data: {
-                administrativeUnitId: unit.parentId!,
-                currentLevel: unit.parent.level,
-                // Status remains OPEN or IN_PROGRESS? Maybe ESCALATED?
-                // Provide distinction? Schema has ESCALATED?
-                // Let's keep it OPEN but move it up.
-                // Or use specific status if available.
-                // existingCase.status had 'ESCALATED' in getPerformanceMetrics snippet check logic.
-                status: 'ESCALATED', // Assuming enum has it
+                currentLevel: nextLevel,
+                status: 'ESCALATED',
             }
         });
 
 
-        // 5. Create new Assignment for the Parent Unit Leader
-        const assignedLeader = await findNearestLeader(prisma, unit.parentId!);
+        // 5. Create new Assignment for the Target Unit Leader
+        const assignedLeader = await findNearestLeader(prisma, targetUnit.id);
 
         if (assignedLeader) {
             const now = new Date();
@@ -468,7 +506,7 @@ export class CaseService {
         } else {
             logger.warn('Escalated case has no leader found in upstream hierarchy', {
                 caseId,
-                startParentId: unit.parentId
+                startParentId: targetUnit.id
             });
         }
 
@@ -476,8 +514,8 @@ export class CaseService {
         await prisma.escalationEvent.create({
             data: {
                 caseId,
-                fromLevel: unit.level,
-                toLevel: unit.parent.level,
+                fromLevel: existingCase.currentLevel,
+                toLevel: nextLevel,
                 triggerReason: 'MANUAL_ESCALATION',
                 triggeredBy: userId
             }
@@ -542,7 +580,7 @@ export class CaseService {
         await prisma.caseAssignment.create({
             data: {
                 caseId,
-                administrativeUnitId: existingCase.administrativeUnitId,
+                administrativeUnitId: targetAssignment.administrativeUnitId, // Use the Target Leader's Unit
                 leaderId: targetLeaderId,
                 assignedAt: new Date(),
                 deadlineAt: deadline,
@@ -1588,9 +1626,12 @@ export class CaseService {
      * Transform entity to response DTO with location path (async)
      */
     private async toResponseDtoWithPath(entity: CaseEntity, deadline?: string): Promise<CaseResponseDto> {
-        const locationPath = entity.administrativeUnitId
-            ? await buildLocationPath(entity.administrativeUnitId)
-            : undefined;
+        const locationPath = entity.administrativeUnitId && entity.currentLevel
+            ? await buildEscalationPath(entity.administrativeUnitId, entity.currentLevel)
+            : entity.administrativeUnitId
+                ? await buildLocationPath(entity.administrativeUnitId) // Fallback
+                : undefined;
+
         return this.toResponseDto(entity, deadline, locationPath);
     }
 }

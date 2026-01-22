@@ -15,7 +15,7 @@ import {
     getEmergencyNotificationLevels,
     AdministrativeLevel,
 } from '../rules/escalation.rules';
-import { findNearestLeader } from '../../../../libs/database/assignment.utils';
+import { findNearestLeader, getAncestorAtLevel } from '../../../../libs/database/assignment.utils';
 
 const logger = createServiceLogger('escalation-scheduler');
 
@@ -133,15 +133,13 @@ export class EscalationScheduler {
                     },
                 });
 
-                // 4. Find parent administrative unit
-                const currentUnit = await tx.administrativeUnit.findUnique({
-                    where: { id: caseData.administrativeUnitId },
-                });
+                // 4. Find target administrative unit for assignment
+                // Since we keep administrativeUnitId as the Origin, we must find the ancestor at the destination level
+                const targetUnit = await getAncestorAtLevel(tx, caseData.administrativeUnitId, nextLevel);
 
-                if (currentUnit?.parentId) {
-                    // 5. Find nearest active leader in hierarchy (recursive up)
-                    // We use the transaction client 'tx' for consistency
-                    const parentLeader = await findNearestLeader(tx, currentUnit.parentId);
+                if (targetUnit) {
+                    // 5. Find nearest active leader starting from the target unit
+                    const parentLeader = await findNearestLeader(tx, targetUnit.id);
 
                     if (parentLeader) {
                         // 6. Create new assignment at parent level (or nearest available)
@@ -167,22 +165,14 @@ export class EscalationScheduler {
                             },
                         });
 
-                        // 8. Update case location to match the leader's unit (optional but good for consistency)
-                        await tx.case.update({
-                            where: { id: caseData.id },
-                            data: {
-                                administrativeUnitId: parentLeader.administrativeUnitId
-                                // Note: We might want to keep original location? 
-                                // But 'case.administrativeUnitId' usually tracks where the case IS currently.
-                                // The original location is preserved in historical path if needed?
-                                // Actually, usually we move the case UP.
-                            }
-                        });
+                        // NOTE: administrativeUnitId update block was removed to preserve origin
 
                     } else {
                         // Log warn: Escaled but no leader found
                         logger.warn(`Case ${caseData.id} escalated to ${nextLevel} but no leader found in upstream hierarchy!`);
                     }
+                } else {
+                    logger.error(`Cannot escalate case ${caseData.id}: No ancestor found at level ${nextLevel}`);
                 }
             });
 

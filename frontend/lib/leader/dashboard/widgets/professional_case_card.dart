@@ -110,6 +110,7 @@ class ProfessionalCaseCard extends StatelessWidget {
                               label: l10n.location,
                               value: caseData.locationPath ?? caseData.locationName ?? 'Unknown',
                               icon: Icons.location_on_outlined,
+                              maxLines: 2,
                             ),
                           ),
                           // Column 4: Submitted
@@ -193,7 +194,7 @@ class ProfessionalCaseCard extends StatelessWidget {
     );
   }
 
-  Widget _buildDetailItem({required BuildContext context, required String label, required String value, IconData? icon, TextStyle? valueStyle}) {
+  Widget _buildDetailItem({required BuildContext context, required String label, required String value, IconData? icon, TextStyle? valueStyle, int maxLines = 1}) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
@@ -223,7 +224,7 @@ class ProfessionalCaseCard extends StatelessWidget {
                   color: isDark ? Colors.white70 : Colors.grey[900],
                   fontWeight: FontWeight.w500,
                 ),
-                maxLines: 1,
+                maxLines: maxLines,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
