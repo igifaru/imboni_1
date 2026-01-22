@@ -2,7 +2,7 @@
  * Case Service - Business Logic
  */
 import { caseRepository, CaseRepository } from '../repositories/case.repository';
-import { CreateCaseDto, UpdateCaseDto, CaseResponseDto } from '../dto/case.dto';
+import { CreateCaseDto, UpdateCaseDto, CitizenUpdateCaseDto, CaseResponseDto } from '../dto/case.dto';
 import { CaseEntity } from '../entities/case.entity';
 import { publishEvent, CHANNELS } from '../../../../libs/messaging/messaging.service';
 import { createServiceLogger } from '../../../../libs/logging/logger.service';
@@ -1389,6 +1389,73 @@ export class CaseService {
 
         logger.info('Evidence added to case', { caseId, evidenceId: evidence.id });
         return evidence;
+    }
+
+    /**
+     * Citizen updates their own case (title, description, urgency)
+     * Restrictions: Only OPEN cases can be edited, only by the submitter
+     */
+    async citizenUpdateCase(caseId: string, dto: CitizenUpdateCaseDto, userId: string): Promise<CaseResponseDto> {
+        const existingCase = await this.repository.findById(caseId);
+
+        if (!existingCase) {
+            throw new Error('Case not found');
+        }
+
+        // Verify ownership - only the submitter can edit
+        if (existingCase.submitterId !== userId) {
+            throw new Error('You can only edit your own cases');
+        }
+
+        // Verify status - only OPEN cases can be edited
+        if (existingCase.status !== 'OPEN') {
+            throw new Error('Only cases with OPEN status can be edited');
+        }
+
+        // Verify it's not anonymous (anonymous users can't edit without identity)
+        if (existingCase.submittedAnonymously) {
+            throw new Error('Anonymous cases cannot be edited');
+        }
+
+        // Build update data
+        const updateData: any = {};
+        if (dto.title) updateData.title = dto.title;
+        if (dto.description) updateData.description = dto.description;
+        if (dto.urgency) updateData.urgency = dto.urgency;
+
+        // Only update if there's something to change
+        if (Object.keys(updateData).length === 0) {
+            throw new Error('No changes to apply');
+        }
+
+        // Update the case
+        const updatedCase = await prisma.case.update({
+            where: { id: caseId },
+            data: updateData,
+            include: { evidence: true, administrativeUnit: true }
+        });
+
+        // Log the action
+        const changes = Object.keys(updateData).join(', ');
+        await prisma.caseAction.create({
+            data: {
+                caseId,
+                performedBy: userId,
+                actionType: 'STATUS_UPDATE',
+                notes: `Citizen edited case: ${changes}`,
+            },
+        });
+
+        // Publish event
+        await publishEvent(CHANNELS.CASE_UPDATED, {
+            caseId,
+            updatedBy: userId,
+            changes: updateData,
+        });
+
+        logger.info('Citizen updated case', { caseId, changes });
+
+        return this.toResponseDto(updatedCase as unknown as CaseEntity);
     }
 
     /**

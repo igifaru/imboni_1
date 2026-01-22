@@ -22,6 +22,15 @@ export const UpdateCaseSchema = z.object({
     notes: z.string().max(2000).optional(),
 });
 
+// Citizen-specific update schema (for editing their own cases)
+export const CitizenUpdateCaseSchema = z.object({
+    title: z.string().min(5).max(200).optional(),
+    description: z.string().min(20).max(5000).optional(),
+    urgency: z.enum(['NORMAL', 'HIGH', 'EMERGENCY']).optional(),
+});
+
+export type CitizenUpdateCaseDto = z.infer<typeof CitizenUpdateCaseSchema>;
+
 export const TrackCaseSchema = z.object({
     caseReference: z.string().regex(/^IMB-[A-Z0-9]{6}-[A-Z0-9]{2}$/),
 });

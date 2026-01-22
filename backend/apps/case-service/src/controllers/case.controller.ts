@@ -3,7 +3,7 @@
  */
 import { Router, Request, Response, NextFunction } from 'express';
 import { caseService } from '../services/case.service';
-import { CreateCaseSchema, UpdateCaseSchema, TrackCaseSchema } from '../dto/case.dto';
+import { CreateCaseSchema, UpdateCaseSchema, TrackCaseSchema, CitizenUpdateCaseSchema } from '../dto/case.dto';
 import { createServiceLogger } from '../../../../libs/logging/logger.service';
 
 const logger = createServiceLogger('case-controller');
@@ -354,6 +354,54 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
         });
     } catch (error) {
         logger.error('Failed to update case', error);
+        next(error);
+    }
+});
+
+/**
+ * PUT /cases/:id/citizen-update - Citizen updates their own case (title, description, urgency)
+ */
+router.put('/:id/citizen-update', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { id } = req.params;
+        const validation = CitizenUpdateCaseSchema.safeParse(req.body);
+
+        if (!validation.success) {
+            return res.status(400).json({
+                success: false,
+                error: 'Validation failed',
+                details: validation.error.errors.map(e => ({
+                    field: e.path.join('.'),
+                    message: e.message
+                }))
+            });
+        }
+
+        const userId = (req as any).user?.userId;
+
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                error: 'Authentication required',
+            });
+        }
+
+        const result = await caseService.citizenUpdateCase(id, validation.data, userId);
+
+        res.json({
+            success: true,
+            data: result,
+            message: 'Case updated successfully',
+        });
+    } catch (error: any) {
+        logger.error('Failed to update case by citizen', { error: error.message });
+        // Return user-friendly error for specific cases
+        if (error.message.includes('only') || error.message.includes('cannot') || error.message.includes('OPEN')) {
+            return res.status(403).json({
+                success: false,
+                error: error.message,
+            });
+        }
         next(error);
     }
 });
