@@ -581,10 +581,12 @@ class CitizenCaseDetailsScreen extends StatefulWidget {
 class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
   List<CaseAction> _actions = [];
   bool _isLoading = false;
+  late CaseModel _currentCase; // Track current case for edit updates
 
   @override
   void initState() {
     super.initState();
+    _currentCase = widget.caseModel;
     _fetchActions();
   }
 
@@ -793,6 +795,305 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
     }
   }
 
+  /// Show edit case dialog
+  Future<void> _showEditDialog(ThemeData theme, AppLocalizations l10n, bool isDark) async {
+    final titleController = TextEditingController(text: _currentCase.title);
+    final descriptionController = TextEditingController(text: _currentCase.description);
+    String selectedUrgency = _currentCase.urgency;
+    bool isSaving = false;
+
+    final result = await showDialog<CaseModel>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return Dialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            backgroundColor: theme.colorScheme.surface,
+            surfaceTintColor: Colors.transparent,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: ImboniColors.primary.withAlpha(25),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.edit, color: ImboniColors.primary, size: 24),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Text(
+                            l10n.editCase,
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Form fields
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Title field
+                            Text(
+                              l10n.caseTitle,
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            TextField(
+                              controller: titleController,
+                              decoration: InputDecoration(
+                                hintText: l10n.caseTitleHint,
+                                filled: true,
+                                fillColor: isDark ? Colors.white10 : Colors.grey.withAlpha(25),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(color: ImboniColors.primary, width: 2),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+
+                            // Description field
+                            Text(
+                              l10n.description,
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            TextField(
+                              controller: descriptionController,
+                              maxLines: 5,
+                              decoration: InputDecoration(
+                                hintText: l10n.descHint,
+                                filled: true,
+                                fillColor: isDark ? Colors.white10 : Colors.grey.withAlpha(25),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(color: ImboniColors.primary, width: 2),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+
+                            // Urgency selector
+                            Text(
+                              l10n.urgencyTitle,
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                _buildUrgencyOption('NORMAL', l10n.urgencyNormal, Icons.info_outline, 
+                                    ImboniColors.urgencyNormal, selectedUrgency, (v) {
+                                  setDialogState(() => selectedUrgency = v);
+                                }),
+                                const SizedBox(width: 12),
+                                _buildUrgencyOption('HIGH', l10n.urgencyHigh, Icons.priority_high, 
+                                    ImboniColors.urgencyHigh, selectedUrgency, (v) {
+                                  setDialogState(() => selectedUrgency = v);
+                                }),
+                                const SizedBox(width: 12),
+                                _buildUrgencyOption('EMERGENCY', l10n.urgencyEmergency, Icons.warning_amber, 
+                                    ImboniColors.urgencyEmergency, selectedUrgency, (v) {
+                                  setDialogState(() => selectedUrgency = v);
+                                }),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Action buttons
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: isSaving ? null : () => Navigator.pop(ctx),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            child: Text(l10n.cancel),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: isSaving ? null : () async {
+                              final newTitle = titleController.text.trim();
+                              final newDesc = descriptionController.text.trim();
+
+                              // Validate
+                              if (newTitle.length < 5) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text(l10n.caseTitleError), backgroundColor: ImboniColors.error),
+                                );
+                                return;
+                              }
+                              if (newDesc.length < 20) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text(l10n.descError), backgroundColor: ImboniColors.error),
+                                );
+                                return;
+                              }
+
+                              // Check if anything changed
+                              final titleChanged = newTitle != _currentCase.title;
+                              final descChanged = newDesc != _currentCase.description;
+                              final urgencyChanged = selectedUrgency != _currentCase.urgency;
+
+                              if (!titleChanged && !descChanged && !urgencyChanged) {
+                                Navigator.pop(ctx);
+                                return;
+                              }
+
+                              setDialogState(() => isSaving = true);
+
+                              try {
+                                final response = await CaseService.instance.updateCase(
+                                  _currentCase.id,
+                                  title: titleChanged ? newTitle : null,
+                                  description: descChanged ? newDesc : null,
+                                  urgency: urgencyChanged ? selectedUrgency : null,
+                                );
+
+                                if (response.isSuccess && response.data != null) {
+                                  Navigator.pop(ctx, response.data);
+                                } else {
+                                  setDialogState(() => isSaving = false);
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(response.error ?? l10n.cannotEditCase),
+                                        backgroundColor: ImboniColors.error,
+                                      ),
+                                    );
+                                  }
+                                }
+                              } catch (e) {
+                                setDialogState(() => isSaving = false);
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Error: $e'), backgroundColor: ImboniColors.error),
+                                  );
+                                }
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: ImboniColors.primary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              elevation: 0,
+                            ),
+                            child: isSaving
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : Text(l10n.saveChanges),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+
+    // Update the case if edit was successful
+    if (result != null && mounted) {
+      setState(() => _currentCase = result);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.caseUpdatedSuccess), backgroundColor: ImboniColors.success),
+      );
+      _fetchActions(); // Refresh timeline
+    }
+  }
+
+  Widget _buildUrgencyOption(String value, String label, IconData icon, Color color, String selected, Function(String) onSelect) {
+    final isSelected = value == selected;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => onSelect(value),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? color.withAlpha(38) : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected ? color : Theme.of(context).colorScheme.outline.withAlpha(75),
+              width: isSelected ? 2 : 1,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: isSelected ? color : Theme.of(context).colorScheme.onSurfaceVariant, size: 24),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? color : Theme.of(context).colorScheme.onSurface,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                  fontSize: 11,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -801,7 +1102,7 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isWideScreen = screenWidth > 700;
 
-    final caseModel = widget.caseModel;
+    final caseModel = _currentCase; // Use current case for updates
     final statusColor = ImboniColors.getStatusColor(caseModel.status);
     final categoryColor = ImboniColors.getCategoryColor(caseModel.category);
     final urgencyColor = ImboniColors.getUrgencyColor(caseModel.urgency);
@@ -830,6 +1131,13 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
         ),
         centerTitle: true,
         actions: [
+          // Edit button - only show for OPEN cases
+          if (_currentCase.status == 'OPEN' && !_currentCase.isAnonymous)
+            IconButton(
+              icon: Icon(Icons.edit, color: isDark ? Colors.white70 : Colors.black54),
+              tooltip: l10n.editCase,
+              onPressed: () => _showEditDialog(theme, l10n, isDark),
+            ),
           IconButton(
             icon: Icon(Icons.refresh, color: isDark ? Colors.white70 : Colors.black54),
             onPressed: _fetchActions,
