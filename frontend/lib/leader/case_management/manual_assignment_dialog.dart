@@ -56,8 +56,8 @@ class _ManualAssignmentDialogState extends State<ManualAssignmentDialog> {
           final currentUser = authService.currentUser;
 
           if (currentUser != null) {
-            // 1. Remove self
-            list = list.where((u) => u.id != currentUser.id).toList();
+            // 1. Keep self in list to allow "Taking" the case
+            // list = list.where((u) => u.id != currentUser.id).toList();
 
             // 2. If Staff (LEADER), hide Head (ADMIN/OVERSIGHT) and by Title
             if (currentUser.role == 'LEADER') {

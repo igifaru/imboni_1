@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../shared/theme/colors.dart';
 import '../../../../shared/models/models.dart';
 import '../../../../shared/services/case_service.dart';
+import '../../../../shared/services/auth_service.dart';
 import '../../case_management/manual_assignment_dialog.dart';
 
 class CaseDetailScreen extends StatefulWidget {
@@ -15,12 +16,23 @@ class CaseDetailScreen extends StatefulWidget {
 
 class _CaseDetailScreenState extends State<CaseDetailScreen> {
   bool _isLoading = false;
-  late String _status;
+  late CaseModel _case;
 
   @override
   void initState() {
     super.initState();
-    _status = widget.caseModel.status;
+    _case = widget.caseModel;
+    _fetchLatestDetails();
+  }
+
+  Future<void> _fetchLatestDetails() async {
+    // Silently refresh data to check for status changes
+    final response = await CaseService.instance.getCaseById(widget.caseModel.id);
+    if (response.isSuccess && response.data != null && mounted) {
+      setState(() {
+        _case = response.data!;
+      });
+    }
   }
 
   Future<void> _handleEscalate() async {
@@ -46,14 +58,17 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
     
     setState(() => _isLoading = true);
     try {
-      final response = await CaseService.instance.escalateCase(widget.caseModel.id, reason);
+      final response = await CaseService.instance.escalateCase(_case.id, reason);
       if (mounted) {
         setState(() => _isLoading = false);
         if (response.isSuccess) {
+          setState(() {
+            _case = response.data!; // Update with new state (ESCALATED)
+          });
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Case escalated successfully'), backgroundColor: Colors.green),
           );
-          Navigator.pop(context, true);
+          // Don't pop, just update UI to show new status/hidden actions
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(response.error ?? 'Failed to escalate'), backgroundColor: Colors.red),
@@ -94,11 +109,13 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
     
     setState(() => _isLoading = true);
     try {
-      final response = await CaseService.instance.resolveCase(widget.caseModel.id, notes);
+      final response = await CaseService.instance.resolveCase(_case.id, notes);
       if (mounted) {
         setState(() {
           _isLoading = false;
-          if (response.isSuccess) _status = 'PENDING_CONFIRMATION';
+          if (response.isSuccess) {
+             _case = response.data!;
+          }
         });
         if (response.isSuccess) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -124,12 +141,13 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => ManualAssignmentDialog(
-         caseId: widget.caseModel.id,
-         administrativeUnitId: widget.caseModel.administrativeUnitId,
+         caseId: _case.id,
+         administrativeUnitId: _case.administrativeUnitId,
       ),
     );
 
     if (result == true && mounted) {
+      _fetchLatestDetails(); // Refresh to see assignments
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Case manually assigned'), backgroundColor: Colors.green),
       );
@@ -218,7 +236,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                widget.caseModel.caseReference,
+                _case.caseReference,
                 style: theme.textTheme.titleSmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.bold,
@@ -226,7 +244,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                widget.caseModel.title,
+                _case.title,
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -240,7 +258,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
   }
 
   Widget _buildPriorityBadge(bool isDark) {
-    final color = ImboniColors.getUrgencyColor(widget.caseModel.urgency);
+    final color = ImboniColors.getUrgencyColor(_case.urgency);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -254,7 +272,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
           Icon(Icons.flag, size: 16, color: color),
           const SizedBox(width: 6),
           Text(
-            widget.caseModel.urgency,
+            _case.urgency,
             style: TextStyle(
               color: color,
               fontWeight: FontWeight.bold,
@@ -291,11 +309,11 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              widget.caseModel.description,
+              _case.description,
               style: theme.textTheme.bodyLarge?.copyWith(height: 1.5),
             ),
             const SizedBox(height: 20),
-            if (widget.caseModel.audioUrl != null || widget.caseModel.imageUrl != null)
+            if (_case.audioUrl != null || _case.imageUrl != null)
               _buildAttachments(theme),
           ],
         ),
@@ -313,13 +331,13 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
           spacing: 8,
           runSpacing: 8,
           children: [
-            if (widget.caseModel.audioUrl != null)
+            if (_case.audioUrl != null)
               Chip(
                 avatar: const Icon(Icons.audiotrack, size: 16),
                 label: const Text('Voice Note'),
                 backgroundColor: theme.colorScheme.secondaryContainer,
               ),
-            if (widget.caseModel.imageUrl != null)
+            if (_case.imageUrl != null)
               Chip(
                 avatar: const Icon(Icons.image, size: 16),
                 label: const Text('Image Evidence'),
@@ -355,11 +373,11 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            _buildInfoRow(theme, 'Level', widget.caseModel.currentLevel),
+            _buildInfoRow(theme, 'Level', _case.currentLevel),
              const SizedBox(height: 8),
-            _buildInfoRow(theme, 'Location', widget.caseModel.locationName ?? 'Unknown'),
+            _buildInfoRow(theme, 'Location', _case.locationPath ?? _case.locationName ?? 'Unknown'),
              const SizedBox(height: 8),
-            _buildInfoRow(theme, 'Status', widget.caseModel.status),
+            _buildInfoRow(theme, 'Status', _case.status),
           ],
         ),
       ),
@@ -367,7 +385,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
   }
 
   Widget _buildStatusCard(ThemeData theme, bool isDark) {
-    final statusColor = ImboniColors.getStatusColor(_status);
+    final statusColor = ImboniColors.getStatusColor(_case.status);
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -393,7 +411,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
                   Icon(Icons.info_outline, size: 18, color: statusColor),
                   const SizedBox(width: 8),
                   Text(
-                    _status.replaceAll('_', ' '),
+                    _case.status.replaceAll('_', ' '),
                     style: TextStyle(color: statusColor, fontWeight: FontWeight.bold),
                   ),
                 ],
@@ -401,7 +419,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Submitted on ${_formatDate(widget.caseModel.createdAt)}',
+              'Submitted on ${_formatDate(_case.createdAt)}',
               style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
           ],
@@ -429,8 +447,8 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
                 CircleAvatar(
                   backgroundColor: theme.colorScheme.primaryContainer,
                   child: Text(
-                    (widget.caseModel.citizenName != null && widget.caseModel.citizenName!.isNotEmpty) 
-                        ? widget.caseModel.citizenName!.substring(0, 1).toUpperCase() 
+                    (_case.citizenName != null && _case.citizenName!.isNotEmpty) 
+                        ? _case.citizenName!.substring(0, 1).toUpperCase() 
                         : 'C',
                     style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.bold),
                   ),
@@ -440,7 +458,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      widget.caseModel.citizenName ?? 'Citizen',
+                      _case.citizenName ?? 'Citizen',
                       style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     Text('Citizen', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
@@ -465,6 +483,17 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
   }
 
   Widget _buildBottomActions(ThemeData theme) {
+    // Permission Check: Actions only visible to the Active Leader
+    final currentUser = authService.currentUser;
+    final isAssignedToMe = _case.assignedLeaderId == currentUser?.id;
+    final isUnassigned = _case.assignedLeaderId == null || _case.assignedLeaderId!.isEmpty;
+    final isClosed = ['CLOSED', 'RESOLVED', 'PENDING_CONFIRMATION'].contains(_case.status);
+
+    // If case is closed, or assigned to someone else (not me and not unassigned), hide actions
+    if (isClosed || (!isAssignedToMe && !isUnassigned)) {
+      return const SizedBox.shrink();
+    }
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -484,7 +513,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
           OutlinedButton.icon(
             onPressed: _handleAssign,
             icon: const Icon(Icons.assignment_ind_outlined),
-            label: const Text('Assign'),
+            label: Text(isUnassigned ? 'Take Case' : 'Reassign'),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             ),
