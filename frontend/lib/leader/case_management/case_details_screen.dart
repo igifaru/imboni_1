@@ -50,31 +50,20 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
   // CHECK: Can the current user perform actions?
   bool get _canPerformActions {
     // If case is closed/resolved, no actions
-    if (_case.status == 'RESOLVED') return false;
+    if (_case.status == 'RESOLVED' || _case.status == 'CLOSED') return false;
     
-    // If Unassigned (OPEN), any leader in the unit can take/assign it
-    // If Assigned, ONLY the assigned leader can act
-    // However, we apply robust fallbacks for data inconsistencies or admin overrides
     final user = authService.currentUser;
     if (user == null) return false;
 
-    // 1. Exact ID Match (Primary)
-    if (user.id == _case.assignedLeaderId) return true;
-    
-    // 2. Admin Override
-    if (user.role == 'ADMIN') return true;
+    // 1. If Case is OPEN (Unassigned) -> Anyone in unit can take it
+    if (_case.status == 'OPEN' || _case.status == 'ESCALATED') return true;
 
-    // 3. Name Match Fallback (Robust: Case-insensitive, Partial)
-    if (_case.assignedLeaderName != null && user.name != null) {
-       final assignedName = _case.assignedLeaderName!.trim().toLowerCase();
-       final currentName = user.name!.trim().toLowerCase();
-       
-       if (assignedName.isNotEmpty && currentName.isNotEmpty) {
-           if (assignedName == currentName) return true;
-           if (assignedName.contains(currentName) || currentName.contains(assignedName)) return true;
-       }
+    // 2. If Case is IN_PROGRESS (Assigned) -> ONLY the specific assignee can act
+    if (_case.assignedLeaderId != null) {
+      return user.id == _case.assignedLeaderId;
     }
     
+    // Fallback (Shouldn't reach here if logic is consistent)
     return false;
   }
 
@@ -194,7 +183,7 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
   }
 
   Future<void> _assignCase() async {
-    final result = await showDialog<bool>(
+    final result = await showDialog<dynamic>(
       context: context,
       builder: (context) => ManualAssignmentDialog(
          caseId: _case.id,
@@ -202,14 +191,19 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
       ),
     );
 
-    if (result == true) {
+    if (result != null && result is CaseModel) {
       if (mounted) {
-        _refreshCaseDetails();
-        _fetchActions();
+        setState(() {
+          _case = result; // Immediate update!
+        });
+        _fetchActions(); // Still fetch actions to log the 'Assigned' event
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(AppLocalizations.of(context).actionSuccess), backgroundColor: ImboniColors.success),
         );
       }
+    } else if (result == true) {
+      // Fallback for legacy true return if any
+      _refreshCaseDetails();
     }
   }
 

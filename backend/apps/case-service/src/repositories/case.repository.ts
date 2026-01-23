@@ -51,7 +51,8 @@ export class CaseRepository {
                 resolution: { include: { evidence: true } },
                 assignments: {
                     where: { isActive: true },
-                    include: { leader: true }
+                    include: { leader: true },
+                    orderBy: { assignedAt: 'desc' } // Prioritize latest assignment
                 }
             },
         });
@@ -71,7 +72,8 @@ export class CaseRepository {
                 resolution: { include: { evidence: true } },
                 assignments: {
                     where: { isActive: true },
-                    include: { leader: true }
+                    include: { leader: true },
+                    orderBy: { assignedAt: 'desc' }
                 }
             },
         });

@@ -73,11 +73,15 @@ class ProfessionalCaseCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 6),
                       ],
-                      _buildStatusChip(context, caseData.status, statusColor),
+                      // Wrap status chip to prevent overflow on small screens
+                      Flexible(
+                        flex: 0,
+                        child: _buildStatusChip(context, caseData.status, statusColor)
+                      ),
                     ],
                   ),
                   
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8), // Reduced from 16
       
                   // Details Grid
                   Row(
@@ -105,7 +109,7 @@ class ProfessionalCaseCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8), // Reduced from 12
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -135,7 +139,7 @@ class ProfessionalCaseCard extends StatelessWidget {
       
                   // Assigned Leader Row (if assigned to another leader)
                   if (caseData.assignedLeaderName != null) ...[
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8), // Reduced from 12
                     Row(
                       children: [
                         Expanded(
@@ -150,9 +154,9 @@ class ProfessionalCaseCard extends StatelessWidget {
                     ),
                   ],
       
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12), // Reduced from 16
                   Divider(height: 1, color: theme.dividerColor),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8), // Reduced from 12
       
                   // Footer Actions
                   if (actions != null)

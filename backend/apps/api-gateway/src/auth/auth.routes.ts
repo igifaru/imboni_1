@@ -174,6 +174,20 @@ router.post('/login', async (req: Request, res: Response) => {
                         cell: true,
                         village: true,
                     }
+                },
+                leaderAssignments: {
+                    where: { isActive: true },
+                    take: 1,
+                    select: {
+                        positionTitle: true,
+                        administrativeUnitId: true, // Fetch Unit ID
+                        administrativeUnit: {
+                            select: {
+                                name: true,
+                                level: true, // Fetch Administrative Level
+                            }
+                        }
+                    }
                 }
             }
         });
@@ -223,6 +237,12 @@ router.post('/login', async (req: Request, res: Response) => {
                 sector: user.profile?.sector || null,
                 cell: user.profile?.cell || null,
                 village: user.profile?.village || null,
+
+                // Map leader fields
+                positionTitle: user.leaderAssignments?.[0]?.positionTitle,
+                assignedUnitId: user.leaderAssignments?.[0]?.administrativeUnitId,
+                assignedUnitName: user.leaderAssignments?.[0]?.administrativeUnit?.name,
+                administrativeLevel: user.leaderAssignments?.[0]?.administrativeUnit?.level,
             },
         });
     } catch (error) {
@@ -264,6 +284,20 @@ router.get('/me', async (req: Request, res: Response) => {
                         village: true,
                     },
                 },
+                leaderAssignments: {
+                    where: { isActive: true },
+                    take: 1,
+                    select: {
+                        positionTitle: true,
+                        administrativeUnitId: true, // Fetch Unit ID
+                        administrativeUnit: {
+                            select: {
+                                name: true,
+                                level: true, // Fetch Administrative Level
+                            }
+                        }
+                    }
+                }
             },
         });
 
@@ -283,7 +317,14 @@ router.get('/me', async (req: Request, res: Response) => {
                 sector: user.profile?.sector || null,
                 cell: user.profile?.cell || null,
                 village: user.profile?.village || null,
+
+                // Map leader fields
+                positionTitle: user.leaderAssignments?.[0]?.positionTitle,
+                assignedUnitName: user.leaderAssignments?.[0]?.administrativeUnit?.name,
+                administrativeLevel: user.leaderAssignments?.[0]?.administrativeUnit?.level,
+
                 profile: undefined,
+                leaderAssignments: undefined,
             },
         });
     } catch (error) {

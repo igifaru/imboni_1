@@ -566,39 +566,55 @@ export class CaseService {
             throw new Error('Target leader does not have jurisdiction over this case.');
         }
 
-        // 2. Deactivate previous assignments for this unit
-        await prisma.caseAssignment.updateMany({
-            where: {
+        // Run in transaction to guarantee consistency
+        await prisma.$transaction(async (tx) => {
+            // 2. Deactivate previous assignments for this case (GLOBAL - ensure only one active leader)
+            await tx.caseAssignment.updateMany({
+                where: {
+                    caseId,
+                    isActive: true
+                },
+                data: { isActive: false, completedAt: new Date() }
+            });
+
+            // 3. Create New Assignment
+            await tx.caseAssignment.create({
+                data: {
+                    caseId,
+                    administrativeUnitId: targetAssignment.administrativeUnitId, // Use the Target Leader's Unit
+                    leaderId: targetLeaderId,
+                    assignedAt: new Date(),
+                    deadlineAt: deadline,
+                    isActive: true
+                }
+            });
+
+            // 4. Log Action
+            await tx.caseAction.create({
+                data: {
+                    caseId,
+                    performedBy: assignerId,
+                    actionType: 'ASSIGNMENT',
+                    notes: `Manually assigned to specific leader. Deadline: ${deadline.toISOString()}`
+                }
+            });
+
+            // 5. Ensure Case Status is IN_PROGRESS (if it was OPEN or ESCALATED)
+            await tx.case.update({
+                where: { id: caseId },
+                data: {
+                    status: 'IN_PROGRESS',
+                }
+            });
+
+            logger.info('Transaction committed for assignment', {
                 caseId,
-                administrativeUnitId: existingCase.administrativeUnitId,
-                isActive: true
-            },
-            data: { isActive: false, completedAt: new Date() }
+                targetLeaderId,
+                assignerId
+            });
         });
 
-        // 3. Create New Assignment
-        await prisma.caseAssignment.create({
-            data: {
-                caseId,
-                administrativeUnitId: targetAssignment.administrativeUnitId, // Use the Target Leader's Unit
-                leaderId: targetLeaderId,
-                assignedAt: new Date(),
-                deadlineAt: deadline,
-                isActive: true
-            }
-        });
-
-        // 4. Log Action
-        await prisma.caseAction.create({
-            data: {
-                caseId,
-                performedBy: assignerId,
-                actionType: 'ASSIGNMENT', // Ensure Prisma Enum has this or log as STATUS_UPDATE with note? Assuming flexible.
-                notes: `Manually assigned to specific leader. Deadline: ${deadline.toISOString()}`
-            }
-        });
-
-        // 5. Notify Target
+        // 6. Notify Target (Outside transaction - best effort)
         await publishEvent(CHANNELS.NOTIFICATION_SEND, {
             userId: targetLeaderId,
             caseId,
@@ -1586,7 +1602,36 @@ export class CaseService {
      */
     private async toResponseDto(entity: CaseEntity, deadline?: string, locationPath?: string): Promise<CaseResponseDto> {
         // Find active assignment if available
-        const activeAssignment = (entity as any).assignments?.find((a: any) => a.isActive);
+        // Safety: Explicitly filter and sort in memory to guarantee correctness regardless of DB order
+        let activeAssignments = (entity as any).assignments?.filter((a: any) => a.isActive) || [];
+        if (activeAssignments.length > 1) {
+            // Sort Newest First (Desc)
+            activeAssignments.sort((a: any, b: any) => {
+                const dA = new Date(a.assignedAt).getTime();
+                const dB = new Date(b.assignedAt).getTime();
+                return dB - dA;
+            });
+        }
+        const activeAssignment = activeAssignments.length > 0 ? activeAssignments[0] : undefined;
+
+        if (entity.caseReference) {
+            if (activeAssignments.length > 1) {
+                logger.warn('[Data Anomaly] Multiple active assignments detected', {
+                    caseId: entity.id,
+                    totalActive: activeAssignments.length,
+                    winnerId: activeAssignment?.leaderId,
+                    winnerName: activeAssignment?.leader?.name
+                });
+            } else {
+                logger.info('[Debug Assignment] toResponseDto', {
+                    caseId: entity.id,
+                    totalAssignments: (entity as any).assignments?.length,
+                    foundActive: !!activeAssignment,
+                    activeLeaderId: activeAssignment?.leaderId,
+                    activeLeaderName: activeAssignment?.leader?.name
+                });
+            }
+        }
 
         // Fetch resolved by name if resolved
         let resolvedByName: string | undefined;

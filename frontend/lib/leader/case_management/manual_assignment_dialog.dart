@@ -23,6 +23,8 @@ class ManualAssignmentDialog extends StatefulWidget {
 
 class _ManualAssignmentDialogState extends State<ManualAssignmentDialog> {
   final _formKey = GlobalKey<FormState>();
+
+  // Removed _getUserLevel - using administrativeLevel from backend directly
   
   List<UserModel> _leaders = [];
   bool _isLoadingLeaders = true;
@@ -42,12 +44,31 @@ class _ManualAssignmentDialogState extends State<ManualAssignmentDialog> {
 
   Future<void> _fetchLeaders() async {
     try {
-      // Fetch leaders for this specific unit
-      // Note: This relies on adminService.getUsers supporting unitId filter
+      final currentUser = authService.currentUser;
+      
+      // Determine the correct Unit ID to search in
+      String? targetUnitId = currentUser?.assignedUnitId;
+
+      // Fallback: If assignedUnitId is missing (stale session), fetch from API
+      if (targetUnitId == null && currentUser?.role == 'LEADER') {
+        try {
+          final juris = await adminService.getMyJurisdiction();
+          if (juris != null && juris['unitId'] != null) {
+            targetUnitId = juris['unitId'];
+          }
+        } catch (e) {
+          debugPrint('Failed to fetch jurisdiction fallback: $e');
+        }
+      }
+
+      // Final fallback to case unit (only if we really can't find the leader's unit)
+      targetUnitId ??= widget.administrativeUnitId;
+
+      // Fetch leaders for the target unit
       final response = await adminService.getUsers(
         role: 'LEADER,ADMIN,OVERSIGHT',
-        unitId: widget.administrativeUnitId,
-        limit: 100, // Fetch all reasonable leaders for the unit
+        unitId: targetUnitId,
+        limit: 100, 
       );
       
       if (mounted) {
@@ -56,27 +77,25 @@ class _ManualAssignmentDialogState extends State<ManualAssignmentDialog> {
           final currentUser = authService.currentUser;
 
           if (currentUser != null) {
-            // 1. Keep self in list to allow "Taking" the case
-            // list = list.where((u) => u.id != currentUser.id).toList();
+            // 1. Remove SELF from the list (Can't assign to self here, use 'Take Case' instead)
+            list = list.where((u) => u.id != currentUser.id).toList();
 
-            // 2. If Staff (LEADER), hide Head (ADMIN/OVERSIGHT) and by Title
+            // 2. If Staff (LEADER), hide Head (ADMIN/OVERSIGHT) and filter by LEVEL
             if (currentUser.role == 'LEADER') {
               list = list.where((u) {
-                // Remove if explicit Admin/Oversight role
+                // Remove if explicit Admin/Oversight role - stick to assignable LEADERS
                 if (u.role == 'ADMIN' || u.role == 'OVERSIGHT') return false;
                 
-                // Remove if Title indicates Head/Chief
-                final title = u.positionTitle?.toLowerCase() ?? '';
-                const headKeywords = [
-                  'head of', 'executive', 'manager', 'director', 
-                  'umuyobozi w', 'ukuru w', 'perezida', 'chief'
-                ];
-                
-                for (final keyword in headKeywords) {
-                  if (title.contains(keyword)) return false;
-                }
-                
-                return true;
+                // FIX: Strictly compare Administrative Level (e.g. CELL to CELL)
+                // This comes from the backend and accounts for the unit hierarchy
+                final myLevel = currentUser.administrativeLevel;
+                final theirLevel = u.administrativeLevel;
+
+                // Fail Open: If levels are missing (migration/legacy), show them
+                if (myLevel == null || theirLevel == null) return true;
+
+                // Simple Exact Match
+                return myLevel == theirLevel;
               }).toList();
             }
           }
@@ -109,8 +128,46 @@ class _ManualAssignmentDialogState extends State<ManualAssignmentDialog> {
 
     if (mounted) {
       setState(() => _isSubmitting = false);
-      if (result.isSuccess) {
-        Navigator.pop(context, true); // Return true to refresh parent
+      if (result.isSuccess && result.data != null) {
+        // Enforce UI consistency: Ensure the returned model reflects the NEW assignment
+        // (Handles potential race conditions where backend returns stale assignment)
+        CaseModel updatedCase = result.data!;
+        
+        if (updatedCase.assignedLeaderId != _selectedLeaderId) {
+           final selectedLeader = _leaders.firstWhere((u) => u.id == _selectedLeaderId);
+           
+           // Manually patch the CaseModel with the selected leader details
+           updatedCase = CaseModel(
+              id: updatedCase.id,
+              caseReference: updatedCase.caseReference,
+              category: updatedCase.category,
+              urgency: updatedCase.urgency,
+              title: updatedCase.title,
+              description: updatedCase.description,
+              currentLevel: updatedCase.currentLevel,
+              status: 'IN_PROGRESS', // Force status update
+              isAnonymous: updatedCase.isAnonymous,
+              createdAt: updatedCase.createdAt,
+              resolvedAt: updatedCase.resolvedAt,
+              deadline: _selectedDeadline, // Use selected deadline
+              audioUrl: updatedCase.audioUrl,
+              imageUrl: updatedCase.imageUrl,
+              citizenName: updatedCase.citizenName,
+              evidence: updatedCase.evidence,
+              locationName: updatedCase.locationName,
+              locationPath: updatedCase.locationPath,
+              administrativeUnitCode: updatedCase.administrativeUnitCode,
+              administrativeUnitId: updatedCase.administrativeUnitId,
+              // OVERRIDE THESE:
+              assignedLeaderId: selectedLeader.id,
+              assignedLeaderName: selectedLeader.name,
+              assignedLeaderPhone: selectedLeader.phone,
+              extensionCount: 0, // Reset for new assignment
+              resolution: updatedCase.resolution,
+           );
+        }
+
+        Navigator.pop(context, updatedCase);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

@@ -170,10 +170,19 @@ class _AssignedCasesScreenState extends State<AssignedCasesScreen> {
                           itemBuilder: (context, index) {
                              return ProfessionalCaseCard(
                                caseData: _filteredCases[index],
-                               onTap: () => Navigator.push(
+                              onTap: () async {
+                                 // Navigate and wait for result
+                                 final result = await Navigator.push(
                                   context,
                                   MaterialPageRoute(builder: (_) => LeaderCaseDetailsScreen(caseData: _filteredCases[index])),
-                               ),
+                                 );
+                                 
+                                 // If result is true or just on every return (safer), refresh the list
+                                 // Checking if mounted to avoid errors if screen disposed
+                                 if (mounted) {
+                                   _loadCases();
+                                 }
+                               },
                              );
                           },
                         );

@@ -284,7 +284,15 @@ router.get('/users', authMiddleware, async (req: Request, res: Response) => {
                     createdAt: true,
                     leaderAssignments: {
                         where: { isActive: true },
-                        select: { positionTitle: true, administrativeUnit: { select: { name: true } } },
+                        select: {
+                            positionTitle: true,
+                            administrativeUnit: {
+                                select: {
+                                    name: true,
+                                    level: true // Fetch Level
+                                }
+                            }
+                        },
                         take: 1
                     }
                 },
@@ -298,7 +306,8 @@ router.get('/users', authMiddleware, async (req: Request, res: Response) => {
         const mappedUsers = users.map(u => ({
             ...u,
             positionTitle: u.leaderAssignments[0]?.positionTitle,
-            assignedUnitName: u.leaderAssignments[0]?.administrativeUnit?.name
+            assignedUnitName: u.leaderAssignments[0]?.administrativeUnit?.name,
+            administrativeLevel: u.leaderAssignments[0]?.administrativeUnit?.level // Map to top level
         }));
 
         res.json({
