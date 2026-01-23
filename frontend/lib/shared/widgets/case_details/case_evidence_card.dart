@@ -179,34 +179,42 @@ class CaseEvidenceCard extends StatelessWidget {
       spacing: 12,
       runSpacing: 16,
       children: evidence.map((e) {
-        final isImage = e.mimeType.startsWith('image/');
-        final isAudio = e.mimeType.startsWith('audio/');
-        final isVideo = e.mimeType.startsWith('video/');
-        final isPdf = e.mimeType == 'application/pdf';
+        final ext = e.fileName.contains('.') ? e.fileName.split('.').last.toLowerCase() : '';
+        
+        final isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic'].contains(ext) || e.mimeType.startsWith('image/');
+        final isAudio = ['mp3', 'wav', 'aac', 'm4a', 'flac'].contains(ext) || e.mimeType.startsWith('audio/');
+        final isVideo = ['mp4', 'mov', 'avi', 'mkv', 'webm'].contains(ext) || e.mimeType.startsWith('video/');
+        final isPdf = ext == 'pdf' || e.mimeType == 'application/pdf';
+        final isWord = ['doc', 'docx'].contains(ext) || e.mimeType.contains('word');
         
         final url = '${ApiClient.storageUrl}${e.url}';
         
-        // Extract extension for label
-        String ext = 'FILE';
-        if (e.fileName.contains('.')) {
-          ext = e.fileName.split('.').last.toUpperCase();
-          if (ext.length > 4) ext = 'FILE'; 
-        }
+        // Display Label
+        String displayLabel = ext.toUpperCase();
+        if (displayLabel.isEmpty) displayLabel = 'FILE';
+        if (displayLabel.length > 4) displayLabel = displayLabel.substring(0, 4);
 
         // Map icon and color
         IconData icon;
         Color iconColor;
+        
         if (isImage) {
           icon = Icons.image;
           iconColor = ImboniColors.primary;
         } else if (isAudio) {
           icon = Icons.audiotrack;
-          iconColor = ImboniColors.secondary;
+          iconColor = ImboniColors.secondary; // Distinct color for audio
         } else if (isVideo) {
-          icon = Icons.play_circle_outline;
-          iconColor = Colors.red;
+          icon = Icons.play_circle_fill_rounded;
+          iconColor = Colors.redAccent;
+        } else if (isPdf) {
+          icon = Icons.picture_as_pdf;
+          iconColor = Colors.red[700]!;
+        } else if (isWord) {
+          icon = Icons.description;
+          iconColor = Colors.blue[700]!;
         } else {
-          icon = isPdf ? Icons.picture_as_pdf : Icons.description;
+          icon = Icons.insert_drive_file;
           iconColor = isDark ? Colors.white54 : Colors.grey[600]!;
         }
 
@@ -243,7 +251,7 @@ class CaseEvidenceCard extends StatelessWidget {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              isAudio ? 'Audio' : ext,
+                              displayLabel,
                               style: TextStyle(
                                 fontSize: 9, 
                                 fontWeight: FontWeight.bold,
