@@ -5,6 +5,8 @@ import '../../shared/services/case_service.dart';
 import '../../shared/models/models.dart';
 import '../../shared/localization/app_localizations.dart';
 import '../../shared/services/api_client.dart';
+import 'package:imboni/shared/utils/case_helper.dart';
+import '../../shared/widgets/professional_case_card.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -51,14 +53,14 @@ class _MyCasesScreenState extends State<MyCasesScreen> with SingleTickerProvider
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Emeza ko ikibazo cyakemutse'),
-        content: const Text('Uremeza ko iki kibazo cyakemutse neza? Iki gikorwa ntishobora gusubirwaho.'),
+        title: Text(AppLocalizations.of(context).resolved),
+        content: Text(AppLocalizations.of(context).confirmResolutionContent),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Hagarika')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(AppLocalizations.of(context).cancel)),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-            child: const Text('Emeza'),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+            child: Text(AppLocalizations.of(context).confirm),
           ),
         ],
       ),
@@ -73,12 +75,12 @@ class _MyCasesScreenState extends State<MyCasesScreen> with SingleTickerProvider
         setState(() => _isLoading = false);
         if (response.isSuccess) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Ikibazo cyafunzwe. Murakoze!'), backgroundColor: Colors.green),
+            SnackBar(content: Text(AppLocalizations.of(context).caseResolved), backgroundColor: Colors.green),
           );
           _loadCases();
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(response.error ?? 'Byanze'), backgroundColor: Colors.red),
+            SnackBar(content: Text(response.error ?? 'Error'), backgroundColor: Colors.red),
           );
         }
       }
@@ -86,7 +88,7 @@ class _MyCasesScreenState extends State<MyCasesScreen> with SingleTickerProvider
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ikosa: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -96,21 +98,21 @@ class _MyCasesScreenState extends State<MyCasesScreen> with SingleTickerProvider
     final reason = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Regera ikibazo'),
+        title: Text(AppLocalizations.of(context).dispute),
         content: TextField(
-          decoration: const InputDecoration(
-            labelText: 'Impamvu yo kuregera',
-            hintText: 'Sobanura impamvu iki kibazo kitakemutse neza...',
+          decoration: InputDecoration(
+            labelText: AppLocalizations.of(context).reasonForDispute,
+            hintText: '...',
           ),
           maxLines: 3,
           onSubmitted: (v) => Navigator.pop(ctx, v),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Hagarika')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.of(context).cancel)),
           ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, 'Ikibazo nticyakemutse neza'),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-            child: const Text('Ohereza'),
+            onPressed: () => Navigator.pop(ctx, 'Not Resolved'),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+            child: Text(AppLocalizations.of(context).submit),
           ),
         ],
       ),
@@ -125,12 +127,12 @@ class _MyCasesScreenState extends State<MyCasesScreen> with SingleTickerProvider
         setState(() => _isLoading = false);
         if (response.isSuccess) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Ikibazo cyoherejwe ku rwego rukurikira'), backgroundColor: Colors.orange),
+            const SnackBar(content: Text('Case escalated'), backgroundColor: Colors.orange),
           );
           _loadCases();
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(response.error ?? 'Byanze'), backgroundColor: Colors.red),
+            SnackBar(content: Text(response.error ?? 'Error'), backgroundColor: Colors.red),
           );
         }
       }
@@ -138,7 +140,7 @@ class _MyCasesScreenState extends State<MyCasesScreen> with SingleTickerProvider
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ikosa: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -159,6 +161,7 @@ class _MyCasesScreenState extends State<MyCasesScreen> with SingleTickerProvider
       appBar: AppBar(
         backgroundColor: isDark ? theme.colorScheme.surfaceContainer : Colors.white,
         elevation: 0,
+        centerTitle: true,
         title: Text(
           l10n.myCasesTitle,
           style: TextStyle(
@@ -166,18 +169,26 @@ class _MyCasesScreenState extends State<MyCasesScreen> with SingleTickerProvider
             color: isDark ? Colors.white : Colors.black87,
           ),
         ),
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          indicatorColor: ImboniColors.primary,
-          labelColor: ImboniColors.primary,
-          unselectedLabelColor: isDark ? Colors.white54 : Colors.grey[600],
-          tabs: [
-            _buildTab(l10n.allCases, _allCases.length, ImboniColors.primary),
-            _buildTab(l10n.openCases, _openCases.length, ImboniColors.statusOpen),
-            _buildTab(l10n.inProgressCases, _inProgressCases.length, ImboniColors.statusInProgress),
-            _buildTab(l10n.resolvedCases, _resolvedCases.length, ImboniColors.statusResolved),
-          ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(kToolbarHeight),
+          child: Center(
+            child: TabBar(
+              controller: _tabController,
+              isScrollable: true,
+              tabAlignment: TabAlignment.center,
+              indicatorColor: ImboniColors.primary,
+              labelColor: ImboniColors.primary,
+              unselectedLabelColor: isDark ? Colors.white54 : Colors.grey[600],
+              padding: EdgeInsets.zero,
+              dividerColor: Colors.transparent,
+              tabs: [
+                _buildTab(l10n.allCases, _allCases.length, ImboniColors.primary),
+                _buildTab(l10n.openCases, _openCases.length, ImboniColors.statusOpen),
+                _buildTab(l10n.inProgressCases, _inProgressCases.length, ImboniColors.statusInProgress),
+                _buildTab(l10n.resolvedCases, _resolvedCases.length, ImboniColors.statusResolved),
+              ],
+            ),
+          ),
         ),
       ),
       body: RefreshIndicator(
@@ -186,14 +197,19 @@ class _MyCasesScreenState extends State<MyCasesScreen> with SingleTickerProvider
             ? const Center(child: CircularProgressIndicator())
             : _error != null
                 ? _buildErrorState(theme, l10n)
-                : TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _buildCasesList(_allCases, theme, l10n, isDark),
-                      _buildCasesList(_openCases, theme, l10n, isDark),
-                      _buildCasesList(_inProgressCases, theme, l10n, isDark),
-                      _buildCasesList(_resolvedCases, theme, l10n, isDark),
-                    ],
+                : Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 800),
+                      child: TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _buildCasesList(_allCases, theme, l10n, isDark),
+                          _buildCasesList(_openCases, theme, l10n, isDark),
+                          _buildCasesList(_inProgressCases, theme, l10n, isDark),
+                          _buildCasesList(_resolvedCases, theme, l10n, isDark),
+                        ],
+                      ),
+                    ),
                   ),
       ),
     );
@@ -251,206 +267,42 @@ class _MyCasesScreenState extends State<MyCasesScreen> with SingleTickerProvider
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
       itemCount: cases.length,
       itemBuilder: (context, index) {
         final c = cases[index];
-        return _buildProfessionalCaseCard(c, theme, l10n, isDark);
-      },
-    );
-  }
-
-  Widget _buildProfessionalCaseCard(CaseModel c, ThemeData theme, AppLocalizations l10n, bool isDark) {
-    final statusColor = ImboniColors.getStatusColor(c.status);
-    final categoryColor = ImboniColors.getCategoryColor(c.category);
-    final urgencyColor = ImboniColors.getUrgencyColor(c.urgency);
-    final cardColor = isDark ? theme.colorScheme.surfaceContainer : Colors.white;
-
-    return GestureDetector(
-      onTap: () => _openCaseDetails(c),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        decoration: BoxDecoration(
-          color: cardColor,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: isDark ? Colors.white10 : Colors.black.withAlpha(12)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(isDark ? 25 : 10),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Left colored strip + Header
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                border: Border(
-                  left: BorderSide(color: statusColor, width: 4),
-                ),
-              ),
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Reference + Status Badge
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        c.caseReference,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? Colors.white54 : Colors.grey[600],
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: statusColor,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          _getStatusLabel(l10n, c.status),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Title
-                  Text(
-                    c.title,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white : Colors.black87,
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16.0),
+          child: ProfessionalCaseCard(
+             caseData: c,
+             onTap: () => _openCaseDetails(c),
+             actions: c.status == 'PENDING_CONFIRMATION' 
+               ? Row(
+                  children: [
+                    TextButton.icon(
+                      onPressed: () => _disputeResolution(c),
+                      icon: const Icon(Icons.close, size: 16, color: Colors.orange),
+                      label: Text(l10n.dispute, style: const TextStyle(fontSize: 12, color: Colors.orange)),
+                      style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Category + Urgency chips
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _buildChip(
-                        _getCategoryIcon(c.category),
-                        _getCategoryLabel(l10n, c.category),
-                        categoryColor,
-                        isDark,
-                      ),
-                      if (c.urgency.toUpperCase() != 'NORMAL')
-                        _buildChip(
-                          Icons.flag,
-                          _getUrgencyLabel(l10n, c.urgency),
-                          urgencyColor,
-                          isDark,
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            // Footer: Location + Date
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: isDark ? Colors.white.withAlpha(8) : Colors.grey.withAlpha(15),
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.location_on_outlined, size: 16, color: isDark ? Colors.white54 : Colors.grey[600]),
-                      const SizedBox(width: 6),
-                      Text(
-                        _getLevelLabel(l10n, c.currentLevel),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isDark ? Colors.white54 : Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                  // Show confirm/dispute buttons for PENDING_CONFIRMATION status
-                  if (c.status == 'PENDING_CONFIRMATION')
-                    Row(
-                      children: [
-                        TextButton.icon(
-                          onPressed: () => _disputeResolution(c),
-                          icon: const Icon(Icons.close, size: 16, color: Colors.orange),
-                          label: Text(l10n.dispute, style: const TextStyle(fontSize: 12, color: Colors.orange)),
-                          style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
-                        ),
-                        const SizedBox(width: 8),
-                        ElevatedButton.icon(
-                          onPressed: () => _confirmResolution(c),
-                          icon: const Icon(Icons.check, size: 16),
-                          label: Text(l10n.confirm, style: const TextStyle(fontSize: 12)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            foregroundColor: Colors.white,
-                            visualDensity: VisualDensity.compact,
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          ),
-                        ),
-                      ],
-                    )
-                  else
-                    Text(
-                      _formatTimeAgo(c.createdAt),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isDark ? Colors.white54 : Colors.grey[600],
+                    const SizedBox(width: 8),
+                    ElevatedButton.icon(
+                      onPressed: () => _confirmResolution(c),
+                      icon: const Icon(Icons.check, size: 16),
+                      label: Text(l10n.confirm, style: const TextStyle(fontSize: 12)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       ),
                     ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildChip(IconData icon, String label, Color color, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: color.withAlpha(isDark ? 50 : 25),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withAlpha(75)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: color,
-            ),
+                  ],
+               )
+               : null,
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -495,72 +347,6 @@ class _MyCasesScreenState extends State<MyCasesScreen> with SingleTickerProvider
         ]),
       ),
     );
-  }
-
-  // Helper methods for labels
-  String _getStatusLabel(AppLocalizations l10n, String status) {
-    switch (status.toUpperCase()) {
-      case 'OPEN': return l10n.statusOpen;
-      case 'IN_PROGRESS': return l10n.statusInProgress;
-      case 'RESOLVED': return l10n.statusResolved;
-      case 'ESCALATED': return l10n.statusEscalated;
-      default: return status;
-    }
-  }
-
-  String _getCategoryLabel(AppLocalizations l10n, String category) {
-    switch (category.toUpperCase()) {
-      case 'JUSTICE': return l10n.categoryJustice;
-      case 'HEALTH': return l10n.categoryHealth;
-      case 'LAND': return l10n.categoryLand;
-      case 'INFRASTRUCTURE': return l10n.categoryInfrastructure;
-      case 'SECURITY': return l10n.categorySecurity;
-      case 'SOCIAL': return l10n.categorySocial;
-      case 'EDUCATION': return l10n.categoryEducation;
-      default: return l10n.categoryOther;
-    }
-  }
-
-  String _getUrgencyLabel(AppLocalizations l10n, String urgency) {
-    switch (urgency.toUpperCase()) {
-      case 'HIGH': return l10n.urgencyHigh;
-      case 'EMERGENCY': return l10n.urgencyEmergency;
-      default: return l10n.urgencyNormal;
-    }
-  }
-
-  String _getLevelLabel(AppLocalizations l10n, String level) {
-    switch (level.toUpperCase()) {
-      case 'VILLAGE': return l10n.levelVillage;
-      case 'CELL': return l10n.levelCell;
-      case 'SECTOR': return l10n.levelSector;
-      case 'DISTRICT': return l10n.levelDistrict;
-      case 'PROVINCE': return l10n.levelProvince;
-      case 'NATIONAL': return l10n.levelNational;
-      default: return level;
-    }
-  }
-
-  IconData _getCategoryIcon(String category) {
-    switch (category.toUpperCase()) {
-      case 'JUSTICE': return Icons.balance;
-      case 'HEALTH': return Icons.health_and_safety;
-      case 'LAND': return Icons.terrain;
-      case 'INFRASTRUCTURE': return Icons.construction;
-      case 'SECURITY': return Icons.security;
-      case 'SOCIAL': return Icons.people;
-      case 'EDUCATION': return Icons.school;
-      default: return Icons.category;
-    }
-  }
-
-  String _formatTimeAgo(DateTime date) {
-    final now = DateTime.now();
-    final diff = now.difference(date);
-    if (diff.inDays > 0) return '${diff.inDays}d ago';
-    if (diff.inHours > 0) return '${diff.inHours}h ago';
-    if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
-    return 'now';
   }
 
   void _openCaseDetails(CaseModel caseModel) {
@@ -1235,9 +1021,9 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
             spacing: 10,
             runSpacing: 8,
             children: [
-              _buildBadge(_getStatusLabel(l10n, caseModel.status), statusColor, Icons.circle, isDark),
-              _buildBadge(_getCategoryLabel(l10n, caseModel.category), categoryColor, _getCategoryIcon(caseModel.category), isDark),
-              _buildBadge(_getUrgencyLabel(l10n, caseModel.urgency), urgencyColor, Icons.flag, isDark),
+              _buildBadge(CaseHelper.getStatusLabel(l10n, caseModel.status), statusColor, Icons.circle, isDark),
+              _buildBadge(CaseHelper.getCategoryLabel(l10n, caseModel.category), categoryColor, CaseHelper.getCategoryIcon(caseModel.category), isDark),
+              _buildBadge(CaseHelper.getUrgencyLabel(l10n, caseModel.urgency), urgencyColor, Icons.flag, isDark),
             ],
           ),
           const SizedBox(height: 16),
@@ -1337,7 +1123,7 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
                   children: [
                     _buildInfoItem(Icons.location_on_outlined, l10n.location, caseModel.locationPath ?? caseModel.locationName ?? 'Unknown', isDark, subTextColor, textColor),
                     const SizedBox(height: 16),
-                    _buildInfoItem(Icons.layers_outlined, l10n.level, _getLevelLabel(l10n, caseModel.currentLevel), isDark, subTextColor, textColor),
+                    _buildInfoItem(Icons.layers_outlined, l10n.level, CaseHelper.getLevelLabel(l10n, caseModel.currentLevel), isDark, subTextColor, textColor),
                   ],
                 ),
               ),
@@ -1720,7 +1506,7 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
     if (needsStatusNode) {
        Color statusColor = ImboniColors.primary;
        IconData statusIcon = Icons.circle;
-       String statusTitle = _getStatusLabel(l10n, status);
+       String statusTitle = CaseHelper.getStatusLabel(l10n, status);
        
        switch(status) {
          case 'PENDING_CONFIRMATION':
@@ -1973,48 +1759,8 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
   }
 
   // Helper methods
-  String _getStatusLabel(AppLocalizations l10n, String status) {
-    switch (status.toUpperCase()) {
-      case 'OPEN': return l10n.statusOpen;
-      case 'IN_PROGRESS': return l10n.statusInProgress;
-      case 'RESOLVED': return l10n.statusResolved;
-      case 'ESCALATED': return l10n.statusEscalated;
-      default: return status;
-    }
-  }
+  // Duplicate methods replaced by CaseHelper
 
-  String _getCategoryLabel(AppLocalizations l10n, String category) {
-    switch (category.toUpperCase()) {
-      case 'JUSTICE': return l10n.categoryJustice;
-      case 'HEALTH': return l10n.categoryHealth;
-      case 'LAND': return l10n.categoryLand;
-      case 'INFRASTRUCTURE': return l10n.categoryInfrastructure;
-      case 'SECURITY': return l10n.categorySecurity;
-      case 'SOCIAL': return l10n.categorySocial;
-      case 'EDUCATION': return l10n.categoryEducation;
-      default: return l10n.categoryOther;
-    }
-  }
-
-  String _getUrgencyLabel(AppLocalizations l10n, String urgency) {
-    switch (urgency.toUpperCase()) {
-      case 'HIGH': return l10n.urgencyHigh;
-      case 'EMERGENCY': return l10n.urgencyEmergency;
-      default: return l10n.urgencyNormal;
-    }
-  }
-
-  String _getLevelLabel(AppLocalizations l10n, String level) {
-    switch (level.toUpperCase()) {
-      case 'VILLAGE': return l10n.levelVillage;
-      case 'CELL': return l10n.levelCell;
-      case 'SECTOR': return l10n.levelSector;
-      case 'DISTRICT': return l10n.levelDistrict;
-      case 'PROVINCE': return l10n.levelProvince;
-      case 'NATIONAL': return l10n.levelNational;
-      default: return level;
-    }
-  }
 
   String _getActionTitle(AppLocalizations l10n, String type) {
     switch (type) {
@@ -2067,7 +1813,7 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
     // 3. Check for status change notes
     if (note.startsWith('Status changed to ')) {
       final statusPart = note.replaceFirst('Status changed to ', '');
-      return '${l10n.statusChangedTo} ${_getStatusLabel(l10n, statusPart)}';
+      return '${l10n.statusChangedTo} ${CaseHelper.getStatusLabel(l10n, statusPart)}';
     }
 
     // 4. Check for citizen confirmation
@@ -2110,18 +1856,8 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
     }
   }
 
-  IconData _getCategoryIcon(String category) {
-    switch (category.toUpperCase()) {
-      case 'JUSTICE': return Icons.balance;
-      case 'HEALTH': return Icons.health_and_safety;
-      case 'LAND': return Icons.terrain;
-      case 'INFRASTRUCTURE': return Icons.construction;
-      case 'SECURITY': return Icons.security;
-      case 'SOCIAL': return Icons.people;
-      case 'EDUCATION': return Icons.school;
-      default: return Icons.category;
-    }
-  }
+  // _getCategoryIcon replaced by CaseHelper.getCategoryIcon
+
 
   String _formatDate(DateTime date) => DateFormat('dd/MM/yyyy').format(date);
   String _formatTime(DateTime date) => DateFormat('HH:mm').format(date);

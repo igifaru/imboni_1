@@ -3,7 +3,7 @@ import 'package:imboni/shared/services/case_service.dart';
 import 'package:imboni/shared/models/models.dart';
 import 'package:imboni/shared/localization/app_localizations.dart';
 import '../../case_management/case_details_screen.dart';
-import '../widgets/professional_case_card.dart';
+import 'package:imboni/shared/widgets/professional_case_card.dart';
 
 class AssignedCasesScreen extends StatefulWidget {
   const AssignedCasesScreen({super.key});

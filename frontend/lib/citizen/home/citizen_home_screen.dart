@@ -8,7 +8,7 @@ import '../../shared/models/models.dart';
 import '../report_case/submit_case_screen.dart';
 import '../profile/profile_screen.dart';
 import '../my_cases/my_cases_screen.dart';
-import '../../leader/dashboard/widgets/professional_case_card.dart';
+import '../../shared/widgets/professional_case_card.dart';
 import '../../features/community/screens/community_home_screen.dart';
 import '../../features/pftcv/pftcv.dart';
 
