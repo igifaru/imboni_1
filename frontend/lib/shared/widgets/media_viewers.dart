@@ -41,7 +41,6 @@ class _AudioPlayerDialogState extends State<AudioPlayerDialog> {
             _position = Duration.zero; 
           });
         }
-        _player.seek(Duration.zero);
       });
       
       if (mounted) {
@@ -57,22 +56,37 @@ class _AudioPlayerDialogState extends State<AudioPlayerDialog> {
 
   @override
   void dispose() {
+    _player.stop();
     _player.dispose();
     super.dispose();
   }
 
   Future<void> _togglePlay() async {
-    if (_isPlaying) {
-      await _player.pause();
-      setState(() => _isPlaying = false);
-    } else {
-      // If finished or very close to end, restart
-      if (_position >= _duration || _position.inMilliseconds >= _duration.inMilliseconds - 500) {
-        await _player.seek(Duration.zero);
-        setState(() => _position = Duration.zero);
+    try {
+      final state = _player.state;
+      if (state == PlayerState.playing) {
+        await _player.pause();
+        setState(() => _isPlaying = false);
+      } else {
+        // If completed, re-play from source (safest for Linux)
+        if (state == PlayerState.completed || _position >= _duration) {
+           await _player.stop();
+           await _player.play(UrlSource(widget.url));
+        } else {
+           // Provide fallback for normal resume
+           await _player.resume();
+        }
+        setState(() => _isPlaying = true);
       }
-      await _player.resume();
-      setState(() => _isPlaying = true);
+    } catch (e) {
+      debugPrint('Toggle play error: $e');
+      // If resume failed, try force play
+      try {
+        await _player.play(UrlSource(widget.url));
+        setState(() => _isPlaying = true);
+      } catch (e2) {
+         debugPrint('Force play error: $e2');
+      }
     }
   }
 
@@ -96,13 +110,13 @@ class _AudioPlayerDialogState extends State<AudioPlayerDialog> {
       insetPadding: const EdgeInsets.all(16),
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxWidth: 460, // Increased width
-          minWidth: screenWidth < 460 ? screenWidth * 0.95 : 380,
+          maxWidth: 500, // Increased width further
+          minWidth: screenWidth < 500 ? screenWidth * 0.95 : 400,
         ),
         child: Stack(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(28, 48, 28, 36),
+              padding: const EdgeInsets.fromLTRB(32, 48, 32, 36),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
