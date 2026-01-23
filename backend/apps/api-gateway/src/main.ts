@@ -20,7 +20,10 @@ const logger = createServiceLogger('api-gateway');
 const app = express();
 
 // Security middleware
-app.use(helmet());
+app.use(helmet({
+    crossOriginResourcePolicy: false,
+    crossOriginEmbedderPolicy: false,
+}));
 app.use(cors({
     origin: true, // Reflect request origin to support credentials with strict CORS
     credentials: true,
@@ -32,8 +35,8 @@ app.use(generalRateLimiter);
 
 // Serve static files (uploads)
 import path from 'path';
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
-app.use('/uploads/pftcv-evidence', express.static(path.join(process.cwd(), 'uploads/pftcv-evidence')));
+app.use('/uploads', cors({ origin: '*' }), express.static(path.join(process.cwd(), 'uploads')));
+app.use('/uploads/pftcv-evidence', cors({ origin: '*' }), express.static(path.join(process.cwd(), 'uploads/pftcv-evidence')));
 
 // Health check (no auth)
 app.get('/health', (req, res) => {
