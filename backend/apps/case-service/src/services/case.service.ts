@@ -1486,7 +1486,9 @@ export class CaseService {
             mimeType: string;
             path: string;
             url: string;
-        }
+        },
+        purpose: 'SUBMISSION' | 'RESOLUTION' = 'SUBMISSION',
+        description?: string
     ) {
         // Determine evidence type
         let type: 'IMAGE' | 'VIDEO' | 'AUDIO' | 'DOCUMENT' = 'DOCUMENT';
@@ -1498,6 +1500,8 @@ export class CaseService {
             data: {
                 caseId,
                 type,
+                purpose,
+                description,
                 url: fileData.url,
                 fileName: fileData.fileName,
                 fileSize: fileData.fileSize,
@@ -1505,7 +1509,7 @@ export class CaseService {
             }
         });
 
-        logger.info('Evidence added to case', { caseId, evidenceId: evidence.id });
+        logger.info('Evidence added to case', { caseId, evidenceId: evidence.id, purpose, description });
         return evidence;
     }
 
@@ -1609,6 +1613,8 @@ export class CaseService {
             evidence: entity.evidence?.map(e => ({
                 id: e.id,
                 type: e.type,
+                purpose: (e as any).purpose,
+                description: (e as any).description,
                 url: e.url,
                 fileName: e.fileName,
                 mimeType: e.mimeType,
@@ -1618,6 +1624,17 @@ export class CaseService {
                 name: (entity as any).administrativeUnit.name,
                 code: (entity as any).administrativeUnit.code,
                 level: (entity as any).administrativeUnit.level,
+            } : undefined,
+            resolution: (entity as any).resolution ? {
+                notes: (entity as any).resolution.notes,
+                resolvedBy: (entity as any).resolution.resolvedBy,
+                evidence: (entity as any).resolution.evidence ? {
+                    id: (entity as any).resolution.evidence.id,
+                    type: (entity as any).resolution.evidence.type,
+                    url: (entity as any).resolution.evidence.url,
+                    fileName: (entity as any).resolution.evidence.fileName,
+                    mimeType: (entity as any).resolution.evidence.mimeType,
+                } : undefined,
             } : undefined
         };
     }

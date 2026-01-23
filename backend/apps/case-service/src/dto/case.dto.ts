@@ -61,6 +61,8 @@ export interface CaseResponseDto {
     evidence?: {
         id: string;
         type: string;
+        purpose: string;
+        description?: string;
         url: string;
         fileName: string;
     }[];
@@ -79,9 +81,11 @@ export interface CaseResponseDto {
         notes: string;
         resolvedBy: string;
         evidence?: {
+            id: string;
             url: string;
             fileName: string;
             type: string;
+            mimeType: string;
         };
     };
 }

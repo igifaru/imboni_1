@@ -262,19 +262,27 @@ model Notification {
 }
 
 model Evidence {
-  id         String          @id @default(cuid())
-  caseId     String          @map("case_id")
-  type       EvidenceType
-  url        String
-  fileName   String          @map("file_name")
-  fileSize   Int             @map("file_size")
-  mimeType   String          @map("mime_type")
-  createdAt  DateTime        @default(now()) @map("created_at")
-  resolution CaseResolution?
-  case       Case            @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  id          String          @id @default(cuid())
+  caseId      String          @map("case_id")
+  type        EvidenceType
+  purpose     EvidencePurpose @default(SUBMISSION)
+  description String?
+  url         String
+  fileName    String          @map("file_name")
+  fileSize    Int             @map("file_size")
+  mimeType    String          @map("mime_type")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  resolution  CaseResolution?
+  case        Case            @relation(fields: [caseId], references: [id], onDelete: Cascade)
 
   @@index([caseId])
+  @@index([purpose])
   @@map("evidence")
+}
+
+enum EvidencePurpose {
+  SUBMISSION  // Citizen-submitted with case
+  RESOLUTION  // Leader-submitted during resolution
 }
 
 model CaseResolution {

@@ -597,7 +597,9 @@ router.post('/:id/evidence',
                 fileName: file.filename,
                 mimeType: file.mimetype,
                 originalName: file.originalname,
-                size: file.size
+                size: file.size,
+                url: req.originalUrl,
+                body: req.body // Multipart fields are in body
             });
 
             // Verify case exists
@@ -611,13 +613,20 @@ router.post('/:id/evidence',
             // Construct public URL (assuming static serve setup)
             const publicUrl = `/uploads/evidence/${file.filename}`;
 
+            // Extract metadata with fallback (Body priority, then Query)
+            const purpose = (req.body.purpose || req.query.purpose) as 'SUBMISSION' | 'RESOLUTION' | undefined;
+            const description = (req.body.description || req.query.description) as string | undefined;
+
             const evidence = await caseService.addEvidence(id, {
                 fileName: file.originalname,
                 fileSize: file.size,
                 mimeType: file.mimetype,
                 path: file.path,
                 url: publicUrl
-            });
+            },
+                purpose,
+                description
+            );
 
             res.status(201).json({
                 success: true,
