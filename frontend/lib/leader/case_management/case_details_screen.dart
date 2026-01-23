@@ -53,11 +53,29 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
     if (_case.status == 'RESOLVED') return false;
     
     // If Unassigned (OPEN), any leader in the unit can take/assign it
-    if (_case.assignedLeaderId == null || _case.assignedLeaderId!.isEmpty) return true;
-
     // If Assigned, ONLY the assigned leader can act
-    final currentUserId = authService.currentUser?.id;
-    return currentUserId == _case.assignedLeaderId;
+    // However, we apply robust fallbacks for data inconsistencies or admin overrides
+    final user = authService.currentUser;
+    if (user == null) return false;
+
+    // 1. Exact ID Match (Primary)
+    if (user.id == _case.assignedLeaderId) return true;
+    
+    // 2. Admin Override
+    if (user.role == 'ADMIN') return true;
+
+    // 3. Name Match Fallback (Robust: Case-insensitive, Partial)
+    if (_case.assignedLeaderName != null && user.name != null) {
+       final assignedName = _case.assignedLeaderName!.trim().toLowerCase();
+       final currentName = user.name!.trim().toLowerCase();
+       
+       if (assignedName.isNotEmpty && currentName.isNotEmpty) {
+           if (assignedName == currentName) return true;
+           if (assignedName.contains(currentName) || currentName.contains(assignedName)) return true;
+       }
+    }
+    
+    return false;
   }
 
 

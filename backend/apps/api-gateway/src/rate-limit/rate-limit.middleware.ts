@@ -43,7 +43,7 @@ export const authRateLimiter = rateLimit({
  */
 export const caseSubmissionRateLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
-    max: 5, // 5 cases per hour
+    max: 100, // Increased to 100 to allow multiple evidence uploads
     message: {
         error: 'Case submission limit reached, please try again later',
         retryAfter: '1 hour',
