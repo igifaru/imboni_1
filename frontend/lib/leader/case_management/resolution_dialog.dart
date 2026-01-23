@@ -1,8 +1,11 @@
+import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:imboni/shared/theme/colors.dart';
 import 'package:imboni/shared/services/case_service.dart';
+import 'package:imboni/shared/widgets/pdf_viewer_screen.dart';
 
 class ResolutionDialog extends StatefulWidget {
   final String caseId;
@@ -15,8 +18,11 @@ class ResolutionDialog extends StatefulWidget {
 
 class _ResolutionDialogState extends State<ResolutionDialog> {
   final _notesController = TextEditingController();
-  PlatformFile? _selectedFile;
+  List<PlatformFile> _selectedFiles = [];
   bool _isLoading = false;
+
+  // Allowed extensions
+  static const _allowedExtensions = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png', 'gif', 'webp'];
 
   @override
   void dispose() {
@@ -24,23 +30,75 @@ class _ResolutionDialogState extends State<ResolutionDialog> {
     super.dispose();
   }
 
-  Future<void> _pickFile() async {
+  Future<void> _pickFiles() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['pdf', 'jpg', 'png', 'jpeg'],
+      allowedExtensions: _allowedExtensions,
+      allowMultiple: true,
     );
 
-    if (result != null) {
-      final file = result.files.first;
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        if (mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(
-             const SnackBar(content: Text('Dosiye igomba kuba munsi ya 5MB'), backgroundColor: ImboniColors.error),
-           );
+    if (result != null && result.files.isNotEmpty) {
+      final validFiles = <PlatformFile>[];
+      for (final file in result.files) {
+        if (file.size > 5 * 1024 * 1024) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('${file.name} irenze 5MB, ntiyakiriwe'), backgroundColor: ImboniColors.error),
+            );
+          }
+          continue;
         }
-        return;
+        validFiles.add(file);
       }
-      setState(() => _selectedFile = file);
+      setState(() => _selectedFiles = [..._selectedFiles, ...validFiles]);
+    }
+  }
+
+  void _removeFile(int index) {
+    setState(() => _selectedFiles.removeAt(index));
+  }
+
+  /// Preview local file before upload
+  Future<void> _previewFile(PlatformFile file) async {
+    final ext = (file.extension ?? '').toLowerCase();
+    final isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(ext);
+    final isPdf = ext == 'pdf';
+    final isDoc = ['doc', 'docx'].contains(ext);
+    
+    if (isImage && file.path != null) {
+      // Show local image in dialog
+      showDialog(
+        context: context,
+        builder: (_) => _LocalImagePreviewDialog(filePath: file.path!, fileName: file.name),
+      );
+    } else if (isPdf && file.path != null) {
+      // Use internal PDF viewer for PDFs
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PDFViewerScreen(filePath: file.path!, fileName: file.name),
+        ),
+      );
+    } else if (isDoc && file.path != null) {
+      // Open DOC/DOCX with system default application
+      final uri = Uri.file(file.path!);
+      try {
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri);
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Nta porogaramu ibasha gufungura iyi nyandiko'), backgroundColor: ImboniColors.warning),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Ntibibashije gufungura: $e'), backgroundColor: ImboniColors.error),
+          );
+        }
+      }
     }
   }
 
@@ -55,18 +113,23 @@ class _ResolutionDialogState extends State<ResolutionDialog> {
     setState(() => _isLoading = true);
 
     try {
-      String? attachmentId;
-      // 1. Upload file if present
-      if (_selectedFile != null && _selectedFile!.path != null) {
-         final uploadResult = await CaseService.instance.uploadEvidence(widget.caseId, _selectedFile!.path!);
-         if (!uploadResult.isSuccess || uploadResult.data == null) {
-           throw Exception(uploadResult.error ?? 'Failed to upload evidence');
-         }
-         attachmentId = uploadResult.data;
+      List<String> uploadedEvidenceIds = [];
+      
+      // 1. Upload all files
+      for (final file in _selectedFiles) {
+        if (file.path != null) {
+          final uploadResult = await CaseService.instance.uploadEvidence(widget.caseId, file.path!);
+          if (uploadResult.isSuccess && uploadResult.data != null) {
+            uploadedEvidenceIds.add(uploadResult.data!);
+          } else {
+            debugPrint('Failed to upload ${file.name}: ${uploadResult.error}');
+          }
+        }
       }
 
-      // 2. Resolve case
-      final result = await CaseService.instance.resolveCase(widget.caseId, _notesController.text, attachmentId);
+      // 2. Resolve case (pass first evidence ID for backward compatibility, or null)
+      final primaryEvidenceId = uploadedEvidenceIds.isNotEmpty ? uploadedEvidenceIds.first : null;
+      final result = await CaseService.instance.resolveCase(widget.caseId, _notesController.text, primaryEvidenceId);
       
       if (mounted) {
         if (result.isSuccess) {
@@ -167,66 +230,101 @@ class _ResolutionDialogState extends State<ResolutionDialog> {
                   ),
                   const SizedBox(height: 8),
 
-                  if (_selectedFile == null)
-                    InkWell(
-                      onTap: _pickFile,
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        height: 120,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[50], // Light grey background
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey[300]!, style: BorderStyle.none), // Using Dotted border would be nice but requires package. Using dashed effect via CustomPainter or just standard border for now. 
-                        ),
-                        child: CustomPaint(
-                          painter: _DashedBorderPainter(color: Colors.grey[400]!),
-                          child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.cloud_upload_outlined, size: 32, color: Colors.grey[600]),
-                                const SizedBox(height: 8),
-                                const Text("Kurura dosiye hano cyangwa ukande", style: TextStyle(fontWeight: FontWeight.w500)),
-                                const SizedBox(height: 4),
-                                Text("Accepted formats: PDF, JPG, PNG. Max size: 5MB.", style: TextStyle(fontSize: 12, color: Colors.grey[500])),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    )
-                  else
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  // File Upload Area
+                  InkWell(
+                    onTap: _pickFiles,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      height: 100,
                       decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey[300]!),
+                        color: Colors.grey[50],
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            _selectedFile!.extension == 'pdf' ? Icons.picture_as_pdf : Icons.image,
-                            color: ImboniColors.primary,
+                      child: CustomPaint(
+                        painter: _DashedBorderPainter(color: Colors.grey[400]!),
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.cloud_upload_outlined, size: 28, color: Colors.grey[600]),
+                              const SizedBox(height: 6),
+                              const Text("Kanda hano uhitemo dosiye", style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
+                              const SizedBox(height: 4),
+                              Text("PDF, DOC, DOCX, JPG, PNG (Max: 5MB)", style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+                            ],
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              _selectedFile!.name,
-                              style: const TextStyle(fontWeight: FontWeight.w500),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                           Text(
-                              _formatSize(_selectedFile!.size),
-                              style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                            ),
-                           IconButton(
-                             icon: const Icon(Icons.delete_outline, color: Colors.red),
-                             onPressed: () => setState(() => _selectedFile = null),
-                           ),
-                        ],
+                        ),
                       ),
                     ),
+                  ),
+
+                  // Selected Files List
+                  if (_selectedFiles.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      constraints: const BoxConstraints(maxHeight: 150),
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: _selectedFiles.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 8),
+                        itemBuilder: (context, index) {
+                          final file = _selectedFiles[index];
+                          final ext = (file.extension ?? '').toLowerCase();
+                          final canPreview = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx'].contains(ext);
+                          
+                          return InkWell(
+                            onTap: () => _previewFile(file),
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey[300]!),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    _getFileIcon(file.extension ?? ''),
+                                    color: ImboniColors.primary,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          file.name,
+                                          style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        if (canPreview)
+                                          Text(
+                                            'Kanda urebe',
+                                            style: TextStyle(fontSize: 10, color: ImboniColors.primary),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                  Text(
+                                    _formatSize(file.size),
+                                    style: TextStyle(color: Colors.grey[600], fontSize: 11),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  IconButton(
+                                    icon: const Icon(Icons.close, size: 18, color: Colors.red),
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                    onPressed: () => _removeFile(index),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -275,6 +373,24 @@ class _ResolutionDialogState extends State<ResolutionDialog> {
     );
   }
 
+  IconData _getFileIcon(String extension) {
+    switch (extension.toLowerCase()) {
+      case 'pdf':
+        return Icons.picture_as_pdf;
+      case 'doc':
+      case 'docx':
+        return Icons.description;
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+      case 'webp':
+        return Icons.image;
+      default:
+        return Icons.insert_drive_file;
+    }
+  }
+
   String _formatSize(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
@@ -314,4 +430,82 @@ class _DashedBorderPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Local image preview dialog for files not yet uploaded
+class _LocalImagePreviewDialog extends StatelessWidget {
+  final String filePath;
+  final String fileName;
+
+  const _LocalImagePreviewDialog({required this.filePath, required this.fileName});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.all(16),
+      child: Container(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.9,
+          maxHeight: MediaQuery.of(context).size.height * 0.8,
+        ),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      fileName,
+                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: Icon(Icons.close, color: theme.colorScheme.onSurface),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            // Image
+            Flexible(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: InteractiveViewer(
+                    minScale: 0.5,
+                    maxScale: 4.0,
+                    child: Image.file(
+                      File(filePath),
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.broken_image, size: 48, color: Colors.grey[400]),
+                          const SizedBox(height: 12),
+                          Text('Ntibibashije kwereka ifoto', style: TextStyle(color: Colors.grey[600])),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
