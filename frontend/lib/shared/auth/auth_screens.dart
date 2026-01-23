@@ -5,6 +5,7 @@ import '../widgets/location_selector.dart';
 import '../services/auth_service.dart';
 
 import '../models/models.dart';
+import '../localization/app_localizations.dart';
 
 /// Login Screen - Professional Design
 class LoginScreen extends StatefulWidget {
@@ -302,6 +303,7 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _phoneController = TextEditingController();
+  final _emailController = TextEditingController(); // Added email controller
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _namesController = TextEditingController();
@@ -314,6 +316,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   void dispose() {
     _phoneController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _namesController.dispose();
@@ -411,6 +414,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
               theme: theme,
               keyboardType: TextInputType.phone,
               validator: (v) => (v == null || v.length < 10) ? 'Nimero ya telefoni ntabwo yuzuye' : null,
+            ),
+            const SizedBox(height: 20),
+
+            // Email (Optional)
+            _buildStyledField(
+              controller: _emailController,
+              label: AppLocalizations.of(context).emailOptional,
+              hint: 'email@example.com',
+              icon: Icons.email_outlined,
+              colorScheme: colorScheme,
+              theme: theme,
+              keyboardType: TextInputType.emailAddress,
+              validator: (v) {
+                if (v != null && v.isNotEmpty && (!v.contains('@') || !v.contains('.'))) {
+                  return AppLocalizations.of(context).invalidEmail;
+                }
+                return null;
+              },
             ),
             const SizedBox(height: 20),
 
@@ -671,6 +692,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     try {
       final response = await authService.register(
         phone: _phoneController.text.trim(),
+        email: _emailController.text.trim().isNotEmpty ? _emailController.text.trim() : null,
         password: _passwordController.text,
         name: _namesController.text.trim(),
         nationalId: _nationalIdController.text.trim(),

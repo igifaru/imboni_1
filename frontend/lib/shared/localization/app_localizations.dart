@@ -97,6 +97,7 @@ class AppLocalizations {
   String get connectionError => get('connection_error');
   String get selectLevel => get('select_level');
   String get hintRoleSelect => get('hint_role_select');
+  String get invalidEmail => get('invalid_email');
 
   // Settings Screen
   String get settings => get('settings');
@@ -486,6 +487,7 @@ const Map<String, Map<String, String>> _translations = {
     'connection_error': 'Ikibazo cya interineti',
     'select_level': 'Hitamo',
     'hint_role_select': 'Hitamo Urwego (urugero: Umuyobozi w\'Umudugudu)',
+    'invalid_email': 'Imeli ntabwo yuzuye',
     // User Management RW
     'user_management': 'Imicungire y\'Abakoresha',
     'search_users_hint': 'Shakisha izina, imeri, cyangwa inshingano...',
@@ -828,6 +830,7 @@ const Map<String, Map<String, String>> _translations = {
     'connection_error': 'Connection error',
     'select_level': 'Select',
     'hint_role_select': 'Select Role (e.g., Village Leader)',
+    'invalid_email': 'Invalid email address',
     // User Management EN
     'user_management': 'User Management',
     'search_users_hint': 'Search by name, email, or role...',
