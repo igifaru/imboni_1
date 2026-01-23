@@ -4,20 +4,22 @@ import 'package:imboni/shared/models/models.dart';
 import 'package:imboni/shared/services/case_service.dart';
 import '../../shared/theme/colors.dart';
 import '../../shared/localization/app_localizations.dart';
-import '../../shared/widgets/countdown_timer.dart';
-import 'package:audioplayers/audioplayers.dart';
+
+
 import 'package:imboni/shared/services/api_client.dart';
 import 'package:imboni/shared/services/auth_service.dart'; // Import AuthService
 import 'resolution_dialog.dart';
 import 'manual_assignment_dialog.dart';
-import 'package:intl/intl.dart';
+import '../../shared/widgets/pdf_viewer_screen.dart';
+import '../../shared/widgets/media_viewers.dart';
+
 import 'package:imboni/shared/widgets/case_details/case_header_card.dart';
 import 'package:imboni/shared/widgets/case_details/case_info_card.dart';
 import 'package:imboni/shared/widgets/case_details/case_description_card.dart';
 import 'package:imboni/shared/widgets/case_details/case_evidence_card.dart';
 import 'package:imboni/shared/widgets/case_details/case_timeline_section.dart';
 import 'package:imboni/shared/widgets/case_details/case_detail_card.dart';
-import 'package:imboni/shared/utils/case_helper.dart';
+
 
 // ... imports remain the same
 
@@ -33,7 +35,6 @@ class LeaderCaseDetailsScreen extends StatefulWidget {
 class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
   late CaseModel _case;
   bool _isLoading = false;
-  final _player = AudioPlayer();
   List<CaseAction> _actions = [];
 
   @override
@@ -44,11 +45,7 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
     _fetchActions();
   }
 
-  @override
-  void dispose() {
-    _player.dispose();
-    super.dispose();
-  }
+
 
   // CHECK: Can the current user perform actions?
   bool get _canPerformActions {
@@ -269,7 +266,7 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
       horizontalPadding = 24.0;
     }
     
-    final hasEvidence = _case.evidence != null && _case.evidence!.isNotEmpty;
+
 
     return Scaffold(
       backgroundColor: _bgColor,
@@ -441,253 +438,46 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
   // Evidence builders removed - Replaced by shared
   void _handleEvidenceTap(EvidenceModel e) {
     // Preserve existing Leader evidence logic
-    final isImage = e.mimeType.startsWith('image/');
-    final isAudio = e.mimeType.startsWith('audio/');
     final url = '${ApiClient.storageUrl}${e.url}';
 
+    // Generic Extension Check
+    final ext = e.fileName.split('.').last.toLowerCase();
+    final isPdf = ext == 'pdf' || e.mimeType == 'application/pdf';
+    final isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(ext) || e.mimeType.startsWith('image/');
+    final isAudio = ['mp3', 'wav', 'aac', 'm4a'].contains(ext) || e.mimeType.startsWith('audio/');
+    final isVideo = ['mp4', 'mov', 'avi', 'mkv'].contains(ext) || e.mimeType.startsWith('video/');
+
     if (isImage) {
-        _openLightbox(e);
+        showDialog(
+          context: context,
+          builder: (_) => ImageViewerDialog(url: url, fileName: e.fileName),
+        );
+    } else if (isPdf) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PDFViewerScreen(url: url, fileName: e.fileName),
+          ),
+        );
     } else if (isAudio) {
-        _player.play(UrlSource(url));
+        showDialog(
+          context: context,
+          builder: (_) => AudioPlayerDialog(url: url, fileName: e.fileName),
+        );
+    } else if (isVideo) {
+        showDialog(
+          context: context,
+          builder: (_) => VideoPlayerDialog(url: url, fileName: e.fileName),
+        );
     } else {
         launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     }
   }
 
 
-  void _openLightbox(EvidenceModel evidence) {
-    Navigator.of(context).push(PageRouteBuilder(
-      opaque: false,
-      pageBuilder: (BuildContext context, _, __) {
-        return Scaffold(
-          backgroundColor: Colors.black,
-          appBar: AppBar(backgroundColor: Colors.transparent, iconTheme: const IconThemeData(color: Colors.white)),
-          body: Center(
-            child: Hero(
-              tag: evidence.url,
-              child: Image.network(
-                '${ApiClient.storageUrl}${evidence.url}',
-                fit: BoxFit.contain,
-              ),
-            ),
-          ),
-        );
-      },
-    ));
-  }
 
-  // Timeline Section - Horizontal Row Format
-  Widget _buildTimelineSection(ThemeData theme, AppLocalizations l10n, bool isDark, Color cardColor, Color textColor, Color subTextColor) {
-    if (_actions.isEmpty) return const SizedBox.shrink();
 
-    final reversedActions = _actions.reversed.toList();
 
-    return CaseDetailCard(
-      backgroundColor: cardColor,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.timeline, size: 20, color: theme.colorScheme.primary),
-              const SizedBox(width: 8),
-              Text(
-                l10n.timeline,
-                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: textColor),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          // Horizontal timeline
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: reversedActions.asMap().entries.map((entry) {
-                final index = entry.key;
-                final action = entry.value;
-                final isLast = index == reversedActions.length - 1;
-                final color = _getActionColor(action.actionType);
-
-                return Row(
-                  children: [
-                    // Timeline Item
-                    _buildTimelineItem(l10n, action, color, isDark, textColor, subTextColor),
-                    
-                    // Connector line
-                    if (!isLast)
-                      Container(
-                        width: 40,
-                        height: 2,
-                        margin: const EdgeInsets.symmetric(horizontal: 8),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [color.withAlpha(150), _getActionColor(reversedActions[index + 1].actionType).withAlpha(150)],
-                          ),
-                          borderRadius: BorderRadius.circular(1),
-                        ),
-                      ),
-                  ],
-                );
-              }).toList(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTimelineItem(AppLocalizations l10n, CaseAction action, Color color, bool isDark, Color textColor, Color subTextColor) {
-    return Container(
-      width: 200, // Increased from 140 to accommodate longer localized text
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withAlpha(isDark ? 38 : 20),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withAlpha(75)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Icon + Status
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: color.withAlpha(50),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(_getActionIcon(action.actionType), size: 14, color: color),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  _getActionTitle(l10n, action.actionType),
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: color,
-                  ),
-                  maxLines: 2, // Allow title to wrap
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          
-          // Date/Time
-          Row(
-            children: [
-              Icon(Icons.calendar_today, size: 12, color: subTextColor),
-              const SizedBox(width: 4),
-              Text(
-                _formatDate(action.createdAt),
-                style: TextStyle(fontSize: 10, color: subTextColor),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Icon(Icons.access_time, size: 12, color: subTextColor),
-              const SizedBox(width: 4),
-              Text(
-                _formatTime(action.createdAt),
-                style: TextStyle(fontSize: 10, color: subTextColor),
-              ),
-            ],
-          ),
-          // Notes if any
-          if (action.notes != null && action.notes!.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              _formatActionNotes(l10n, action.notes!),
-              style: TextStyle(fontSize: 10, color: textColor, fontStyle: FontStyle.italic),
-              maxLines: 4, // Increased lines for better readability of detailed notes
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  IconData _getActionIcon(String type) {
-    switch (type) {
-      case 'CREATED': return Icons.add_circle_outline;
-      case 'ESCALATED': return Icons.arrow_upward;
-      case 'RESOLVED': return Icons.check_circle_outline;
-      case 'RESOLUTION': return Icons.task_alt;
-      case 'VIEWED': return Icons.visibility;
-      case 'ASSIGNED': return Icons.person_add;
-      case 'ACCEPTED': return Icons.thumb_up_alt_outlined;
-      default: return Icons.info_outline;
-    }
-  }
-
-  String _getActionTitle(AppLocalizations l10n, String type) {
-    switch (type) {
-      case 'CREATED': return l10n.caseCreated;
-      case 'ESCALATED': return l10n.caseEscalated;
-      case 'RESOLVED': return l10n.caseResolved;
-      case 'RESOLUTION': return l10n.resolution;
-      case 'VIEWED': return l10n.caseViewed;
-      case 'ASSIGNED': return l10n.caseAssigned;
-      case 'ACCEPTED': return l10n.caseAccepted;
-      case 'STATUS_UPDATE': return l10n.caseStatusUpdate;
-      case 'ASSIGNMENT': return l10n.caseAssignment;
-      default: return type;
-    }
-  }
-
-  // Helper to parse backend English strings and localize them
-  String _formatActionNotes(AppLocalizations l10n, String note) {
-    // 1. Check for Manual Assignment
-    if (note.contains('Manually assigned to specific leader')) {
-      return l10n.noteManualAssignment;
-    }
-
-    // 2. Check for Deadline Extension
-    // Pattern: "Deadline extended by {days} days. Reason: "{reason}". Extension {count}/2."
-    if (note.contains('Deadline extended by')) {
-      try {
-        final daysMatch = RegExp(r'extended by (\d+) days').firstMatch(note);
-        final reasonMatch = RegExp(r'Reason: "([^"]+)"').firstMatch(note);
-        final extMatch = RegExp(r'Extension (\d+/\d+)').firstMatch(note);
-
-        String result = '';
-        if (daysMatch != null) {
-          result += '${l10n.noteDeadlineExtended} ${daysMatch.group(1)}. ';
-        }
-        if (reasonMatch != null) {
-          result += '${l10n.noteReason}: "${reasonMatch.group(1)}". ';
-        }
-        if (extMatch != null) {
-          result += '(${l10n.noteExtensionCount}: ${extMatch.group(1)})';
-        }
-        
-        return result.isNotEmpty ? result : note;
-      } catch (e) {
-        return note; // Fallback to original if parsing fails
-      }
-    }
-
-    return note;
-  }
-
-  Color _getActionColor(String type) {
-    switch (type) {
-      case 'CREATED': return ImboniColors.info;
-      case 'ESCALATED': return ImboniColors.categoryJustice;
-      case 'RESOLVED': return ImboniColors.success;
-      case 'VIEWED': return Colors.grey;
-      case 'ASSIGNED': return ImboniColors.secondary;
-      case 'ACCEPTED': return ImboniColors.primary;
-      default: return Colors.grey;
-    }
-  }
 
   Widget _buildActionButtonsCard(ThemeData theme, AppLocalizations l10n, bool isDark, Color cardColor) {
     // Check permissions first
@@ -905,13 +695,7 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
     );
   }
 
-  String _formatDate(DateTime date) {
-    return DateFormat('dd/MM/yyyy').format(date);
-  }
 
-  String _formatTime(DateTime date) {
-    return DateFormat('HH:mm').format(date);
-  }
 }
 
 class _ExtendDeadlineDialog extends StatefulWidget {
