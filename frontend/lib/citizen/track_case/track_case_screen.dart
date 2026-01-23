@@ -4,7 +4,8 @@ import '../../shared/widgets/loading_overlay.dart';
 import '../../shared/localization/app_localizations.dart';
 import '../../shared/services/case_service.dart';
 import '../../shared/models/models.dart';
-import '../my_cases/my_cases_screen.dart';
+
+import '../my_cases/citizen_case_details_screen.dart';
 
 /// Track Case Screen - Search and view case by reference
 class TrackCaseScreen extends StatefulWidget {

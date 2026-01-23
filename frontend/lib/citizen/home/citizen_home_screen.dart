@@ -11,7 +11,7 @@ import '../my_cases/my_cases_screen.dart';
 import '../../shared/widgets/professional_case_card.dart';
 import '../../features/community/screens/community_home_screen.dart';
 import '../../features/pftcv/pftcv.dart';
-
+import '../my_cases/citizen_case_details_screen.dart';
 /// Citizen Home Screen - Professional design with theme support
 class CitizenHomeScreen extends StatefulWidget {
   const CitizenHomeScreen({super.key});
