@@ -189,9 +189,9 @@ class _GalleryImageViewerDialogState extends State<GalleryImageViewerDialog> {
         height: dialogHeight,
         constraints: const BoxConstraints(maxWidth: 900, maxHeight: 700),
         decoration: BoxDecoration(
-          color: Colors.black,
+          color: Colors.transparent, // Transparent background
           borderRadius: BorderRadius.circular(12),
-          boxShadow: const [BoxShadow(color: Colors.black54, blurRadius: 20)],
+          // No box shadow on the container itself to avoid "box" look
         ),
         child: Stack(
           alignment: Alignment.center,
@@ -272,7 +272,7 @@ class _GalleryImageViewerDialogState extends State<GalleryImageViewerDialog> {
                     onPressed: _previous,
                     icon: const Icon(Icons.chevron_left, size: 32),
                     style: IconButton.styleFrom(
-                      backgroundColor: Colors.black.withOpacity(0.5),
+                      backgroundColor: Colors.black54,
                       foregroundColor: Colors.white,
                     ),
                   ),
@@ -284,7 +284,7 @@ class _GalleryImageViewerDialogState extends State<GalleryImageViewerDialog> {
                     onPressed: _next,
                     icon: const Icon(Icons.chevron_right, size: 32),
                     style: IconButton.styleFrom(
-                      backgroundColor: Colors.black.withOpacity(0.5),
+                      backgroundColor: Colors.black54,
                       foregroundColor: Colors.white,
                     ),
                   ),
