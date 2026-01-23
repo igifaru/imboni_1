@@ -128,41 +128,170 @@ class _AudioPlayerDialogState extends State<AudioPlayerDialog> {
   }
 }
 
-class ImageViewerDialog extends StatelessWidget {
-  final String url;
-  final String fileName;
+class GalleryImageViewerDialog extends StatefulWidget {
+  final List<String> urls;
+  final List<String> fileNames;
+  final int initialIndex;
 
-  const ImageViewerDialog({super.key, required this.url, required this.fileName});
+  const GalleryImageViewerDialog({
+    super.key,
+    required this.urls,
+    required this.fileNames,
+    this.initialIndex = 0,
+  }) : assert(urls.length == fileNames.length);
+
+  @override
+  State<GalleryImageViewerDialog> createState() => _GalleryImageViewerDialogState();
+}
+
+class _GalleryImageViewerDialogState extends State<GalleryImageViewerDialog> {
+  late int _currentIndex;
+  late PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+    _pageController = PageController(initialPage: widget.initialIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _next() {
+    if (_currentIndex < widget.urls.length - 1) {
+      _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+    }
+  }
+
+  void _previous() {
+    if (_currentIndex > 0) {
+      _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    
+    // Calculate dialog size (e.g., 80% of screen width/height, max 800x600)
+    final dialogWidth = size.width * 0.8;
+    final dialogHeight = size.height * 0.8;
+
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: EdgeInsets.zero,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          InteractiveViewer(
-            minScale: 0.5,
-            maxScale: 4.0,
-            child: Image.network(
-              url,
-              loadingBuilder: (_, child, prog) => prog == null ? child : const CircularProgressIndicator(color: Colors.white),
-              errorBuilder: (_, __, ___) => const Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [Icon(Icons.broken_image, color: Colors.white, size: 48), Text('Failed to load image', style: TextStyle(color: Colors.white))],
+      insetPadding: const EdgeInsets.all(16),
+      child: Container(
+        width: dialogWidth,
+        height: dialogHeight,
+        constraints: const BoxConstraints(maxWidth: 900, maxHeight: 700),
+        decoration: BoxDecoration(
+          color: Colors.black,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: const [BoxShadow(color: Colors.black54, blurRadius: 20)],
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Image PageView
+            PageView.builder(
+              controller: _pageController,
+              itemCount: widget.urls.length,
+              onPageChanged: (index) => setState(() => _currentIndex = index),
+              itemBuilder: (context, index) {
+                return InteractiveViewer(
+                  minScale: 0.5,
+                  maxScale: 4.0,
+                  child: Image.network(
+                    widget.urls[index],
+                    fit: BoxFit.contain,
+                    loadingBuilder: (_, child, prog) => prog == null 
+                        ? child 
+                        : const Center(child: CircularProgressIndicator(color: Colors.white)),
+                    errorBuilder: (_, __, ___) => const Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.broken_image, color: Colors.white, size: 48),
+                        SizedBox(height: 8),
+                        Text('Failed to load image', style: TextStyle(color: Colors.white))
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+
+            // Top Bar: Counter and FileName
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.black54, Colors.transparent],
+                  ),
+                  borderRadius: BorderRadius.only(topLeft: Radius.circular(12), topRight: Radius.circular(12)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '${_currentIndex + 1} / ${widget.urls.length}',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                    Expanded(
+                      child: Text(
+                        widget.fileNames[_currentIndex],
+                        style: const TextStyle(color: Colors.white),
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                  ],
+                ),
               ),
             ),
-          ),
-          Positioned(
-            top: 40,
-            right: 20,
-            child: IconButton(
-              icon: const Icon(Icons.close, color: Colors.white, size: 30),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ),
-        ],
+
+            // Navigation Buttons
+            if (widget.urls.length > 1) ...[
+              if (_currentIndex > 0)
+                Positioned(
+                  left: 10,
+                  child: IconButton.filled(
+                    onPressed: _previous,
+                    icon: const Icon(Icons.chevron_left, size: 32),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.black.withOpacity(0.5),
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ),
+              if (_currentIndex < widget.urls.length - 1)
+                Positioned(
+                  right: 10,
+                  child: IconButton.filled(
+                    onPressed: _next,
+                    icon: const Icon(Icons.chevron_right, size: 32),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.black.withOpacity(0.5),
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ),
+            ],
+          ],
+        ),
       ),
     );
   }

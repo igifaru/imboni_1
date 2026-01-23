@@ -328,9 +328,28 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
     final isVideo = ['mp4', 'mov', 'avi', 'mkv'].contains(ext) || e.mimeType.startsWith('video/');
 
     if (isImage) {
+        // Collect all images for gallery
+        final allImages = (_currentCase.evidence ?? []).where((ev) {
+           final ex = ev.fileName.split('.').last.toLowerCase();
+           return ['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(ex) || ev.mimeType.startsWith('image/');
+        }).toList();
+
+        final initialIndex = allImages.indexOf(e);
+        
+        // Map to URLs and Names
+        final urls = allImages.map((ev) => ev.url.startsWith('http') 
+          ? ev.url 
+          : '${ApiClient.storageUrl}${ev.url.startsWith('/') ? '' : '/'}${ev.url}').toList();
+          
+        final names = allImages.map((ev) => ev.fileName).toList();
+
         showDialog(
           context: context,
-          builder: (_) => ImageViewerDialog(url: fullUrl, fileName: e.fileName),
+          builder: (_) => GalleryImageViewerDialog(
+            urls: urls,
+            fileNames: names,
+            initialIndex: initialIndex != -1 ? initialIndex : 0,
+          ),
         );
     } else if (isAudio) {
         showDialog(
