@@ -78,6 +78,18 @@ class CaseInfoCard extends StatelessWidget {
               ),
             ),
           ],
+
+          if (caseModel.assignedLeaderName != null || (caseModel.resolution != null && caseModel.resolution!.resolvedBy.isNotEmpty)) ...[
+             const SizedBox(height: 16),
+             _buildInfoItem(
+               Icons.person_outline, 
+               caseModel.status == 'RESOLVED' || caseModel.status == 'CLOSED' ? "Resolved By" : l10n.assignedTo, 
+               caseModel.status == 'RESOLVED' || caseModel.status == 'CLOSED' 
+                   ? (caseModel.resolution?.resolvedByName ?? caseModel.resolution?.resolvedBy ?? 'Unknown') 
+                   : (caseModel.assignedLeaderName ?? 'Unknown'), 
+               isDark, subTextColor, textColor
+             ),
+          ],
         ],
       ),
     );

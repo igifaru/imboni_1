@@ -249,7 +249,7 @@ export class CaseService {
 
         logger.info('Case created successfully', { caseReference: newCase.caseReference });
 
-        return this.toResponseDto(newCase);
+        return await this.toResponseDto(newCase);
     }
 
     /**
@@ -521,7 +521,7 @@ export class CaseService {
             }
         });
 
-        return this.toResponseDto(updatedCase as unknown as CaseEntity);
+        return await this.toResponseDto(updatedCase as unknown as CaseEntity);
     }
 
     /**
@@ -607,7 +607,7 @@ export class CaseService {
         });
 
         const updated = await this.repository.findById(caseId);
-        return this.toResponseDto(updated!);
+        return await this.toResponseDto(updated!);
     }
 
     /**
@@ -707,7 +707,7 @@ export class CaseService {
         }
 
         const updatedCase = await this.repository.findById(caseId);
-        return this.toResponseDto(updatedCase!);
+        return await this.toResponseDto(updatedCase!);
     }
 
     /**
@@ -783,7 +783,7 @@ export class CaseService {
 
         // Return full DTO
         const finalCase = await this.repository.findById(caseId);
-        return this.toResponseDto(finalCase!);
+        return await this.toResponseDto(finalCase!);
     }
 
     /**
@@ -881,7 +881,7 @@ export class CaseService {
             },
         });
 
-        return assignments.map(a => this.toResponseDto(a.case as unknown as CaseEntity));
+        return Promise.all(assignments.map(a => this.toResponseDto(a.case as unknown as CaseEntity)));
     }
 
     /**
@@ -1577,16 +1577,26 @@ export class CaseService {
 
         logger.info('Citizen updated case', { caseId, changes });
 
-        return this.toResponseDto(updatedCase as unknown as CaseEntity);
+        return await this.toResponseDto(updatedCase as unknown as CaseEntity);
     }
 
     /**
      * Transform entity to response DTO
      * @param locationPath Optional pre-computed location path
      */
-    private toResponseDto(entity: CaseEntity, deadline?: string, locationPath?: string): CaseResponseDto {
+    private async toResponseDto(entity: CaseEntity, deadline?: string, locationPath?: string): Promise<CaseResponseDto> {
         // Find active assignment if available
         const activeAssignment = (entity as any).assignments?.find((a: any) => a.isActive);
+
+        // Fetch resolved by name if resolved
+        let resolvedByName: string | undefined;
+        if ((entity as any).resolution && (entity as any).resolution.resolvedBy) {
+            const resolver = await prisma.user.findUnique({
+                where: { id: (entity as any).resolution.resolvedBy },
+                select: { name: true }
+            });
+            resolvedByName = resolver?.name || undefined;
+        }
 
         return {
             id: entity.id,
@@ -1628,6 +1638,7 @@ export class CaseService {
             resolution: (entity as any).resolution ? {
                 notes: (entity as any).resolution.notes,
                 resolvedBy: (entity as any).resolution.resolvedBy,
+                resolvedByName: resolvedByName, // Injected name
                 evidence: (entity as any).resolution.evidence ? {
                     id: (entity as any).resolution.evidence.id,
                     type: (entity as any).resolution.evidence.type,
@@ -1649,7 +1660,7 @@ export class CaseService {
                 ? await buildLocationPath(entity.administrativeUnitId) // Fallback
                 : undefined;
 
-        return this.toResponseDto(entity, deadline, locationPath);
+        return await this.toResponseDto(entity, deadline, locationPath);
     }
 }
 

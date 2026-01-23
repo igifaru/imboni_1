@@ -4,11 +4,13 @@ export 'location_selection.dart';
 class CaseResolutionModel {
   final String notes;
   final String resolvedBy;
+  final String? resolvedByName;
   final EvidenceModel? evidence;
 
   const CaseResolutionModel({
     required this.notes,
     required this.resolvedBy,
+    this.resolvedByName,
     this.evidence,
   });
 
@@ -16,6 +18,7 @@ class CaseResolutionModel {
     return CaseResolutionModel(
       notes: json['notes'] as String,
       resolvedBy: json['resolvedBy'] as String,
+      resolvedByName: json['resolvedByName'] as String?,
       evidence: json['evidence'] != null ? EvidenceModel.fromJson(json['evidence']) : null,
     );
   }

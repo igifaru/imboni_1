@@ -80,6 +80,7 @@ export interface CaseResponseDto {
     resolution?: {
         notes: string;
         resolvedBy: string;
+        resolvedByName?: string; // Added for UI display
         evidence?: {
             id: string;
             url: string;
