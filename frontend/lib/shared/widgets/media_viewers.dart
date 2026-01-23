@@ -457,6 +457,7 @@ class _VideoPlayerDialogState extends State<VideoPlayerDialog> {
         autoPlay: true,
         looping: false,
         aspectRatio: _videoPlayerController.value.aspectRatio,
+        placeholder: const Center(child: CircularProgressIndicator()),
         errorBuilder: (context, errorMessage) {
           return Center(
             child: Text(
@@ -489,39 +490,89 @@ class _VideoPlayerDialogState extends State<VideoPlayerDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final onSurface = theme.colorScheme.onSurface;
+    final screenWidth = MediaQuery.of(context).size.width;
+    
     return Dialog(
-      backgroundColor: Colors.black,
-      insetPadding: EdgeInsets.zero,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          if (_isLoading)
-            const CircularProgressIndicator(color: Colors.white)
-          else if (_error != null)
-             Column(
-               mainAxisSize: MainAxisSize.min,
+       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+       elevation: 8,
+       backgroundColor: theme.colorScheme.surface,
+       insetPadding: const EdgeInsets.all(16),
+       child: Container(
+         constraints: BoxConstraints(
+           maxWidth: 800, // Constrain width like Audio Player
+           maxHeight: MediaQuery.of(context).size.height * 0.85,
+         ),
+         child: Column(
+           mainAxisSize: MainAxisSize.min,
+           crossAxisAlignment: CrossAxisAlignment.stretch,
+           children: [
+             // Header
+             Padding(
+               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+               child: Row(
+               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                children: [
-                 const Icon(Icons.error_outline, color: Colors.red, size: 48),
-                 const SizedBox(height: 16),
-                 Text('Video Error: $_error', style: const TextStyle(color: Colors.white)),
+                 Row(
+                   children: [
+                     Icon(Icons.play_circle_fill_rounded, color: theme.colorScheme.primary, size: 24),
+                     const SizedBox(width: 12),
+                     ConstrainedBox(
+                       constraints: BoxConstraints(maxWidth: screenWidth * 0.5),
+                       child: Text(
+                         widget.fileName,
+                         style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                         maxLines: 1,
+                         overflow: TextOverflow.ellipsis,
+                       ),
+                     ),
+                   ],
+                 ),
+                 IconButton(
+                   icon: Icon(Icons.close, color: onSurface.withAlpha(150)),
+                   onPressed: () => Navigator.pop(context),
+                   splashRadius: 20,
+                 ),
                ],
-             )
-          else
-            AspectRatio(
-              aspectRatio: _videoPlayerController.value.aspectRatio,
-              child: Chewie(controller: _chewieController!),
-            ),
-            
-          Positioned(
-            top: 40,
-            right: 20,
-            child: IconButton(
-              icon: const Icon(Icons.close, color: Colors.white, size: 30),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ),
-        ],
-      ),
+             ),
+             ),
+             
+             const Divider(height: 1),
+             
+             // Video Content
+             Flexible(
+               child: Container(
+                 color: Colors.black, // Player background remains black for video contrast includes rounded corners via ClipRRect if desired, but square is standard for video area
+                 child: _isLoading
+                     ? const SizedBox(
+                         height: 300, 
+                         child: Center(child: CircularProgressIndicator(color: Colors.white)),
+                       )
+                     : _error != null
+                         ? SizedBox(
+                             height: 300,
+                             child: Center(
+                               child: Column(
+                                 mainAxisSize: MainAxisSize.min,
+                                 children: [
+                                   const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                                   const SizedBox(height: 16),
+                                   Text('Video Error: $_error', style: const TextStyle(color: Colors.white)),
+                                 ],
+                               ),
+                             ),
+                           )
+                         : AspectRatio(
+                             aspectRatio: _videoPlayerController.value.aspectRatio,
+                             child: Chewie(controller: _chewieController!),
+                           ),
+               ),
+             ),
+           ],
+         ),
+       ),
     );
   }
 }

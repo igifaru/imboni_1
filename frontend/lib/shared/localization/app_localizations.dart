@@ -487,7 +487,7 @@ const Map<String, Map<String, String>> _translations = {
     'connection_error': 'Ikibazo cya interineti',
     'select_level': 'Hitamo',
     'hint_role_select': 'Hitamo Urwego (urugero: Umuyobozi w\'Umudugudu)',
-    'invalid_email': 'Imeli ntabwo yuzuye',
+    'invalid_email': 'Imeli ntabwo ariyo',
     // User Management RW
     'user_management': 'Imicungire y\'Abakoresha',
     'search_users_hint': 'Shakisha izina, imeri, cyangwa inshingano...',

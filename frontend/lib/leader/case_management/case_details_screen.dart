@@ -463,7 +463,7 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
     final isPdf = ext == 'pdf' || e.mimeType == 'application/pdf';
     final isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(ext) || e.mimeType.startsWith('image/');
     final isAudio = ['mp3', 'wav', 'aac', 'm4a'].contains(ext) || e.mimeType.startsWith('audio/');
-    final isVideo = ['mp4', 'mov', 'avi', 'mkv'].contains(ext) || e.mimeType.startsWith('video/');
+    final isVideo = ['mp4', 'mov', 'avi', 'mkv', 'webm'].contains(ext) || e.mimeType.startsWith('video/');
 
     if (isImage) {
         // Collect all images for gallery

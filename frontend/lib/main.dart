@@ -13,8 +13,11 @@ import 'package:provider/provider.dart';
 import 'package:imboni/features/community/providers/community_provider.dart';
 import 'package:imboni/features/pftcv/providers/pftcv_provider.dart';
 
+import 'package:fvp/fvp.dart' as fvp;
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  fvp.registerWith(); // Register FVP for desktop video playback
   await settingsService.initialize();
   // Ensure auth service initialized (check token)
   await authService.initialize(); 
