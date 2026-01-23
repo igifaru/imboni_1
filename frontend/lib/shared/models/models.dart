@@ -440,6 +440,8 @@ class SubUnitPerformance {
 class EvidenceModel {
   final String id;
   final String type;
+  final String? purpose;
+  final String? description;
   final String url;
   final String fileName;
   final String mimeType;
@@ -447,6 +449,8 @@ class EvidenceModel {
   EvidenceModel({
     required this.id,
     required this.type,
+    this.purpose,
+    this.description,
     required this.url,
     required this.fileName,
     required this.mimeType,
@@ -457,6 +461,8 @@ class EvidenceModel {
     return EvidenceModel(
       id: json['id'] as String,
       type: json['type'] as String,
+      purpose: json['purpose'] as String?,
+      description: json['description'] as String?,
       url: json['url'] as String,
       fileName: json['fileName'] as String,
       mimeType: json['mimeType'] as String,

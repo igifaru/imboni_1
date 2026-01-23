@@ -118,11 +118,21 @@ class _ResolutionDialogState extends State<ResolutionDialog> {
       // 1. Upload all files
       for (final file in _selectedFiles) {
         if (file.path != null) {
-          final uploadResult = await CaseService.instance.uploadEvidence(widget.caseId, file.path!);
+          final uploadResult = await CaseService.instance.uploadEvidence(
+            widget.caseId, 
+            file.path!, 
+            purpose: 'RESOLUTION',
+            description: file.name,
+          );
           if (uploadResult.isSuccess && uploadResult.data != null) {
             uploadedEvidenceIds.add(uploadResult.data!);
           } else {
             debugPrint('Failed to upload ${file.name}: ${uploadResult.error}');
+            if (mounted) {
+               ScaffoldMessenger.of(context).showSnackBar(
+                 SnackBar(content: Text('Failed to upload ${file.name}: ${uploadResult.error}')),
+               );
+            }
           }
         }
       }

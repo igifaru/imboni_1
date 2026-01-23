@@ -27,8 +27,22 @@ class CaseService {
   }
 
   /// Upload evidence file
-  Future<ApiResponse<String>> uploadEvidence(String caseId, String filePath) async {
-    final response = await apiClient.uploadFile('/cases/$caseId/evidence', filePath);
+  Future<ApiResponse<String>> uploadEvidence(String caseId, String filePath, {String purpose = 'SUBMISSION', String? description}) async {
+    final fields = {'purpose': purpose};
+    
+    // Construct URL with query params as backup
+    String endpoint = '/cases/$caseId/evidence?purpose=$purpose';
+    
+    if (description != null && description.isNotEmpty) {
+      fields['description'] = description;
+      endpoint += '&description=${Uri.encodeComponent(description)}';
+    }
+    
+    final response = await apiClient.uploadFile(
+      endpoint, 
+      filePath, 
+      fields: fields,
+    );
     if (response.isSuccess && response.data != null) {
        return ApiResponse.success(response.data['id'] as String? ?? '');
     }

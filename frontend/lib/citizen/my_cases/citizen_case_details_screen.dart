@@ -36,7 +36,16 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
   void initState() {
     super.initState();
     _currentCase = widget.caseModel;
+    _fetchCaseDetails();
     _fetchActions();
+  }
+
+  Future<void> _fetchCaseDetails() async {
+    // Refresh case details to get latest evidence
+    final result = await CaseService.instance.getCaseById(widget.caseModel.id);
+    if (result.isSuccess && result.data != null && mounted) {
+      setState(() => _currentCase = result.data!);
+    }
   }
 
   Future<void> _fetchActions() async {

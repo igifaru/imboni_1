@@ -110,7 +110,11 @@ class ApiClient {
     }
   }
 
-  Future<ApiResponse<T>> uploadFile<T>(String endpoint, String filePath, {String fieldName = 'file', T Function(dynamic)? fromJson}) async {
+  Future<ApiResponse<T>> uploadFile<T>(String endpoint, String filePath, {
+    String fieldName = 'file',
+    Map<String, String>? fields,
+    T Function(dynamic)? fromJson,
+  }) async {
     try {
       final uri = Uri.parse('$_baseUrl$endpoint');
       final request = http.MultipartRequest('POST', uri);
@@ -118,6 +122,11 @@ class ApiClient {
       // Add headers
       request.headers.addAll(_headers);
       request.headers.remove('Content-Type'); // Let http client set boundary
+      
+      // Add fields
+      if (fields != null) {
+        request.fields.addAll(fields);
+      }
       
       // Add file
       if (kIsWeb) {
