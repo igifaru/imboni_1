@@ -11,7 +11,13 @@ import 'package:imboni/shared/services/auth_service.dart'; // Import AuthService
 import 'resolution_dialog.dart';
 import 'manual_assignment_dialog.dart';
 import 'package:intl/intl.dart';
-import 'widgets/case_detail_card.dart';
+import 'package:imboni/shared/widgets/case_details/case_header_card.dart';
+import 'package:imboni/shared/widgets/case_details/case_info_card.dart';
+import 'package:imboni/shared/widgets/case_details/case_description_card.dart';
+import 'package:imboni/shared/widgets/case_details/case_evidence_card.dart';
+import 'package:imboni/shared/widgets/case_details/case_timeline_section.dart';
+import 'package:imboni/shared/widgets/case_details/case_detail_card.dart';
+import 'package:imboni/shared/utils/case_helper.dart';
 
 // ... imports remain the same
 
@@ -278,7 +284,7 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
           ),
           children: [
             // Header Section
-            _buildHeaderCard(theme, l10n, _isDark, _cardColor, _textColor),
+            CaseHeaderCard(caseModel: _case),
             const SizedBox(height: 20),
 
             // Main Content (Grid-like logic)
@@ -293,9 +299,9 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildInfoCard(theme, l10n, _isDark, _cardColor, _textColor, _subTextColor),
+                        CaseInfoCard(caseModel: _case),
                         const SizedBox(height: 20),
-                        _buildDescriptionCard(theme, l10n, _isDark, _cardColor, _textColor, _subTextColor),
+                        CaseDescriptionCard(caseModel: _case),
                       ],
                     ),
                   ),
@@ -309,7 +315,10 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
                       children: [
                         _buildReporterCard(theme, l10n, _isDark, _cardColor, _textColor, _subTextColor),
                         const SizedBox(height: 20),
-                        _buildEvidenceCard(theme, l10n, _isDark, _cardColor, _textColor, hasEvidence),
+                        CaseEvidenceCard(
+                          caseModel: _case,
+                          onEvidenceTap: _handleEvidenceTap,
+                        ),
                       ],
                     ),
                   ),
@@ -319,18 +328,21 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
               Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _buildInfoCard(theme, l10n, _isDark, _cardColor, _textColor, _subTextColor),
+                  CaseInfoCard(caseModel: _case),
                   const SizedBox(height: 16),
-                  _buildDescriptionCard(theme, l10n, _isDark, _cardColor, _textColor, _subTextColor),
+                  CaseDescriptionCard(caseModel: _case),
                   const SizedBox(height: 16),
                   _buildReporterCard(theme, l10n, _isDark, _cardColor, _textColor, _subTextColor),
                   const SizedBox(height: 16),
-                  _buildEvidenceCard(theme, l10n, _isDark, _cardColor, _textColor, hasEvidence),
+                  CaseEvidenceCard(
+                    caseModel: _case,
+                    onEvidenceTap: _handleEvidenceTap,
+                  ),
                 ],
               ),
 
             const SizedBox(height: 20),
-            _buildTimelineSection(theme, l10n, _isDark, _cardColor, _textColor, _subTextColor),
+            CaseTimelineSection(caseModel: _case, actions: _actions),
             
             // Action Buttons (Moved Inline)
             if (!(_case.status == 'RESOLVED' || _case.status == 'CLOSED'))
@@ -376,270 +388,8 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
     );
   }
 
-  Widget _buildHeaderCard(ThemeData theme, AppLocalizations l10n, bool isDark, Color cardColor, Color textColor) {
-    final statusColor = ImboniColors.getStatusColor(_case.status);
-    final urgencyColor = ImboniColors.getUrgencyColor(_case.urgency);
-    final categoryColor = ImboniColors.getCategoryColor(_case.category);
+  // Duplicate UI builders removed (Header, Info, Description) - Replaced by shared widgets
 
-    return CaseDetailCard(
-      backgroundColor: cardColor,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Row 1: Status + Category + Urgency + Countdown badges
-          Wrap(
-            spacing: 10,
-            runSpacing: 8,
-            children: [
-              _buildBadge(_getStatusLabel(l10n, _case.status), statusColor, Icons.circle, isDark),
-              _buildBadge(_getCategoryLabel(l10n, _case.category), categoryColor, _getCategoryIcon(_case.category), isDark),
-              _buildBadge(_getUrgencyLabel(l10n, _case.urgency), urgencyColor, Icons.flag, isDark),
-              // Countdown Timer
-              if (_case.deadline != null)
-                CountdownTimer(
-                  deadline: _case.deadline!,
-                  showIcon: true,
-                ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          
-          // Title
-          Text(
-            _case.title,
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: textColor,
-              height: 1.3,
-            ),
-          ),
-          const SizedBox(height: 8),
-          
-          // Case Reference
-          Row(
-            children: [
-              Icon(Icons.tag, size: 16, color: isDark ? Colors.white54 : Colors.grey),
-              const SizedBox(width: 6),
-              Text(
-                _case.caseReference,
-                style: TextStyle(
-                  color: isDark ? Colors.white54 : Colors.grey[600],
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _getStatusLabel(AppLocalizations l10n, String status) {
-    switch (status.toUpperCase()) {
-      case 'OPEN': return l10n.statusOpen;
-      case 'IN_PROGRESS': return l10n.statusInProgress;
-      case 'RESOLVED': return l10n.statusResolved;
-      case 'ESCALATED': return l10n.statusEscalated;
-      default: return status;
-    }
-  }
-
-  String _getCategoryLabel(AppLocalizations l10n, String category) {
-    switch (category.toUpperCase()) {
-      case 'JUSTICE': return l10n.categoryJustice;
-      case 'HEALTH': return l10n.categoryHealth;
-      case 'LAND': return l10n.categoryLand;
-      case 'INFRASTRUCTURE': return l10n.categoryInfrastructure;
-      case 'SECURITY': return l10n.categorySecurity;
-      case 'SOCIAL': return l10n.categorySocial;
-      case 'EDUCATION': return l10n.categoryEducation;
-      default: return l10n.categoryOther;
-    }
-  }
-
-  String _getUrgencyLabel(AppLocalizations l10n, String urgency) {
-    switch (urgency.toUpperCase()) {
-      case 'HIGH': return l10n.urgencyHigh;
-      case 'EMERGENCY': return l10n.urgencyEmergency;
-      default: return l10n.urgencyNormal;
-    }
-  }
-
-  Widget _buildBadge(String label, Color color, IconData icon, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withAlpha(isDark ? 65 : 30),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withAlpha(100)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  IconData _getCategoryIcon(String category) {
-    switch (category.toUpperCase()) {
-      case 'JUSTICE': return Icons.balance;
-      case 'HEALTH': return Icons.health_and_safety;
-      case 'LAND': return Icons.terrain;
-      case 'INFRASTRUCTURE': return Icons.construction;
-      case 'SECURITY': return Icons.security;
-      case 'SOCIAL': return Icons.people;
-      case 'EDUCATION': return Icons.school;
-      default: return Icons.category;
-    }
-  }
-
-  Widget _buildInfoCard(ThemeData theme, AppLocalizations l10n, bool isDark, Color cardColor, Color textColor, Color subTextColor) {
-    return CaseDetailCard(
-      title: l10n.importantInfo,
-      icon: Icons.info_outline,
-      backgroundColor: cardColor,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Info Grid - 2 columns
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  children: [
-                    _buildInfoItem(Icons.location_on_outlined, l10n.location, _case.locationPath ?? _case.locationName ?? 'Unknown', isDark, subTextColor, textColor),
-                    const SizedBox(height: 16),
-                    _buildInfoItem(Icons.layers_outlined, l10n.level, _getLevelLabel(l10n, _case.currentLevel), isDark, subTextColor, textColor),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  children: [
-                    _buildInfoItem(Icons.calendar_today_outlined, l10n.date, _formatDate(_case.createdAt), isDark, subTextColor, textColor),
-                    const SizedBox(height: 16),
-                    _buildInfoItem(Icons.access_time, l10n.time, _formatTime(_case.createdAt), isDark, subTextColor, textColor),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          
-          // Deadline if exists
-          if (_case.deadline != null) ...[
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: ImboniColors.warning.withAlpha(isDark ? 50 : 25),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: ImboniColors.warning.withAlpha(75)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.timer_outlined, size: 18, color: ImboniColors.warning),
-                  const SizedBox(width: 8),
-                  Text(
-                    '${l10n.deadline}: ${_formatDate(_case.deadline!)}',
-                    style: const TextStyle(
-                      color: ImboniColors.warning,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  String _getLevelLabel(AppLocalizations l10n, String level) {
-    switch (level.toUpperCase()) {
-      case 'VILLAGE': return l10n.levelVillage;
-      case 'CELL': return l10n.levelCell;
-      case 'SECTOR': return l10n.levelSector;
-      case 'DISTRICT': return l10n.levelDistrict;
-      case 'PROVINCE': return l10n.levelProvince;
-      case 'NATIONAL': return l10n.levelNational;
-      default: return level;
-    }
-  }
-
-  Widget _buildInfoItem(IconData icon, String label, String value, bool isDark, Color subTextColor, Color textColor) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: isDark ? Colors.white10 : Colors.grey.withAlpha(25),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, size: 18, color: isDark ? Colors.white70 : Colors.black54),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: subTextColor)),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textColor),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDescriptionCard(ThemeData theme, AppLocalizations l10n, bool isDark, Color cardColor, Color textColor, Color subTextColor) {
-    return CaseDetailCard(
-      title: l10n.description,
-      icon: Icons.description_outlined,
-      backgroundColor: cardColor,
-      child: Container(
-        padding: const EdgeInsets.only(left: 16),
-        decoration: BoxDecoration(
-          border: Border(
-            left: BorderSide(
-              color: theme.colorScheme.primary.withAlpha(125),
-              width: 3,
-            ),
-          ),
-        ),
-        child: Text(
-          _case.description,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            height: 1.6,
-            fontSize: 14,
-            color: subTextColor,
-          ),
-        ),
-      ),
-    );
-  }
 
   Widget _buildReporterCard(ThemeData theme, AppLocalizations l10n, bool isDark, Color cardColor, Color textColor, Color subTextColor) {
     return CaseDetailCard(
@@ -688,113 +438,22 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
     );
   }
 
-  Widget _buildEvidenceCard(ThemeData theme, AppLocalizations l10n, bool isDark, Color cardColor, Color textColor, bool hasEvidence) {
-    return CaseDetailCard(
-      title: l10n.evidence,
-      icon: Icons.attach_file,
-      backgroundColor: cardColor,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (!hasEvidence)
-             Center(
-               child: Column(
-                 children: [
-                   Icon(
-                     Icons.folder_off_outlined,
-                     size: 40,
-                     color: isDark ? Colors.white24 : Colors.grey[400],
-                   ),
-                   const SizedBox(height: 8),
-                   Text(
-                     l10n.noEvidenceProvided,
-                     style: TextStyle(
-                       color: isDark ? Colors.white38 : Colors.grey[500],
-                       fontSize: 13,
-                     ),
-                   ),
-                 ],
-               ),
-             )
-          else
-            _buildEvidenceGrid(isDark),
-        ],
-      ),
-    );
+  // Evidence builders removed - Replaced by shared
+  void _handleEvidenceTap(EvidenceModel e) {
+    // Preserve existing Leader evidence logic
+    final isImage = e.mimeType.startsWith('image/');
+    final isAudio = e.mimeType.startsWith('audio/');
+    final url = '${ApiClient.storageUrl}${e.url}';
+
+    if (isImage) {
+        _openLightbox(e);
+    } else if (isAudio) {
+        _player.play(UrlSource(url));
+    } else {
+        launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    }
   }
 
-  Widget _buildEvidenceGrid(bool isDark) {
-    return Wrap(
-      spacing: 10,
-      runSpacing: 10,
-      children: (_case.evidence ?? []).map((e) {
-        final isImage = e.mimeType.startsWith('image/');
-        final isAudio = e.mimeType.startsWith('audio/');
-        final isVideo = e.mimeType.startsWith('video/');
-        final isPdf = e.mimeType == 'application/pdf';
-        
-        final url = '${ApiClient.storageUrl}${e.url}';
-        
-        // Extract extension for label (e.g. JPG, PDF, MP4)
-        String ext = 'FILE';
-        if (e.fileName.contains('.')) {
-          ext = e.fileName.split('.').last.toUpperCase();
-          if (ext.length > 4) ext = 'FILE'; 
-        }
-
-        return GestureDetector(
-          onTap: () {
-              if (isImage) {
-                  _openLightbox(e);
-              } else if (isAudio) {
-                  _player.play(UrlSource(url));
-              } else {
-                  launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-              }
-          },
-          child: Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              border: Border.all(color: isDark ? Colors.white12 : Colors.grey.withAlpha(50)),
-              borderRadius: BorderRadius.circular(12),
-              color: isDark ? Colors.white.withAlpha(12) : Colors.grey.withAlpha(15),
-            ),
-            child: isImage
-                ? Hero(
-                    tag: e.url,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.network(
-                        url,
-                        fit: BoxFit.cover,
-                        errorBuilder: (c, e, s) => const Icon(Icons.broken_image),
-                      ),
-                    ),
-                  )
-                : Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        isAudio ? Icons.audiotrack :
-                        isVideo ? Icons.videocam :
-                        isPdf ? Icons.picture_as_pdf :
-                        Icons.insert_drive_file,
-                        size: 28,
-                        color: isDark ? Colors.white54 : Colors.grey[600],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        isAudio ? 'Audio' : ext, // Show extension for files/video
-                        style: TextStyle(fontSize: 10, color: isDark ? Colors.white54 : Colors.grey[600]),
-                      ),
-                    ],
-                  ),
-          ),
-        );
-      }).toList(),
-    );
-  }
 
   void _openLightbox(EvidenceModel evidence) {
     Navigator.of(context).push(PageRouteBuilder(
