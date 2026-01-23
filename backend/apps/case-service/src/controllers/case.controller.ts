@@ -438,14 +438,14 @@ router.post('/:id/review', async (req: Request, res: Response, next: NextFunctio
 router.post('/:id/resolve', async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { id } = req.params;
-        const { notes } = req.body;
+        const { notes, evidenceId } = req.body;
         const userId = (req as any).user?.userId;
 
         if (!notes) {
             return res.status(400).json({ error: 'Resolution notes are required' });
         }
 
-        const result = await caseService.resolveCase(id, notes, userId);
+        const result = await caseService.resolveCase(id, notes, userId, evidenceId);
 
         res.json({
             success: true,

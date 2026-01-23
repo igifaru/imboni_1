@@ -48,6 +48,7 @@ export class CaseRepository {
                 evidence: true,
                 administrativeUnit: true,
                 submitter: true,
+                resolution: { include: { evidence: true } },
                 assignments: {
                     where: { isActive: true },
                     include: { leader: true }
@@ -67,6 +68,7 @@ export class CaseRepository {
                 evidence: true,
                 administrativeUnit: true,
                 submitter: true,
+                resolution: { include: { evidence: true } },
                 assignments: {
                     where: { isActive: true },
                     include: { leader: true }

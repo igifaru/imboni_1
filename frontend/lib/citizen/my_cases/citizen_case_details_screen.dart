@@ -276,7 +276,67 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
              l10n.resolutionActionDesc,
              style: theme.textTheme.bodyMedium?.copyWith(color: textColor.withValues(alpha: 0.8)),
            ),
-           const SizedBox(height: 20),
+           const SizedBox(height: 16),
+           
+           // Resolution Notes & Evidence
+           if (_currentCase.resolution != null) ...[
+             Container(
+               width: double.infinity,
+               padding: const EdgeInsets.all(12),
+               decoration: BoxDecoration(
+                 color: isDark ? Colors.grey[800] : Colors.white,
+                 borderRadius: BorderRadius.circular(8),
+                 border: Border.all(color: isDark ? Colors.grey[700]! : Colors.grey[200]!),
+               ),
+               child: Column(
+                 crossAxisAlignment: CrossAxisAlignment.start,
+                 children: [
+                   Text(
+                     'Ibisobanuro:', 
+                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: isDark ? Colors.grey[400] : Colors.grey[700]),
+                   ),
+                   const SizedBox(height: 4),
+                   Text(
+                     _currentCase.resolution!.notes,
+                     style: TextStyle(fontSize: 14, color: isDark ? Colors.white : Colors.black87),
+                   ),
+                   
+                   if (_currentCase.resolution!.evidence != null) ...[
+                     const SizedBox(height: 12),
+                     const Divider(height: 1),
+                     const SizedBox(height: 8),
+                     InkWell(
+                       onTap: () => _handleEvidenceTap(context, _currentCase.resolution!.evidence!),
+                       borderRadius: BorderRadius.circular(4),
+                       child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                           children: [
+                             Icon(Icons.description, size: 18, color: ImboniColors.primary),
+                             const SizedBox(width: 8),
+                             Expanded(
+                               child: Text(
+                                 _currentCase.resolution!.evidence!.fileName,
+                                 style: const TextStyle(
+                                   color: ImboniColors.primary,
+                                   decoration: TextDecoration.underline,
+                                   fontWeight: FontWeight.w500,
+                                 ),
+                                 overflow: TextOverflow.ellipsis,
+                               ),
+                             ),
+                             Icon(Icons.open_in_new, size: 16, color: isDark ? Colors.grey[400] : Colors.grey),
+                           ],
+                         ),
+                       ),
+                     ),
+                   ],
+                 ],
+               ),
+             ),
+             const SizedBox(height: 20),
+           ],
+
            Row(
              children: [
                Expanded(

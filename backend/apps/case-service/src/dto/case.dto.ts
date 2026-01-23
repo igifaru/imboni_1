@@ -75,6 +75,15 @@ export interface CaseResponseDto {
         code: string;
         level: string;
     };
+    resolution?: {
+        notes: string;
+        resolvedBy: string;
+        evidence?: {
+            url: string;
+            fileName: string;
+            type: string;
+        };
+    };
 }
 
 export interface CaseListResponseDto {

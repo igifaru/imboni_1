@@ -1,5 +1,26 @@
 export 'location_selection.dart';
 /// Case model for API responses
+/// Case model for API responses
+class CaseResolutionModel {
+  final String notes;
+  final String resolvedBy;
+  final EvidenceModel? evidence;
+
+  const CaseResolutionModel({
+    required this.notes,
+    required this.resolvedBy,
+    this.evidence,
+  });
+
+  factory CaseResolutionModel.fromJson(Map<String, dynamic> json) {
+    return CaseResolutionModel(
+      notes: json['notes'] as String,
+      resolvedBy: json['resolvedBy'] as String,
+      evidence: json['evidence'] != null ? EvidenceModel.fromJson(json['evidence']) : null,
+    );
+  }
+}
+
 class CaseModel {
   final String id;
   final String caseReference;
@@ -24,7 +45,9 @@ class CaseModel {
   final String? assignedLeaderId;
   final String? assignedLeaderName;
   final String? assignedLeaderPhone;
+
   final int? extensionCount; // Added for extension tracking
+  final CaseResolutionModel? resolution;
 
   const CaseModel({
     required this.id,
@@ -51,6 +74,7 @@ class CaseModel {
     this.assignedLeaderName,
     this.assignedLeaderPhone,
     this.extensionCount,
+    this.resolution,
   });
 
   factory CaseModel.fromJson(Map<String, dynamic> json) {
@@ -82,6 +106,7 @@ class CaseModel {
       assignedLeaderName: json['assignedLeaderName'] as String?,
       assignedLeaderPhone: json['assignedLeaderPhone'] as String?,
       extensionCount: json['extensionCount'] as int?,
+      resolution: json['resolution'] != null ? CaseResolutionModel.fromJson(json['resolution']) : null,
     );
   }
 
