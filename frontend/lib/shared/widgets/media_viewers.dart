@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
@@ -33,7 +34,15 @@ class _AudioPlayerDialogState extends State<AudioPlayerDialog> {
       
       _player.onDurationChanged.listen((d) => setState(() => _duration = d));
       _player.onPositionChanged.listen((p) => setState(() => _position = p));
-      _player.onPlayerComplete.listen((_) => setState(() { _isPlaying = false; _position = Duration.zero; }));
+      _player.onPlayerComplete.listen((_) {
+        if (mounted) {
+          setState(() { 
+            _isPlaying = false; 
+            _position = Duration.zero; 
+          });
+        }
+        _player.seek(Duration.zero);
+      });
       
       if (mounted) {
         setState(() => _isLoading = false);
@@ -55,10 +64,16 @@ class _AudioPlayerDialogState extends State<AudioPlayerDialog> {
   Future<void> _togglePlay() async {
     if (_isPlaying) {
       await _player.pause();
+      setState(() => _isPlaying = false);
     } else {
+      // If finished or very close to end, restart
+      if (_position >= _duration || _position.inMilliseconds >= _duration.inMilliseconds - 500) {
+        await _player.seek(Duration.zero);
+        setState(() => _position = Duration.zero);
+      }
       await _player.resume();
+      setState(() => _isPlaying = true);
     }
-    setState(() => _isPlaying = !_isPlaying);
   }
 
   String _formatDuration(Duration d) {
@@ -70,57 +85,154 @@ class _AudioPlayerDialogState extends State<AudioPlayerDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final primaryColor = theme.colorScheme.primary;
+    final screenWidth = MediaQuery.of(context).size.width;
     
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      elevation: 10,
+      backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+      insetPadding: const EdgeInsets.all(16),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: 460, // Increased width
+          minWidth: screenWidth < 460 ? screenWidth * 0.95 : 380,
+        ),
+        child: Stack(
           children: [
-             Icon(Icons.audiotrack, size: 48, color: theme.colorScheme.secondary),
-             const SizedBox(height: 16),
-             Text(
-               widget.fileName,
-               style: theme.textTheme.titleMedium,
-               textAlign: TextAlign.center,
-               maxLines: 2,
-             ),
-             const SizedBox(height: 24),
-             if (_isLoading)
-               const CircularProgressIndicator()
-             else ...[
-               Slider(
-                 value: _position.inSeconds.toDouble(),
-                 max: _duration.inSeconds.toDouble() > 0 ? _duration.inSeconds.toDouble() : 1,
-                 onChanged: (v) async {
-                   final pos = Duration(seconds: v.toInt());
-                   await _player.seek(pos);
-                 },
-               ),
-               Row(
-                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                 children: [
-                   Text(_formatDuration(_position), style: theme.textTheme.bodySmall),
-                   Text(_formatDuration(_duration), style: theme.textTheme.bodySmall),
-                 ],
-               ),
-               const SizedBox(height: 16),
-               IconButton.filled(
-                 onPressed: _togglePlay,
-                 icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
-                 iconSize: 32,
-                 style: IconButton.styleFrom(
-                   backgroundColor: theme.colorScheme.secondary,
-                   foregroundColor: Colors.white,
-                 ),
-               ),
-             ],
-             const SizedBox(height: 16),
-             TextButton(
-               onPressed: () => Navigator.pop(context),
-               child: const Text('Close'),
-             ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(28, 48, 28, 36),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                   // Visualizer / Icon
+                   Container(
+                     padding: const EdgeInsets.all(20),
+                     decoration: BoxDecoration(
+                       color: primaryColor.withAlpha(20),
+                       shape: BoxShape.circle,
+                     ),
+                     child: Icon(Icons.music_note_rounded, size: 40, color: primaryColor),
+                   ),
+                   const SizedBox(height: 20),
+                   
+                   // Metadata
+                   Text(
+                     widget.fileName,
+                     style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                     textAlign: TextAlign.center,
+                     maxLines: 1,
+                     overflow: TextOverflow.ellipsis,
+                   ),
+                   const SizedBox(height: 24),
+                   
+                   if (_isLoading)
+                     const Padding(
+                       padding: EdgeInsets.all(16.0),
+                       child: SizedBox(
+                         width: 24, height: 24, 
+                         child: CircularProgressIndicator(strokeWidth: 2),
+                       ),
+                     )
+                   else ...[
+                     // Progress Bar
+                     SizedBox(
+                       height: 20,
+                       child: SliderTheme(
+                         data: SliderTheme.of(context).copyWith(
+                           thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                           overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+                           trackHeight: 4,
+                           activeTrackColor: primaryColor,
+                           inactiveTrackColor: primaryColor.withAlpha(50),
+                           thumbColor: primaryColor,
+                         ),
+                         child: Slider(
+                           value: _position.inSeconds.toDouble(),
+                           max: _duration.inSeconds.toDouble() > 0 ? _duration.inSeconds.toDouble() : 1,
+                           onChanged: (v) async {
+                             final pos = Duration(seconds: v.toInt());
+                             await _player.seek(pos);
+                           },
+                         ),
+                       ),
+                     ),
+                     
+                     // Time Labels
+                     Padding(
+                       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                       child: Row(
+                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                         children: [
+                           Text(_formatDuration(_position), style: TextStyle(fontSize: 10, color: Colors.grey[600], fontFeatures: [const FontFeature.tabularFigures()])),
+                           Text(_formatDuration(_duration), style: TextStyle(fontSize: 10, color: Colors.grey[600], fontFeatures: [const FontFeature.tabularFigures()])),
+                         ],
+                       ),
+                     ),
+                     
+                     const SizedBox(height: 16),
+                     
+                     // Controls
+                     Row(
+                       mainAxisAlignment: MainAxisAlignment.center,
+                       children: [
+                         IconButton(
+                           onPressed: () {
+                             final newPos = _position - const Duration(seconds: 10);
+                             _player.seek(newPos < Duration.zero ? Duration.zero : newPos);
+                           },
+                           icon: Icon(Icons.replay_10_rounded, color: Colors.grey[600], size: 28),
+                         ),
+                         const SizedBox(width: 16),
+                         Container(
+                           decoration: BoxDecoration(
+                             color: primaryColor,
+                             shape: BoxShape.circle,
+                             boxShadow: [
+                               BoxShadow(
+                                 color: primaryColor.withAlpha(100),
+                                 blurRadius: 12,
+                                 offset: const Offset(0, 4),
+                               ),
+                             ],
+                           ),
+                           child: IconButton(
+                             onPressed: _togglePlay,
+                             icon: Icon(_isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded),
+                             iconSize: 32,
+                             color: Colors.white,
+                             padding: const EdgeInsets.all(12),
+                             constraints: const BoxConstraints(),
+                             style: IconButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                           ),
+                         ),
+                         const SizedBox(width: 16),
+                         IconButton(
+                           onPressed: () {
+                              final newPos = _position + const Duration(seconds: 10);
+                              _player.seek(newPos > _duration ? _duration : newPos);
+                           },
+                           icon: Icon(Icons.forward_10_rounded, color: Colors.grey[600], size: 28),
+                         ),
+                       ],
+                     ),
+                   ],
+                ],
+              ),
+            ),
+            
+            // Close Button
+            Positioned(
+              top: 8,
+              right: 8,
+              child: IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.close_rounded, size: 20),
+                color: Colors.grey[500],
+                splashRadius: 20,
+              ),
+            ),
           ],
         ),
       ),
