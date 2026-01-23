@@ -175,11 +175,13 @@ class _GalleryImageViewerDialogState extends State<GalleryImageViewerDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final size = MediaQuery.of(context).size;
-    
-    // Calculate dialog size (e.g., 80% of screen width/height, max 800x600)
     final dialogWidth = size.width * 0.8;
     final dialogHeight = size.height * 0.8;
+
+    final onSurface = theme.colorScheme.onSurface;
+    final scrim = theme.colorScheme.scrim.withAlpha(150);
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -210,13 +212,13 @@ class _GalleryImageViewerDialogState extends State<GalleryImageViewerDialog> {
                     fit: BoxFit.contain,
                     loadingBuilder: (_, child, prog) => prog == null 
                         ? child 
-                        : const Center(child: CircularProgressIndicator(color: Colors.white)),
-                    errorBuilder: (_, __, ___) => const Column(
+                        : Center(child: CircularProgressIndicator(color: onSurface)),
+                    errorBuilder: (_, __, ___) => Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.broken_image, color: Colors.white, size: 48),
-                        SizedBox(height: 8),
-                        Text('Failed to load image', style: TextStyle(color: Colors.white))
+                        Icon(Icons.broken_image, color: onSurface, size: 48),
+                        const SizedBox(height: 8),
+                         Text('Failed to load image', style: TextStyle(color: onSurface))
                       ],
                     ),
                   ),
@@ -231,31 +233,31 @@ class _GalleryImageViewerDialogState extends State<GalleryImageViewerDialog> {
               right: 0,
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [Colors.black54, Colors.transparent],
+                    colors: [scrim, Colors.transparent],
                   ),
-                  borderRadius: BorderRadius.only(topLeft: Radius.circular(12), topRight: Radius.circular(12)),
+                  borderRadius: const BorderRadius.only(topLeft: Radius.circular(12), topRight: Radius.circular(12)),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       '${_currentIndex + 1} / ${widget.urls.length}',
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      style: TextStyle(color: onSurface, fontWeight: FontWeight.bold),
                     ),
                     Expanded(
                       child: Text(
                         widget.fileNames[_currentIndex],
-                        style: const TextStyle(color: Colors.white),
+                        style: TextStyle(color: onSurface),
                         textAlign: TextAlign.center,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white),
+                        icon: Icon(Icons.close, color: onSurface),
                         onPressed: () => Navigator.pop(context),
                       ),
                   ],
@@ -272,8 +274,8 @@ class _GalleryImageViewerDialogState extends State<GalleryImageViewerDialog> {
                     onPressed: _previous,
                     icon: const Icon(Icons.chevron_left, size: 32),
                     style: IconButton.styleFrom(
-                      backgroundColor: Colors.black54,
-                      foregroundColor: Colors.white,
+                      backgroundColor: scrim,
+                      foregroundColor: onSurface,
                     ),
                   ),
                 ),
@@ -284,8 +286,8 @@ class _GalleryImageViewerDialogState extends State<GalleryImageViewerDialog> {
                     onPressed: _next,
                     icon: const Icon(Icons.chevron_right, size: 32),
                     style: IconButton.styleFrom(
-                      backgroundColor: Colors.black54,
-                      foregroundColor: Colors.white,
+                      backgroundColor: scrim,
+                      foregroundColor: onSurface,
                     ),
                   ),
                 ),
