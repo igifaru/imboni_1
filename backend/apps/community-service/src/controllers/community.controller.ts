@@ -163,15 +163,51 @@ router.post('/messages/:messageId/pin', async (req: Request, res: Response) => {
     }
 });
 
+// POST /api/community/messages/:messageId/poll-vote
+router.post('/messages/:messageId/poll-vote', async (req: Request, res: Response) => {
+    try {
+        const { messageId } = req.params;
+        const { attachmentId, votes } = req.body;
+        const userId = (req as any).user?.userId;
+
+        if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+        if (!attachmentId || votes === undefined) return res.status(400).json({ error: 'Attachment ID and votes required' });
+
+        const updatedMessage = await communityService.voteOnPoll(userId, messageId, attachmentId, votes);
+        res.json(updatedMessage);
+    } catch (error) {
+        logger.error('Error voting on poll', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// POST /api/community/messages/:messageId/list-entry
+router.post('/messages/:messageId/list-entry', async (req: Request, res: Response) => {
+    try {
+        const { messageId } = req.params;
+        const { attachmentId, data } = req.body;
+        const userId = (req as any).user?.userId;
+
+        if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+        if (!attachmentId || !data) return res.status(400).json({ error: 'Attachment ID and entry data required' });
+
+        const updatedMessage = await communityService.addListEntry(userId, messageId, attachmentId, data);
+        res.json(updatedMessage);
+    } catch (error) {
+        logger.error('Error adding list entry', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
 // PATCH /api/community/messages/:messageId
 router.patch('/messages/:messageId', async (req: Request, res: Response) => {
     try {
         const { messageId } = req.params;
-        const { content } = req.body;
+        const { content, attachments } = req.body;
         const userId = (req as any).user?.userId;
 
         if (!userId) return res.status(401).json({ error: 'Unauthorized' });
-        if (!content) return res.status(400).json({ error: 'Content is required' });
+        if (!content && !attachments) return res.status(400).json({ error: 'Content or attachments required' });
 
         // Validate user is author
 
@@ -179,7 +215,7 @@ router.patch('/messages/:messageId', async (req: Request, res: Response) => {
         if (!message) return res.status(404).json({ error: 'Message not found' });
         if (message.authorId !== userId) return res.status(403).json({ error: 'Forbidden' });
 
-        const updated = await communityService.updateMessage(messageId, content);
+        const updated = await communityService.updateMessage(messageId, content ?? message.content, attachments);
         res.json(updated);
     } catch (error) {
         logger.error('Error updating message', error);

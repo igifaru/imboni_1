@@ -87,7 +87,8 @@ export class CommunityService {
                 channelId: dto.channelId,
                 authorId: dto.authorId,
                 isOfficial: dto.isOfficial || false,
-                replyToId: dto.replyToId
+                replyToId: dto.replyToId,
+                attachments: dto.attachments ?? []
             },
             include: {
                 author: {
@@ -529,10 +530,13 @@ export class CommunityService {
     /**
      * Update a message content
      */
-    async updateMessage(messageId: string, content: string) {
+    async updateMessage(messageId: string, content: string, attachments?: any[]) {
         return prisma.channelMessage.update({
             where: { id: messageId },
-            data: { content },
+            data: {
+                content,
+                ...(attachments ? { attachments } : {})
+            },
             include: {
                 author: {
                     select: { id: true, name: true, role: true, profilePicture: true }
@@ -574,6 +578,76 @@ export class CommunityService {
         return prisma.channelMessage.delete({
             where: { id: messageId }
         });
+    }
+
+    /**
+     * Vote on a poll attachment
+     */
+    async voteOnPoll(userId: string, messageId: string, attachmentId: string, votes: number | number[]) {
+        const message = await prisma.channelMessage.findUnique({ where: { id: messageId } });
+        if (!message) throw new Error('Message not found');
+
+        const attachments = message.attachments as any[];
+        const attachmentIndex = attachments.findIndex((a: any) => a.id === attachmentId);
+
+        if (attachmentIndex === -1) throw new Error('Attachment not found');
+
+        const attachment = attachments[attachmentIndex];
+        if (attachment.type !== 'poll') throw new Error('Attachment is not a poll');
+
+        // Update metadata
+        const metadata = attachment.metadata || {};
+        const currentVotes = metadata.votes || {};
+
+        // Update user vote
+        if (Array.isArray(votes) && votes.length === 0) {
+            delete currentVotes[userId];
+        } else {
+            currentVotes[userId] = votes;
+        }
+
+        metadata.votes = currentVotes;
+        attachment.metadata = metadata;
+        attachments[attachmentIndex] = attachment;
+
+        return this.updateMessage(messageId, message.content, attachments);
+    }
+
+    /**
+     * Add entry to collaborative list attachment
+     */
+    async addListEntry(userId: string, messageId: string, attachmentId: string, entryData: any) {
+        const message = await prisma.channelMessage.findUnique({ where: { id: messageId } });
+        if (!message) throw new Error('Message not found');
+
+        const attachments = message.attachments as any[];
+        const attachmentIndex = attachments.findIndex((a: any) => a.id === attachmentId);
+
+        if (attachmentIndex === -1) throw new Error('Attachment not found');
+
+        const attachment = attachments[attachmentIndex];
+        if (attachment.type !== 'collaborativeList') throw new Error('Attachment is not a list');
+
+        // Update metadata
+        const metadata = attachment.metadata || {};
+        const entries = metadata.entries || [];
+
+        // Check if user already added? Or allow multiple? Usually allow multiple for list.
+        // Add timestamp and user info
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+
+        entries.push({
+            userId,
+            userName: user?.name || 'Unknown',
+            data: entryData,
+            timestamp: new Date().toISOString()
+        });
+
+        metadata.entries = entries;
+        attachment.metadata = metadata;
+        attachments[attachmentIndex] = attachment;
+
+        return this.updateMessage(messageId, message.content, attachments);
     }
 
     // Traverse up the tree
