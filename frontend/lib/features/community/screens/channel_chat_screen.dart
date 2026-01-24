@@ -562,13 +562,24 @@ class _ChannelChatScreenState extends State<ChannelChatScreen> {
     final editController = TextEditingController(text: message.content);
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        final dialogWidth = screenWidth > 650 ? 600.0 : screenWidth * 0.9;
+        
+        return AlertDialog(
         title: const Text('Edit Message'),
-        content: TextField(
-          controller: editController,
-          autofocus: true,
-          decoration: const InputDecoration(border: OutlineInputBorder()),
-          maxLines: 3,
+        content: SizedBox(
+          width: dialogWidth,
+          child: TextField(
+            controller: editController,
+            autofocus: true,
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              hintText: 'Enter message...',
+            ),
+            minLines: 5,
+            maxLines: 5, // Fixed height to prevent jumping
+          ),
         ),
         actions: [
           TextButton(
@@ -586,7 +597,8 @@ class _ChannelChatScreenState extends State<ChannelChatScreen> {
             child: const Text('Save'),
           ),
         ],
-      ),
+      );
+     },
     );
   }
 
