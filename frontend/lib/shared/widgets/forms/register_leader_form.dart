@@ -380,15 +380,16 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
                  icon: Icons.phone_outlined,
                  theme: theme,
                  keyboardType: TextInputType.phone,
-                 // Allow digits only (user can type 07... or 250...)
-                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                 // Allow digits only (user can type 07...)
+                 inputFormatters: [
+                   FilteringTextInputFormatter.digitsOnly,
+                   LengthLimitingTextInputFormatter(10),
+                 ],
                  validator: (v) {
                     if (v == null || v.isEmpty) return l10n.phoneRequired;
                     final clean = v.replaceAll(RegExp(r'\s+'), '');
-                    // Matches 07... (10 digits) or 250... (12 digits)
-                    // (?:250|0) - Starts with 250 or 0
-                    // 7\d{8} - followed by 7 and 8 digits
-                    if (!RegExp(r'^(?:250|0)(7\d{8})$').hasMatch(clean)) {
+                    // Matches 07... (10 digits)
+                    if (!RegExp(r'^07\d{8}$').hasMatch(clean)) {
                       return l10n.invalidPhone;
                     }
                     return null;
