@@ -112,7 +112,7 @@ import { escalationScheduler } from '../../escalation-service/src/schedulers/esc
 // Start server
 const PORT = config.ports.apiGateway;
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     logger.info(`🚀 API Gateway running on port ${PORT}`);
     logger.info(`   Environment: ${config.nodeEnv}`);
 

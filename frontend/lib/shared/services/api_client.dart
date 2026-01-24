@@ -19,14 +19,14 @@ class ApiClient {
     }
     
     // For Android Emulator: use 10.0.2.2 (standard loopback)
-    if (Platform.isAndroid) {
-       return 'http://10.0.2.2:3000/api'; 
-    }
+   if (Platform.isAndroid || Platform.isIOS) {
+   return 'http://172.31.112.90:3000/api'; 
+   }
     
     // For iOS / fallback: use localhost (though iOS simulator uses localhost, physical needs IP)
     return 'http://localhost:3000/api';
   }
-  
+   
   static String get baseUrl => _baseUrl;
   static String get storageUrl => _baseUrl.replaceAll('/api', '');
   
