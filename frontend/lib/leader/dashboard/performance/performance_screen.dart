@@ -173,7 +173,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
   }
 
   Widget _buildMetricsGrid(ThemeData theme, double width, PerformanceMetrics metrics, bool isDark, AppLocalizations l10n) {
-    final formattedAvgTime = metrics.avgResponseTimeHours.toStringAsFixed(1);
+    final formattedAvgTime = metrics.avgResponseTimeHours.toStringAsFixed(2);
     
     if (width < 600) {
         return Column(
@@ -182,7 +182,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                 const SizedBox(height: 16),
                 _buildMetricCard(theme, l10n.avgResponseTime, '${formattedAvgTime}h', '${l10n.target}: < 4h', Icons.timer_outlined, ImboniColors.info, isDark),
                 const SizedBox(height: 16),
-                _buildMetricCard(theme, l10n.escalationRate, '${metrics.escalationRate}%', l10n.failingResolution, Icons.arrow_upward_rounded, ImboniColors.warning, isDark),
+                _buildMetricCard(theme, l10n.escalationRate, '${metrics.escalationRate.toStringAsFixed(1)}%', l10n.failingResolution, Icons.arrow_upward_rounded, ImboniColors.warning, isDark),
                 const SizedBox(height: 16),
                 _buildMetricCard(theme, l10n.overdueCases, '${metrics.overdueCases}', l10n.exceededSla, Icons.notification_important_outlined, ImboniColors.error, isDark),
             ],
@@ -195,7 +195,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
         const SizedBox(width: 16),
         Expanded(child: _buildMetricCard(theme, l10n.avgResponseTime, '${formattedAvgTime}h', '${l10n.target}: < 4h', Icons.timer_outlined, ImboniColors.info, isDark)),
         const SizedBox(width: 16),
-        Expanded(child: _buildMetricCard(theme, l10n.escalationRate, '${metrics.escalationRate}%', l10n.failingResolution, Icons.arrow_upward_rounded, ImboniColors.warning, isDark)),
+        Expanded(child: _buildMetricCard(theme, l10n.escalationRate, '${metrics.escalationRate.toStringAsFixed(1)}%', l10n.failingResolution, Icons.arrow_upward_rounded, ImboniColors.warning, isDark)),
         const SizedBox(width: 16),
         Expanded(child: _buildMetricCard(theme, l10n.overdueCases, '${metrics.overdueCases}', l10n.exceededSla, Icons.notification_important_outlined, ImboniColors.error, isDark)),
       ],
@@ -440,7 +440,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                                       Expanded(flex: 3, child: Text(unit.unitName, style: theme.textTheme.bodyMedium)),
                                       Expanded(flex: 2, child: Text('${unit.totalCases}', style: theme.textTheme.bodyMedium)),
                                       Expanded(flex: 2, child: _buildProgressBar(theme, unit.resolutionRate)),
-                                      Expanded(flex: 2, child: Text('${unit.avgResponseTimeHours}h', style: theme.textTheme.bodyMedium)),
+                                      Expanded(flex: 2, child: Text('${unit.avgResponseTimeHours.toStringAsFixed(2)}h', style: theme.textTheme.bodyMedium)),
                                       Expanded(flex: 2, child: _buildStatusBadge(theme, unit.status)),
                                   ],
                               ),
