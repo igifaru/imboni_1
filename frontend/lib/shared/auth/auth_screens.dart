@@ -266,23 +266,31 @@ class _LoginScreenState extends State<LoginScreen> {
           keyboardType: TextInputType.emailAddress,
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Hagarika'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (emailController.text.isNotEmpty) {
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Ubutumwa bwo gusubiza ijambo bwoherejwe'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-              }
-            },
-            child: const Text('Ohereza'),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Hagarika'),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: () {
+                  if (emailController.text.isNotEmpty) {
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Ubutumwa bwo gusubiza ijambo bwoherejwe'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(minimumSize: const Size(100, 40)), // Reset infinite width
+                child: const Text('Ohereza'),
+              ),
+            ],
           ),
         ],
       ),
