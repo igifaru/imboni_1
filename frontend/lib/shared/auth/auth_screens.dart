@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../theme/colors.dart';
 import '../widgets/loading_overlay.dart';
 import '../widgets/location_selector.dart';
@@ -413,7 +414,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
               colorScheme: colorScheme,
               theme: theme,
               keyboardType: TextInputType.phone,
-              validator: (v) => (v == null || v.length < 10) ? 'Nimero ya telefoni ntabwo yuzuye' : null,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(10),
+              ],
+              validator: (v) {
+                if (v == null || v.isEmpty) return 'Nimero ya telefoni irakenewe';
+                if (!RegExp(r'^07\d{8}$').hasMatch(v)) return 'Nimero ya telefoni ntabwo yuzuye (digits 10)';
+                return null;
+              },
             ),
             const SizedBox(height: 20),
 
@@ -444,8 +453,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
               colorScheme: colorScheme,
               theme: theme,
               keyboardType: TextInputType.number,
-              maxLength: 16,
-              validator: (v) => (v == null || v.length < 16) ? 'Indangamuntu igomba kuba imibare 16' : null,
+              inputFormatters: [
+                 FilteringTextInputFormatter.digitsOnly,
+                 LengthLimitingTextInputFormatter(16),
+              ],
+              validator: (v) => (v == null || v.length != 16) ? 'Indangamuntu igomba kuba imibare 16' : null,
             ),
             const SizedBox(height: 20),
 
@@ -532,6 +544,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     bool obscureText = false,
     int? maxLength,
     String? Function(String?)? validator,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return TextFormField(
       controller: controller,
@@ -539,6 +552,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       textCapitalization: textCapitalization,
       obscureText: obscureText,
       maxLength: maxLength,
+      inputFormatters: inputFormatters,
       style: theme.textTheme.bodyLarge,
       decoration: InputDecoration(
         labelText: label,
