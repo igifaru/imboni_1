@@ -10,8 +10,8 @@ class ApiClient {
     const envUrl = String.fromEnvironment('API_URL');
     if (envUrl.isNotEmpty) return envUrl;
 
-    // For Web: use localhost
-    if (kIsWeb) return 'http://localhost:3000/api';
+    // For Web: use live backend
+    if (kIsWeb) return 'https://imboni-pscv.onrender.com/api';
     
     // For Desktop (Linux, macOS, Windows): use localhost since both are on same machine
     if (Platform.isLinux || Platform.isMacOS || Platform.isWindows) {
