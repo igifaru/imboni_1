@@ -247,10 +247,33 @@ class _DashboardHomeState extends State<_DashboardHome> {
   String? _focusCell;
   String? _focusVillage;
   
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _dataSectionKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
     _loadDashboardData();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToData() {
+    // Only scroll if we have a valid key and it's not desktop (desktop has side-by-side)
+    if (_dataSectionKey.currentContext != null && !Responsive.isDesktop(context)) {
+      Future.delayed(const Duration(milliseconds: 300), () {
+         Scrollable.ensureVisible(
+           _dataSectionKey.currentContext!, 
+           duration: const Duration(milliseconds: 500), 
+           curve: Curves.easeInOut,
+           alignment: 0.0, // Top of the widget
+         );
+      });
+    }
   }
 
   // ... (keep _casesByDistrict same)
@@ -424,6 +447,7 @@ class _DashboardHomeState extends State<_DashboardHome> {
       _selectedLocationName = unitName;
     });
     _loadDashboardData();
+    _scrollToData();
   }
 
   void _jumpToBreadcrumb(int index) {
@@ -516,6 +540,7 @@ class _DashboardHomeState extends State<_DashboardHome> {
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : SingleChildScrollView(
+                controller: _scrollController,
                 padding: EdgeInsets.all(padding),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(AppLocalizations.of(context).dashboard, style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold)),
@@ -583,16 +608,22 @@ class _DashboardHomeState extends State<_DashboardHome> {
                       allowFullMapToggle: _currentLevel != 'NATIONAL' && _currentLevel != 'PROVINCE',
                     ),
                     const SizedBox(height: 24),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8.0),
-                      child: _buildBreadcrumbs(theme),
-                    ),
-                    DistrictCasesWidget(
-                      subUnitStats: _metrics?.subUnitBreakdown ?? [],
-                      isDashboardLoading: _isLoading,
-                      currentLevel: _metrics?.currentLevel ?? widget.currentLevel ?? '',
-                      onUnitSelected: _handleUnitSelected,
-                      currentMetrics: _metrics, // Pass metrics for mobile too
+                    Column(
+                      key: _dataSectionKey, // Key for auto-scroll target
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                          child: _buildBreadcrumbs(theme),
+                        ),
+                        DistrictCasesWidget(
+                          subUnitStats: _metrics?.subUnitBreakdown ?? [],
+                          isDashboardLoading: _isLoading,
+                          currentLevel: _metrics?.currentLevel ?? widget.currentLevel ?? '',
+                          onUnitSelected: _handleUnitSelected,
+                          currentMetrics: _metrics, // Pass metrics for mobile too
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 16),
                     // Case search and table for mobile

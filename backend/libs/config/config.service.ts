@@ -23,7 +23,7 @@ export const config = {
 
     // Service Ports
     ports: {
-        apiGateway: parseInt(process.env.API_GATEWAY_PORT || '3000'),
+        apiGateway: parseInt(process.env.PORT || process.env.API_GATEWAY_PORT || '3000'),
         caseService: parseInt(process.env.CASE_SERVICE_PORT || '3001'),
         escalationService: parseInt(process.env.ESCALATION_SERVICE_PORT || '3002'),
         notificationService: parseInt(process.env.NOTIFICATION_SERVICE_PORT || '3003'),
