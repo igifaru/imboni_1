@@ -39,6 +39,9 @@ export class CreateMessageDto {
     @IsString()
     @IsOptional()
     replyToId?: string;
+
+    @IsOptional()
+    attachments?: any[];
 }
 
 export class JoinChannelDto {
@@ -57,6 +60,7 @@ export const CreateMessageSchema = z.object({
     content: z.string().min(1),
     channelId: z.string().min(1), // Changed from uuid() to accept CUIDs
     isOfficial: z.boolean().optional(),
-    replyToId: z.string().optional()
+    replyToId: z.string().optional(),
+    attachments: z.array(z.any()).optional()
 });
 

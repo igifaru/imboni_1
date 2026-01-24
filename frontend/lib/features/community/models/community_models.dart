@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+import 'package:flutter/material.dart';
 import 'package:imboni/shared/models/models.dart';
 
 enum ChannelType {
@@ -79,6 +81,151 @@ class MessageReaction {
   }
 }
 
+enum AttachmentType { image, video, document, poll, collaborativeList }
+
+class CommunityAttachment {
+  final String id;
+  final AttachmentType type;
+  final String path; // Local path or URL
+  final String name;
+  final int size;
+  final Uint8List? bytes; // For web or unsaved uploads
+  final Map<String, dynamic>? metadata; // Extra data (e.g. for Polls)
+
+  const CommunityAttachment({
+    required this.id,
+    required this.type,
+    required this.path,
+    required this.name,
+    required this.size,
+    this.bytes,
+    this.metadata,
+  });
+
+  factory CommunityAttachment.fromJson(Map<String, dynamic> json) {
+    return CommunityAttachment(
+      id: json['id'] as String,
+      type: AttachmentType.values.firstWhere(
+        (e) => e.toString() == 'AttachmentType.${json['type']}', 
+        orElse: () => AttachmentType.document
+      ),
+      path: json['url'] ?? json['path'] ?? '',
+      name: json['name'] ?? 'Attachment',
+      size: json['size'] ?? 0,
+      metadata: json['metadata'],
+    );
+  }
+}
+
+class ListEntry {
+  final String userId;
+  final String userName; // Denormalized for ease
+  final Map<String, String> data; // key: column name, value: cell value
+  final DateTime timestamp;
+
+  const ListEntry({
+    required this.userId,
+    required this.userName,
+    required this.data,
+    required this.timestamp,
+  });
+
+  factory ListEntry.fromJson(Map<String, dynamic> json) {
+    return ListEntry(
+      userId: json['userId'] ?? 'unknown',
+      userName: json['userName'] ?? 'User',
+      data: Map<String, String>.from(json['data'] ?? {}),
+      timestamp: json['timestamp'] != null 
+          ? DateTime.tryParse(json['timestamp']) ?? DateTime.now() 
+          : DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'userId': userId,
+    'userName': userName,
+    'data': data,
+    'timestamp': timestamp.toIso8601String(),
+  };
+}
+
+class CollaborativeList {
+  final String title;
+  final List<String> columns;
+  final List<ListEntry> entries;
+
+  const CollaborativeList({
+    required this.title,
+    required this.columns,
+    this.entries = const [],
+  });
+
+  factory CollaborativeList.fromJson(Map<String, dynamic> json) {
+    return CollaborativeList(
+      title: json['title'] ?? 'Untitled List',
+      columns: List<String>.from(json['columns'] ?? ['Column 1']),
+      entries: (json['entries'] as List?)
+          ?.map((e) => ListEntry.fromJson(e))
+          .toList() ?? [],
+    );
+  }
+  
+  Map<String, dynamic> toJson() => {
+    'title': title,
+    'columns': columns,
+    'entries': entries.map((e) => e.toJson()).toList(),
+  };
+}
+
+class PollOption {
+  final String id;
+  final String text;
+  final int voteCount;
+  final bool userVoted;
+
+  const PollOption({
+    required this.id,
+    required this.text,
+    this.voteCount = 0,
+    this.userVoted = false,
+  });
+
+  factory PollOption.fromJson(Map<String, dynamic> json) {
+    return PollOption(
+      id: json['id'],
+      text: json['text'],
+      voteCount: json['voteCount'] ?? 0,
+      userVoted: json['userVoted'] ?? false,
+    );
+  }
+}
+
+class Poll {
+  final String question;
+  final List<PollOption> options;
+  final bool allowMultiple;
+  final DateTime? expiresAt;
+  final int totalVotes;
+
+  const Poll({
+    required this.question,
+    required this.options,
+    this.allowMultiple = false,
+    this.expiresAt,
+    this.totalVotes = 0,
+  });
+
+  factory Poll.fromJson(Map<String, dynamic> json) {
+    return Poll(
+      question: json['question'],
+      options: (json['options'] as List).map((e) => PollOption.fromJson(e)).toList(),
+      allowMultiple: json['allowMultiple'] ?? false,
+      expiresAt: json['expiresAt'] != null ? DateTime.parse(json['expiresAt']) : null,
+      totalVotes: json['totalVotes'] ?? 0,
+    );
+  }
+}
+
 class ChannelMessage {
   final String id;
   final String content;
@@ -87,7 +234,7 @@ class ChannelMessage {
   final UserModel? author;
   final bool isOfficial;
   final DateTime createdAt;
-  final dynamic attachments;
+  final List<CommunityAttachment> attachments;
   final List<MessageReaction> reactions;
   final String? replyToId;
   final ReplyMessage? replyTo;
@@ -101,7 +248,7 @@ class ChannelMessage {
     this.author,
     this.isOfficial = false,
     required this.createdAt,
-    this.attachments,
+    this.attachments = const [],
     this.reactions = const [],
     this.replyToId,
     this.replyTo,
@@ -117,7 +264,9 @@ class ChannelMessage {
       author: json['author'] != null ? UserModel.fromJson(json['author']) : null,
       isOfficial: json['isOfficial'] as bool? ?? false,
       createdAt: DateTime.parse(json['createdAt'] as String),
-      attachments: json['attachments'],
+      attachments: (json['attachments'] as List<dynamic>?)
+          ?.map((e) => CommunityAttachment.fromJson(e))
+          .toList() ?? [],
       reactions: (json['reactions'] as List<dynamic>?)
           ?.map((e) => MessageReaction.fromJson(e))
           .toList() ?? [],
@@ -132,6 +281,7 @@ class ChannelMessage {
     List<MessageReaction>? reactions,
     bool? isPinned,
     String? content,
+    List<CommunityAttachment>? attachments,
   }) {
     return ChannelMessage(
       id: id,
@@ -141,7 +291,7 @@ class ChannelMessage {
       author: author,
       isOfficial: isOfficial,
       createdAt: createdAt,
-      attachments: attachments,
+      attachments: attachments ?? this.attachments,
       reactions: reactions ?? this.reactions,
       isPinned: isPinned ?? this.isPinned,
       replyToId: replyToId,
