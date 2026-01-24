@@ -7,6 +7,10 @@ import '../providers/community_provider.dart';
 import '../models/community_models.dart';
 import '../widgets/message_actions_widget.dart';
 import '../widgets/chat_message_bubble.dart';
+import '../widgets/attachments/attachment_picker_sheet.dart';
+import '../widgets/attachments/poll_creator_dialog.dart';
+import '../widgets/attachments/list_creator_dialog.dart';
+import '../widgets/attachments/attachment_preview_list.dart';
 import '../utils/community_utils.dart';
 
 
@@ -33,7 +37,9 @@ class _ChannelChatScreenState extends State<ChannelChatScreen> {
   final LayerLink _layerLink = LayerLink();
   OverlayEntry? _mentionOverlay;
   String? _mentionQuery;
+
   ChannelMessage? _replyingToMessage;
+  List<CommunityAttachment> _attachments = [];
 
   @override
   void initState() {
@@ -211,10 +217,12 @@ class _ChannelChatScreenState extends State<ChannelChatScreen> {
       widget.channel.id, 
       content,
       replyToId: _replyingToMessage?.id,
+      attachments: _attachments,
     );
     
     setState(() {
       _replyingToMessage = null;
+      _attachments.clear();
     });
 
     if (success) {
@@ -478,13 +486,18 @@ class _ChannelChatScreenState extends State<ChannelChatScreen> {
                   ],
                 ),
               ),
+            if (_attachments.isNotEmpty)
+              AttachmentPreviewList(
+                attachments: _attachments,
+                onRemove: (att) => setState(() => _attachments.remove(att)),
+              ),
             Padding(
               padding: const EdgeInsets.all(12),
               child: Row(
                 children: [
                   IconButton(
                     icon: const Icon(Icons.add_circle_outline), 
-                    onPressed: () {}, // Attachments
+                    onPressed: _showAttachmentPicker, // Attachments
                     color: isDark ? colorScheme.onSurface.withValues(alpha: 0.7) : Colors.grey,
                   ),
                   Expanded(
@@ -627,20 +640,14 @@ class _ChannelChatScreenState extends State<ChannelChatScreen> {
   }
 
 
-  // Scroll to a specific message
   void _scrollToMessage(String messageId) {
+    // ... existing logic ...
     final messages = context.read<CommunityProvider>().getMessages(widget.channel.id);
     final index = messages.indexWhere((m) => m.id == messageId);
     
     if (index != -1) {
-      // Calculate render index (reversed logic matches ListView builder)
       final renderIndex = messages.length - 1 - index;
-      
-      // Estimate position (assuming ~70px per message on average)
-      // This is a heuristic since we don't have exact heights
       final double offset = renderIndex * 70.0; 
-      
-      // Clamp to extents
       final double target = offset.clamp(
           _scrollController.position.minScrollExtent, 
           _scrollController.position.maxScrollExtent
@@ -655,6 +662,49 @@ class _ChannelChatScreenState extends State<ChannelChatScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Message not found (might be older)')),
       );
+    }
+  }
+
+  void _showAttachmentPicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => AttachmentPickerSheet(
+        onAttachmentSelected: (attachment) {
+           setState(() {
+             _attachments.add(attachment);
+           });
+        },
+        onPollRequested: _showPollCreator,
+        onListRequested: _showListCreator,
+      ),
+    );
+  }
+
+  void _showPollCreator() async {
+    final result = await showDialog(
+      context: context,
+      builder: (context) => const PollCreatorDialog(),
+    );
+
+    if (result != null && result is CommunityAttachment) {
+      setState(() {
+        _attachments.add(result);
+      });
+    }
+  }
+
+  void _showListCreator() async {
+    final result = await showDialog(
+      context: context,
+      builder: (context) => const ListCreatorDialog(),
+    );
+
+    if (result != null && result is CommunityAttachment) {
+      setState(() {
+         _attachments.add(result);
+      });
     }
   }
 
