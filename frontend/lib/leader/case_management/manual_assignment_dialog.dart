@@ -263,8 +263,9 @@ class _ManualAssignmentDialogState extends State<ManualAssignmentDialog> {
                                 style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
                             const SizedBox(height: 8),
                             DropdownButtonFormField<String>(
+                              isExpanded: true,
                               // value: _selectedLeaderId, // Deprecated, using initialValue
-              initialValue: _selectedLeaderId,
+                              initialValue: _selectedLeaderId,
                               dropdownColor: theme.colorScheme.surfaceContainerHighest,
                               decoration: InputDecoration(
                                 hintText: l10n.chooseLeaderHint,

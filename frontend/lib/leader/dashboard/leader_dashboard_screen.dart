@@ -223,6 +223,16 @@ class _DashboardHomeState extends State<_DashboardHome> {
 
   // ... (keep _casesByDistrict same)
 
+  String _getInitials() {
+    final user = authService.currentUser;
+    final name = user?.name;
+    if (name == null || name.isEmpty) return 'U';
+    final names = name.trim().split(' ');
+    if (names.isEmpty) return 'U';
+    if (names.length == 1) return names[0][0].toUpperCase();
+    return '${names[0][0]}${names[names.length - 1][0]}'.toUpperCase();
+  }
+
   Future<void> _fetchLevel() async {
       try {
         final context = await adminService.getMyJurisdiction();
@@ -589,15 +599,17 @@ class _DashboardHomeState extends State<_DashboardHome> {
         ),
       ),
       actions: [
-        IconButton(icon: Icon(Icons.refresh, color: theme.colorScheme.onSurface), onPressed: _loadDashboardData),
+        // Refresh is handled by Pull-to-Refresh on body
         Container(
-          margin: const EdgeInsets.symmetric(horizontal: 12),
-          width: 40, height: 40,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(colors: [ImboniColors.primary, ImboniColors.secondary]),
-            borderRadius: BorderRadius.circular(12),
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          child: CircleAvatar(
+            radius: 20,
+            backgroundColor: ImboniColors.primary,
+            child: Text(
+              _getInitials(),
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
           ),
-          child: const Center(child: Text('AD', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
         ),
       ],
     );
@@ -614,31 +626,49 @@ class _DashboardHomeState extends State<_DashboardHome> {
       widget.onNavigateToTab?.call(3);
     }
 
-    return Row(children: [
-      Expanded(child: StatCard(
+    final isMobile = !Responsive.isDesktop(context);
+    
+    final cards = [
+      StatCard(
         icon: Icons.warning_amber_rounded, 
         iconColor: ImboniColors.urgencyEmergency, 
         label: 'Urgent (+24h):', 
         value: '$urgentCount',
         onTap: navigateToCases,
-      )),
-      const SizedBox(width: 24),
-      Expanded(child: StatCard(
+      ),
+      StatCard(
         icon: Icons.cases_outlined, 
         iconColor: ImboniColors.info, 
         label: 'Active Cases:', 
         value: '$activeCount',
         onTap: navigateToCases,
-      )),
-      const SizedBox(width: 24),
-      Expanded(child: StatCard(
+      ),
+      StatCard(
         icon: Icons.trending_up, 
         iconColor: ImboniColors.warning, 
         label: 'Escalated:', 
         value: '$escalatedCount',
         onTap: navigateToCases,
-      )),
-    ]);
+      ),
+    ];
+
+    if (isMobile) {
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        clipBehavior: Clip.none,
+        child: Row(
+          children: cards.map((c) => Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: SizedBox(width: 140, child: c), // Fixed width for consistent look on mobile
+          )).toList(),
+        ),
+      );
+    }
+
+    return Row(children: cards.map((c) => Expanded(child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: c,
+    ))).toList());
   }
 
   Widget _buildSearchAndTable(ThemeData theme, bool isDark) {
