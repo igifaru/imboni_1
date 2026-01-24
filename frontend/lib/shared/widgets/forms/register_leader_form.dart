@@ -360,15 +360,39 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
                 controller: _nationalIdController,
                 icon: Icons.badge_outlined,
                 theme: theme,
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(16),
+                ],
+                validator: (v) {
+                   if (v == null || v.isEmpty) return l10n.nidRequired;
+                   if (v.length != 16) return l10n.nidLengthError;
+                   return null;
+                },
               ),
 
               const SizedBox(height: 16),
               _buildLabel(l10n.phoneNumber),
               _buildTextField(
-                 hint: '+250 7X XXX XXXX',
+                 hint: '0780000000',
                  controller: _phoneController,
                  icon: Icons.phone_outlined,
                  theme: theme,
+                 keyboardType: TextInputType.phone,
+                 // Allow digits only (user can type 07... or 250...)
+                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                 validator: (v) {
+                    if (v == null || v.isEmpty) return l10n.phoneRequired;
+                    final clean = v.replaceAll(RegExp(r'\s+'), '');
+                    // Matches 07... (10 digits) or 250... (12 digits)
+                    // (?:250|0) - Starts with 250 or 0
+                    // 7\d{8} - followed by 7 and 8 digits
+                    if (!RegExp(r'^(?:250|0)(7\d{8})$').hasMatch(clean)) {
+                      return l10n.invalidPhone;
+                    }
+                    return null;
+                 },
               ),
 
               const SizedBox(height: 16),
@@ -592,11 +616,15 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
     String? Function(String?)? validator,
     required ThemeData theme,
     Widget? suffixIcon,
+    TextInputType? keyboardType,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return TextFormField(
       controller: controller,
       obscureText: obscureText,
       validator: validator,
+      keyboardType: keyboardType,
+      inputFormatters: inputFormatters,
       decoration: InputDecoration(
         hintText: hint,
         prefixIcon: Icon(icon, size: 20),

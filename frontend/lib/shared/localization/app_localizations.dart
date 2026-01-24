@@ -98,6 +98,10 @@ class AppLocalizations {
   String get selectLevel => get('select_level');
   String get hintRoleSelect => get('hint_role_select');
   String get invalidEmail => get('invalid_email');
+  String get nidRequired => get('nid_required');
+  String get nidLengthError => get('nid_length_error');
+  String get phoneRequired => get('phone_required');
+  String get invalidPhone => get('invalid_phone');
 
   // Settings Screen
   String get settings => get('settings');
@@ -488,6 +492,10 @@ const Map<String, Map<String, String>> _translations = {
     'select_level': 'Hitamo',
     'hint_role_select': 'Hitamo Urwego (urugero: Umuyobozi w\'Umudugudu)',
     'invalid_email': 'Imeli ntabwo ariyo',
+    'nid_required': 'Indangamuntu irakenewe',
+    'nid_length_error': 'Igomba kuba imibare 16',
+    'phone_required': 'Telefoni irakenewe',
+    'invalid_phone': 'Nimero ntabwo ariyo (urugero: 078...)',
     // User Management RW
     'user_management': 'Imicungire y\'Abakoresha',
     'search_users_hint': 'Shakisha izina, imeri, cyangwa inshingano...',
@@ -831,6 +839,10 @@ const Map<String, Map<String, String>> _translations = {
     'select_level': 'Select',
     'hint_role_select': 'Select Role (e.g., Village Leader)',
     'invalid_email': 'Invalid email address',
+    'nid_required': 'N.I.D is Required',
+    'nid_length_error': 'Must be exactly 16 digits',
+    'phone_required': 'Phone number is Required',
+    'invalid_phone': 'Invalid Rwanda number (e.g. 078...)',
     // User Management EN
     'user_management': 'User Management',
     'search_users_hint': 'Search by name, email, or role...',
