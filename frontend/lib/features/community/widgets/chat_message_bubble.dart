@@ -7,6 +7,7 @@ import '../models/community_models.dart';
 import '../utils/community_utils.dart';
 import '../widgets/message_actions_widget.dart';
 import '../widgets/reaction_details_dialog.dart';
+import '../widgets/attachments/message_attachment_list.dart';
 
 class ChatMessageBubble extends StatelessWidget {
   final ChannelMessage message;
@@ -127,9 +128,9 @@ class ChatMessageBubble extends StatelessWidget {
                             ? Border.all(color: ImboniColors.primary.withValues(alpha: 0.3))
                             : null,
                       ),
-                      child: IntrinsicWidth(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min, // Shrink to children vertically
                           children: [
                               // Reply Preview Section
                               if (message.replyTo != null)
@@ -192,6 +193,20 @@ class ChatMessageBubble extends StatelessWidget {
                                 ),
 
                             _buildRichMessage(context, message.content, isOwnMessage),
+                            
+                            if (message.attachments.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8.0),
+                                child: MessageAttachmentList(
+                                  attachments: message.attachments,
+                                  isOwnMessage: isOwnMessage,
+                                  channelId: channelId,
+                                  messageId: message.id,
+                                  currentUserId: currentUserId ?? 'unknown',
+                                  currentUserName: context.read<CommunityProvider>().getCurrentUserName() ?? 'User',
+                                ),
+                              ),
+
                             const SizedBox(height: 2),
                             Row(
                               mainAxisSize: MainAxisSize.min,
@@ -218,7 +233,6 @@ class ChatMessageBubble extends StatelessWidget {
                             ),
                           ],
                         ),
-                      ),
                     ),
                     
                     // Reactions Display
