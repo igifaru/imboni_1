@@ -37,7 +37,7 @@ export async function seedPftcvData() {
         create: {
             email: leaderEmail,
             name: 'Jean Claude (Leader)',
-            phone: '0788123456',
+            phone: '0788123999',
             password: leaderPassword,
             role: 'LEADER',
             status: 'ACTIVE',
