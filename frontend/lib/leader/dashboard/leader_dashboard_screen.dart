@@ -88,18 +88,50 @@ class _LeaderDashboardScreenState extends State<LeaderDashboardScreen> {
 
   Widget _buildMobile(List<Widget> screens, bool showRegister) => Scaffold(
     body: screens[_currentIndex],
-    bottomNavigationBar: NavigationBar(
-      selectedIndex: _currentIndex,
-      onDestinationSelected: (i) => setState(() => _currentIndex = i),
-      destinations: [
+    floatingActionButton: showRegister ? FloatingActionButton(
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => Scaffold(
+              appBar: AppBar(title: Text(AppLocalizations.of(context).registerNewLeader)),
+              body: const RegisterLeaderForm(),
+            ),
+          ),
+        );
+      },
+      child: const Icon(Icons.person_add),
+    ) : null,
+    bottomNavigationBar: NavigationBarTheme(
+      data: NavigationBarThemeData(
+        indicatorColor: ImboniColors.primary.withOpacity(0.15),
+        iconTheme: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.selected)) {
+            return const IconThemeData(color: ImboniColors.primary);
+          }
+          return IconThemeData(color: Theme.of(context).colorScheme.onSurfaceVariant);
+        }),
+        labelTextStyle: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.selected)) {
+            return const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: ImboniColors.primary);
+          }
+          return TextStyle(fontSize: 12, fontWeight: FontWeight.normal, color: Theme.of(context).colorScheme.onSurfaceVariant);
+        }),
+      ),
+      child: NavigationBar(
+        selectedIndex: _currentIndex,
+        onDestinationSelected: (i) => setState(() => _currentIndex = i),
+        labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
+        destinations: [
         NavigationDestination(icon: const Icon(Icons.dashboard_outlined), selectedIcon: const Icon(Icons.dashboard), label: AppLocalizations.of(context).dashboard),
         NavigationDestination(icon: const Icon(Icons.people_outline), selectedIcon: const Icon(Icons.people), label: AppLocalizations.of(context).communityTitle),
         NavigationDestination(icon: const Icon(Icons.account_balance_outlined), selectedIcon: const Icon(Icons.account_balance), label: AppLocalizations.of(context).publicFunds),
         NavigationDestination(icon: const Icon(Icons.folder_outlined), selectedIcon: const Icon(Icons.folder), label: AppLocalizations.of(context).myCases),
         NavigationDestination(icon: const Icon(Icons.warning_amber_outlined), selectedIcon: const Icon(Icons.warning_amber), label: AppLocalizations.of(context).alerts),
         NavigationDestination(icon: const Icon(Icons.analytics_outlined), selectedIcon: const Icon(Icons.analytics), label: AppLocalizations.of(context).performance),
-        if (showRegister) NavigationDestination(icon: const Icon(Icons.person_add_outlined), selectedIcon: const Icon(Icons.person_add), label: AppLocalizations.of(context).registerNewLeader),
+        // Register button moved to FAB
       ],
+      ),
     ),
   );
 
@@ -602,12 +634,19 @@ class _DashboardHomeState extends State<_DashboardHome> {
         // Refresh is handled by Pull-to-Refresh on body
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 16),
-          child: CircleAvatar(
-            radius: 20,
-            backgroundColor: ImboniColors.primary,
-            child: Text(
-              _getInitials(),
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          child: InkWell(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const LeaderSettingsScreen()),
+            ),
+            borderRadius: BorderRadius.circular(20),
+            child: CircleAvatar(
+              radius: 20,
+              backgroundColor: ImboniColors.primary,
+              child: Text(
+                _getInitials(),
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
             ),
           ),
         ),
