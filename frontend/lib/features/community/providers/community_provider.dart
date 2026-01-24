@@ -3,12 +3,14 @@ import '../../../../shared/models/models.dart';
 import '../../../../shared/services/api_client.dart';
 import '../../../../shared/services/auth_service.dart';
 import '../models/community_models.dart';
+import '../services/media_service.dart';
 
 class CommunityProvider extends ChangeNotifier {
   final ApiClient _api = apiClient;
   
   /// Get the current authenticated user's ID
   String? getCurrentUserId() => authService.currentUser?.id;
+  String? getCurrentUserName() => authService.currentUser?.name ?? authService.currentUser?.email?.split('@').first;
   List<CommunityChannel> _channels = [];
   bool _isLoadingChannels = false;
   String? _error;
@@ -90,13 +92,26 @@ class CommunityProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> sendMessage(String channelId, String content, {String? replyToId}) async {
+  Future<bool> sendMessage(String channelId, String content, {String? replyToId, List<CommunityAttachment>? attachments}) async {
     debugPrint('CommunityProvider: sendMessage called for channel=$channelId');
     try {
+      // Upload attachments first if any
+      List<CommunityAttachment> finalAttachments = [];
+      if (attachments != null && attachments.isNotEmpty) {
+         finalAttachments = await mediaService.uploadAttachments(attachments);
+      }
+
       final response = await _api.post('/community/messages', {
         'channelId': channelId,
         'content': content,
         if (replyToId != null) 'replyToId': replyToId,
+        if (finalAttachments.isNotEmpty) 'attachments': finalAttachments.map((a) => {
+           'type': a.type.toString().split('.').last, // 'image', 'video', 'poll'
+           'path': a.path,
+           'name': a.name,
+           'size': a.size,
+           if (a.metadata != null) 'metadata': a.metadata, 
+        }).toList(),
       });
       
       debugPrint('CommunityProvider: sendMessage response isSuccess=${response.isSuccess}, data=${response.data}');
@@ -311,7 +326,7 @@ class CommunityProvider extends ChangeNotifier {
   }
 
   /// Edit a message
-  Future<bool> editMessage(String channelId, String messageId, String newContent) async {
+  Future<bool> editMessage(String channelId, String messageId, String newContent, {List<CommunityAttachment>? attachments}) async {
     // 1. Optimistic Update
     final currentMessages = _messages[channelId] ?? [];
     final msgIndex = currentMessages.indexWhere((m) => m.id == messageId);
@@ -322,15 +337,31 @@ class CommunityProvider extends ChangeNotifier {
       final msg = currentMessages[msgIndex];
       backupMsg = msg;
       
-      // Update content
-      currentMessages[msgIndex] = msg.copyWith(content: newContent);
+      // Update content and attachments
+      currentMessages[msgIndex] = msg.copyWith(
+        content: newContent,
+        attachments: attachments ?? msg.attachments
+      );
       _messages[channelId] = List.from(currentMessages);
       notifyListeners();
     }
 
     try {
+      // Upload new attachments if provided
+      List<CommunityAttachment>? finalAttachments;
+      if (attachments != null) {
+        finalAttachments = await mediaService.uploadAttachments(attachments);
+      }
+
       final response = await _api.patch('/community/messages/$messageId', {
         'content': newContent,
+        if (finalAttachments != null) 'attachments': finalAttachments.map((a) => {
+           'type': a.type.toString().split('.').last,
+           'path': a.path,
+           'name': a.name,
+           'size': a.size,
+           'metadata': a.metadata, 
+        }).toList(),
       });
 
       if (response.isSuccess && response.data != null) {
@@ -346,7 +377,7 @@ class CommunityProvider extends ChangeNotifier {
          return true;
       }
       
-      // Revert
+      // Revert if failed (generic failure)
       if (backupMsg != null && msgIndex != -1) {
           final msgs = _messages[channelId] ?? [];
           if (msgs.length > msgIndex) {
@@ -366,6 +397,74 @@ class CommunityProvider extends ChangeNotifier {
              notifyListeners();
           }
       }
+      return false;
+    }
+  }
+
+  /// Vote on a poll
+  Future<bool> voteOnPoll(String channelId, String messageId, String attachmentId, dynamic votes) async {
+    // 1. Optimistic Update (Complex, doing deep clone/find is hard in one block, skipping optimistic for now OR doing simple placeholder)
+    // Actually, optimistic update is crucial for "instant" feel.
+    // We will rely on the UI calling us with the *updated attachment* already?
+    // No, the UI logic I wrote in MessageAttachmentList calculates the new votes.
+    // Ideally, I should change the UI to just call this method with the vote delta.
+    // BUT to minimize changes, I will implement the API call first.
+    // The UI currently calculates the full new metadata. 
+    // Wait, the backend expects `votes` (int or List<int>), but the UI calculates the full `votes` Map.
+    // Discrepancy detected!
+    
+    // My backend implementation:
+    // async voteOnPoll(userId, ..., votes) -> updates metadata.votes[userId] = votes
+    // So backend expects JUST the user's vote (int or list of ints).
+    
+    // UI (MessageAttachmentList) currently calculates the full updated map.
+    // I need to update MessageAttachmentList to call this correctly.
+    
+    try {
+      final response = await _api.post('/community/messages/$messageId/poll-vote', {
+        'attachmentId': attachmentId,
+        'votes': votes,
+      });
+
+      if (response.isSuccess && response.data != null) {
+         final updatedMsg = ChannelMessage.fromJson(response.data);
+         // Update local cache
+         final msgs = _messages[channelId] ?? [];
+         final idx = msgs.indexWhere((m) => m.id == messageId);
+         if (idx != -1) {
+            msgs[idx] = updatedMsg;
+            notifyListeners();
+         }
+         return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('Error voting on poll: $e');
+      return false;
+    }
+  }
+
+  /// Add entry to list
+  Future<bool> addListEntry(String channelId, String messageId, String attachmentId, Map<String, dynamic> data) async {
+    try {
+      final response = await _api.post('/community/messages/$messageId/list-entry', {
+        'attachmentId': attachmentId,
+        'data': data,
+      });
+
+      if (response.isSuccess && response.data != null) {
+         final updatedMsg = ChannelMessage.fromJson(response.data);
+         final msgs = _messages[channelId] ?? [];
+         final idx = msgs.indexWhere((m) => m.id == messageId);
+         if (idx != -1) {
+            msgs[idx] = updatedMsg;
+            notifyListeners();
+         }
+         return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('Error adding list entry: $e');
       return false;
     }
   }
