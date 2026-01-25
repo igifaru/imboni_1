@@ -479,7 +479,7 @@ export class CaseService {
 
         if (assignedLeader) {
             const now = new Date();
-            const deadline = this.getDeadlineForUrgency(existingCase.urgency);
+            const deadline = this.calculateDeadline(existingCase.urgency);
 
             // Deactivate any assignments the found leader might already have for this case 
             // (unlikely if strictly going up, but safe)
@@ -705,7 +705,7 @@ export class CaseService {
                 await this.completeAssignment(caseId);
 
                 // 2. Create new assignment for the acting leader
-                const deadlineAt = this.getDeadlineForUrgency(existingCase.urgency);
+                const deadlineAt = this.calculateDeadline(existingCase.urgency);
                 await prisma.caseAssignment.create({
                     data: {
                         caseId,
@@ -841,9 +841,7 @@ export class CaseService {
         }
 
         // Calculate deadline
-        const deadlineHours = this.getDeadlineHours(caseData.urgency);
-        const deadlineAt = new Date();
-        deadlineAt.setHours(deadlineAt.getHours() + deadlineHours);
+        const deadlineAt = this.calculateDeadline(caseData.urgency);
 
         await prisma.caseAssignment.create({
             data: {
@@ -882,17 +880,16 @@ export class CaseService {
     }
 
     /**
-     * Get deadline hours based on urgency
+     * Calculate deadline based on case urgency using config
      */
-    private getDeadlineHours(urgency: string): number {
-        switch (urgency) {
-            case 'EMERGENCY':
-                return config.escalation.emergencyHours;
-            case 'HIGH':
-                return config.escalation.highHours;
-            default:
-                return config.escalation.normalHours;
-        }
+    calculateDeadline(urgency: string): Date {
+        const now = new Date();
+        let hours = config.escalation.normalHours;
+
+        if (urgency === 'EMERGENCY') hours = config.escalation.emergencyHours;
+        else if (urgency === 'HIGH') hours = config.escalation.highHours;
+
+        return new Date(now.getTime() + hours * 60 * 60 * 1000);
     }
 
     /**
@@ -964,21 +961,6 @@ export class CaseService {
         });
     }
 
-    /**
-     * Calculate deadline based on case urgency
-     */
-    getDeadlineForUrgency(urgency: string): Date {
-        const now = new Date();
-        switch (urgency) {
-            case 'EMERGENCY':
-                return new Date(now.getTime() + 30 * 60 * 1000); // 30 minutes
-            case 'HIGH':
-                return new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours
-            case 'NORMAL':
-            default:
-                return new Date(now.getTime() + 48 * 60 * 60 * 1000); // 48 hours
-        }
-    }
 
     /**
      * Mark case as resolved (pending citizen confirmation)
