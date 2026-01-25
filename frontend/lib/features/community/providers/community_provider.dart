@@ -475,19 +475,7 @@ class CommunityProvider extends ChangeNotifier {
 
       if (response.isSuccess && response.data != null) {
          final updatedMsg = ChannelMessage.fromJson(response.data);
-         
-         // Debug print
-         final attachments = updatedMsg.attachments;
-         final list = attachments.firstWhere((a) => a.id == attachmentId, orElse: () => attachments.first);
-         debugPrint('[CommunityProvider] List Entry Response. Entries count: ${(list.metadata?['entries'] as List?)?.length}');
-
-         final msgs = _messages[channelId] ?? [];
-         final idx = msgs.indexWhere((m) => m.id == messageId);
-         if (idx != -1) {
-            msgs[idx] = updatedMsg;
-            _messages[channelId] = List.from(msgs);
-            notifyListeners();
-         }
+         _updateLocalMessage(channelId, messageId, updatedMsg);
          return true;
       }
       return false;
@@ -495,6 +483,58 @@ class CommunityProvider extends ChangeNotifier {
       debugPrint('Error adding list entry: $e');
       return false;
     }
+  }
+
+  /// Edit list entry
+  Future<bool> editListEntry(String channelId, String messageId, String attachmentId, int entryIndex, Map<String, dynamic> data) async {
+    try {
+      final response = await _api.patch('/community/messages/$messageId/list-entry', {
+        'attachmentId': attachmentId,
+        'entryIndex': entryIndex,
+        'data': data,
+      });
+
+      if (response.isSuccess && response.data != null) {
+         final updatedMsg = ChannelMessage.fromJson(response.data);
+         _updateLocalMessage(channelId, messageId, updatedMsg);
+         return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('Error editing list entry: $e');
+      return false;
+    }
+  }
+
+  /// Update list metadata (structure)
+  Future<bool> updateCollaborativeList(String channelId, String messageId, String attachmentId, String? title, List<String>? columns) async {
+    try {
+      final response = await _api.patch('/community/messages/$messageId/list-metadata', {
+        'attachmentId': attachmentId,
+        'title': title,
+        'columns': columns,
+      });
+
+      if (response.isSuccess && response.data != null) {
+         final updatedMsg = ChannelMessage.fromJson(response.data);
+         _updateLocalMessage(channelId, messageId, updatedMsg);
+         return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('Error updating list metadata: $e');
+      return false;
+    }
+  }
+
+  void _updateLocalMessage(String channelId, String messageId, ChannelMessage updatedMsg) {
+     final msgs = _messages[channelId] ?? [];
+     final idx = msgs.indexWhere((m) => m.id == messageId);
+     if (idx != -1) {
+        msgs[idx] = updatedMsg;
+        _messages[channelId] = List.from(msgs);
+        notifyListeners();
+     }
   }
 
   // Member Search State

@@ -9,15 +9,21 @@ import '../../models/community_models.dart';
 class CollaborativeListView extends StatelessWidget {
   final CommunityAttachment attachment;
   final Function(Map<String, String>) onAddEntry;
+  final Function(int, Map<String, String>)? onEditEntry;
+  final Function(String, List<String>)? onUpdateList;
   final String currentUserId;
   final String currentUserName;
+  final bool isCreator;
 
   const CollaborativeListView({
     super.key,
     required this.attachment,
     required this.onAddEntry,
+    this.onEditEntry,
+    this.onUpdateList,
     required this.currentUserId,
     required this.currentUserName,
+    this.isCreator = false,
   });
 
   @override
@@ -95,8 +101,11 @@ class CollaborativeListView extends StatelessWidget {
       builder: (context) => _ListDetailDialog(
         list: list,
         onAddEntry: onAddEntry,
+        onEditEntry: onEditEntry,
+        onUpdateList: onUpdateList,
         currentUserId: currentUserId,
         currentUserName: currentUserName,
+        isCreator: isCreator,
       ),
     );
   }
@@ -105,14 +114,20 @@ class CollaborativeListView extends StatelessWidget {
 class _ListDetailDialog extends StatefulWidget {
   final CollaborativeList list;
   final Function(Map<String, String>) onAddEntry;
+  final Function(int, Map<String, String>)? onEditEntry;
+  final Function(String, List<String>)? onUpdateList;
   final String currentUserId;
   final String currentUserName;
+  final bool isCreator;
 
   const _ListDetailDialog({
     required this.list,
     required this.onAddEntry,
+    this.onEditEntry,
+    this.onUpdateList,
     required this.currentUserId,
     required this.currentUserName,
+    this.isCreator = false,
   });
 
   @override
@@ -310,13 +325,25 @@ class _ListDetailDialogState extends State<_ListDetailDialog> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
-                    child: Text(
-                      _currentList.title,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
+                    child: Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            _currentList.title,
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                        ),
+                        if (widget.isCreator)
+                          IconButton(
+                            icon: const Icon(Icons.edit, size: 16, color: Colors.grey),
+                            tooltip: 'Edit Title/Columns',
+                            onPressed: _showUpdateListDialog,
+                          ),
+                      ],
                     ),
                   ),
                   Row(
@@ -411,11 +438,108 @@ class _ListDetailDialogState extends State<_ListDetailDialog> {
     );
   }
 
+  void _showUpdateListDialog() async {
+    final titleController = TextEditingController(text: _currentList.title);
+    final columnsController = TextEditingController(text: _currentList.columns.join(', '));
+    
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit List Structure'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: titleController,
+              decoration: const InputDecoration(labelText: 'List Title'),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: columnsController,
+              decoration: const InputDecoration(
+                labelText: 'Columns (comma separated)',
+                helperText: 'Changing columns may affect existing data display',
+              ),
+              maxLines: 2,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context, {
+                'title': titleController.text.trim(),
+                'columns': columnsController.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
+              });
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null && widget.onUpdateList != null) {
+      final newTitle = result['title'] as String;
+      final newColumns = result['columns'] as List<String>;
+      
+      widget.onUpdateList!(newTitle, newColumns);
+      
+      // Local update
+      if (mounted) {
+        setState(() {
+          _currentList = CollaborativeList(
+            title: newTitle,
+            columns: newColumns,
+            entries: _currentList.entries,
+          );
+        });
+      }
+    }
+  }
+
+  void _editEntry(int index) async {
+    final entry = _currentList.entries[index];
+    final result = await showDialog<Map<String, String>>(
+      context: context,
+      builder: (context) => _AddEntryDialog(
+        columns: _currentList.columns,
+        initialData: entry.data,
+      ),
+    );
+
+    if (result != null && widget.onEditEntry != null) {
+      widget.onEditEntry!(index, result);
+      
+      // Local update
+      if (mounted) {
+        setState(() {
+          final newEntries = List<ListEntry>.from(_currentList.entries);
+          newEntries[index] = ListEntry(
+             userId: entry.userId,
+             userName: entry.userName,
+             timestamp: DateTime.now(), // or keep original
+             data: result,
+          );
+          
+          _currentList = CollaborativeList(
+            title: _currentList.title,
+            columns: _currentList.columns,
+            entries: newEntries,
+          );
+        });
+      }
+    }
+  }
+
   Widget _buildResponsiveTable() {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final columnWidth = 140.0;
-    final totalTableWidth = columnWidth * _currentList.columns.length;
+    final totalTableWidth = columnWidth * _currentList.columns.length + 50; // +50 for action column
 
     return Scrollbar(
       thumbVisibility: true,
@@ -445,6 +569,7 @@ class _ListDetailDialogState extends State<_ListDetailDialog> {
                 columnWidths: {
                   for (int i = 0; i < _currentList.columns.length; i++)
                     i: FixedColumnWidth(columnWidth),
+                  _currentList.columns.length: const FixedColumnWidth(50), // Action Action column
                 },
                 children: [
                   // Header row
@@ -452,25 +577,26 @@ class _ListDetailDialogState extends State<_ListDetailDialog> {
                     decoration: BoxDecoration(
                       color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
                     ),
-                    children: _currentList.columns
-                        .map((col) => Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 14,
-                              ),
-                              child: Text(
-                                col,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                  color: colorScheme.onSurface,
-                              ),
-                                softWrap: true,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ))
-                        .toList(),
+                    children: [
+                      ..._currentList.columns.map((col) => Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 14,
+                                ),
+                                child: Text(
+                                  col,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                    color: colorScheme.onSurface,
+                                  ),
+                                  softWrap: true,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              )),
+                      const SizedBox(), // Empty header for actions
+                    ],
                   ),
                   // Data rows
                   ..._currentList.entries.asMap().entries.map((rowEntry) {
@@ -482,8 +608,8 @@ class _ListDetailDialogState extends State<_ListDetailDialog> {
                             ? colorScheme.surfaceContainerHighest.withOpacity(0.1)
                             : Colors.transparent,
                       ),
-                      children: _currentList.columns
-                          .map((col) => Container(
+                      children: [
+                           ..._currentList.columns.map((col) => Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 12,
                                   vertical: 12,
@@ -498,9 +624,22 @@ class _ListDetailDialogState extends State<_ListDetailDialog> {
                                   maxLines: 3,
                                   overflow: TextOverflow.ellipsis,
                                 ),
-                              ))
-                          .toList(),
-                    );
+                              )),
+                              // Action Cell
+                              if (entry.userId == widget.currentUserId)
+                                TableCell(
+                                  verticalAlignment: TableCellVerticalAlignment.middle,
+                                  child: IconButton(
+                                    icon: const Icon(Icons.edit, size: 16, color: Colors.blue),
+                                    onPressed: () => _editEntry(rowIndex),
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                  ),
+                                )
+                              else 
+                                const SizedBox(height: 48),
+                        ],
+                      );
                   }).toList(),
                 ],
               ),
@@ -514,8 +653,12 @@ class _ListDetailDialogState extends State<_ListDetailDialog> {
 
 class _AddEntryDialog extends StatefulWidget {
   final List<String> columns;
+  final Map<String, String>? initialData;
 
-  const _AddEntryDialog({required this.columns});
+  const _AddEntryDialog({
+    required this.columns,
+    this.initialData,
+  });
 
   @override
   State<_AddEntryDialog> createState() => _AddEntryDialogState();
@@ -528,7 +671,7 @@ class _AddEntryDialogState extends State<_AddEntryDialog> {
   void initState() {
     super.initState();
     for (var col in widget.columns) {
-      _controllers[col] = TextEditingController();
+      _controllers[col] = TextEditingController(text: widget.initialData?[col] ?? '');
     }
   }
 
@@ -578,7 +721,7 @@ class _AddEntryDialogState extends State<_AddEntryDialog> {
             Padding(
               padding: const EdgeInsets.all(24),
               child: Text(
-                'Add Entry',
+                widget.initialData != null ? 'Edit Entry' : 'Add Entry',
                 style: Theme.of(context).textTheme.headlineSmall,
                 textAlign: TextAlign.center,
               ),
@@ -632,9 +775,9 @@ class _AddEntryDialogState extends State<_AddEntryDialog> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: const Text(
-                        'Add',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                      child: Text(
+                        widget.initialData != null ? 'Save Changes' : 'Add',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),

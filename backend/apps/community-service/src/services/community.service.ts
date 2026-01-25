@@ -624,6 +624,78 @@ export class CommunityService {
     /**
      * Add entry to collaborative list attachment
      */
+    /**
+     * Edit an existing list entry (user can only edit their own)
+     */
+    async editListEntry(userId: string, messageId: string, attachmentId: string, entryIndex: number, entryData: any) {
+        console.log(`[EditListEntry] User ${userId} editing entry ${entryIndex} on msg ${messageId}`);
+        const message = await prisma.channelMessage.findUnique({ where: { id: messageId } });
+        if (!message) throw new Error('Message not found');
+
+        const attachments = message.attachments as any[];
+        const attachmentIndex = attachments.findIndex((a: any) => a.id === attachmentId);
+
+        if (attachmentIndex === -1) throw new Error('Attachment not found');
+
+        const attachment = attachments[attachmentIndex];
+        const metadata = attachment.metadata || {};
+        const entries = metadata.entries || [];
+
+        if (entryIndex < 0 || entryIndex >= entries.length) {
+            throw new Error('Entry not found');
+        }
+
+        // Validate Ownership
+        if (entries[entryIndex].userId !== userId) {
+            throw new Error('Unauthorized: Can only edit your own entry');
+        }
+
+        // Update Data
+        entries[entryIndex].data = entryData;
+        // Optionally update timestamp or add 'editedAt'
+        entries[entryIndex].updatedAt = new Date().toISOString();
+
+        metadata.entries = entries;
+        attachment.metadata = metadata;
+        attachments[attachmentIndex] = attachment;
+
+        return this.updateMessage(messageId, message.content, JSON.parse(JSON.stringify(attachments)));
+    }
+
+    /**
+     * Update List Structure (Title/Columns) - Creator Only
+     */
+    async updateCollaborativeList(userId: string, messageId: string, attachmentId: string, title: string, columns: string[]) {
+        console.log(`[UpdateList] User ${userId} updating list on msg ${messageId}`);
+        const message = await prisma.channelMessage.findUnique({ where: { id: messageId } });
+        if (!message) throw new Error('Message not found');
+
+        // Only Message Author can update structure
+        if (message.authorId !== userId) {
+            throw new Error('Unauthorized: Only list creator can update structure');
+        }
+
+        const attachments = message.attachments as any[];
+        const attachmentIndex = attachments.findIndex((a: any) => a.id === attachmentId);
+
+        if (attachmentIndex === -1) throw new Error('Attachment not found');
+
+        const attachment = attachments[attachmentIndex];
+        const metadata = attachment.metadata || {};
+
+        // Update Metadata
+        if (title) metadata.title = title;
+        if (columns) metadata.columns = columns;
+
+        attachment.metadata = metadata;
+        attachments[attachmentIndex] = attachment;
+
+        return this.updateMessage(messageId, message.content, JSON.parse(JSON.stringify(attachments)));
+    }
+
+    /**
+     * Add entry to collaborative list attachment
+     */
     async addListEntry(userId: string, messageId: string, attachmentId: string, entryData: any) {
         console.log(`[AddListEntry] User ${userId} adding entry on msg ${messageId}, attachment ${attachmentId}, data:`, entryData);
         const message = await prisma.channelMessage.findUnique({ where: { id: messageId } });

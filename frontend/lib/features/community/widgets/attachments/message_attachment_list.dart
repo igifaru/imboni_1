@@ -56,12 +56,31 @@ class MessageAttachmentList extends StatelessWidget {
           attachment: attachment,
           currentUserId: currentUserId,
           currentUserName: currentUserName,
+          isCreator: isOwnMessage,
           onAddEntry: (data) {
              context.read<CommunityProvider>().addListEntry(
                channelId, 
                messageId, 
                attachment.id, 
                data
+             );
+          },
+          onEditEntry: (index, data) {
+             context.read<CommunityProvider>().editListEntry(
+               channelId,
+               messageId,
+               attachment.id,
+               index,
+               data
+             );
+          },
+          onUpdateList: (title, columns) {
+             context.read<CommunityProvider>().updateCollaborativeList(
+               channelId,
+               messageId,
+               attachment.id,
+               title,
+               columns
              );
           },
         );

@@ -199,6 +199,46 @@ router.post('/messages/:messageId/list-entry', async (req: Request, res: Respons
     }
 });
 
+// PATCH /api/community/messages/:messageId/list-entry
+router.patch('/messages/:messageId/list-entry', async (req: Request, res: Response) => {
+    try {
+        const { messageId } = req.params;
+        const { attachmentId, entryIndex, data } = req.body;
+        const userId = (req as any).user?.userId;
+
+        if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+        if (!attachmentId || entryIndex === undefined || !data) {
+            return res.status(400).json({ error: 'Attachment ID, entryIndex, and data required' });
+        }
+
+        const updatedMessage = await communityService.editListEntry(userId, messageId, attachmentId, entryIndex, data);
+        res.json(updatedMessage);
+    } catch (error) {
+        logger.error('Error editing list entry', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// PATCH /api/community/messages/:messageId/list-metadata
+router.patch('/messages/:messageId/list-metadata', async (req: Request, res: Response) => {
+    try {
+        const { messageId } = req.params;
+        const { attachmentId, title, columns } = req.body;
+        const userId = (req as any).user?.userId;
+
+        if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+        if (!attachmentId || (!title && !columns)) {
+            return res.status(400).json({ error: 'Attachment ID and either title or columns required' });
+        }
+
+        const updatedMessage = await communityService.updateCollaborativeList(userId, messageId, attachmentId, title, columns);
+        res.json(updatedMessage);
+    } catch (error) {
+        logger.error('Error updating list metadata', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
 // PATCH /api/community/messages/:messageId
 router.patch('/messages/:messageId', async (req: Request, res: Response) => {
     try {
