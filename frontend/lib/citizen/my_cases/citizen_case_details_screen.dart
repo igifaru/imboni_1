@@ -216,7 +216,14 @@ class _CitizenCaseDetailsScreenState extends State<CitizenCaseDetailsScreen> {
                       ],
 
                       // Header Card
-                      CaseHeaderCard(caseModel: caseModel),
+                      CaseHeaderCard(
+                        caseModel: caseModel,
+                        onExpired: () {
+                          debugPrint('Deadline expired for citizen view, refreshing...');
+                          _fetchCaseDetails();
+                          _fetchActions();
+                        },
+                      ),
                       const SizedBox(height: 20),
 
                       // Grid Layout for Large Screens

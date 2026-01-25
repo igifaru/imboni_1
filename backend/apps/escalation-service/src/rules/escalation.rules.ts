@@ -92,9 +92,11 @@ export function isDeadlineExpired(deadline: Date, now: Date = new Date()): boole
  */
 export function calculateNewDeadline(urgency: CaseUrgency): Date {
     const hours = getDeadlineHours(urgency);
-    const deadline = new Date();
-    deadline.setHours(deadline.getHours() + hours);
-    return deadline;
+    const now = new Date();
+    // Use getTime() + milliseconds to ensure decimal hours are handled correctly
+    // 1 hour = 3,600,000 milliseconds
+    const deadlineTime = now.getTime() + (hours * 3600000);
+    return new Date(deadlineTime);
 }
 
 /**

@@ -143,7 +143,6 @@ async function buildEscalationPath(originUnitId: string, currentLevel: string): 
     // User wants: village(name) -> cell(name) -> sector(current)
 
     // Map of Levels to Order for comparison
-    const levels = ['VILLAGE', 'CELL', 'SECTOR', 'DISTRICT', 'PROVINCE', 'NATIONAL'];
 
     while (currentId) {
         const unit: { id: string; name: string; parentId: string | null; level: string } | null = await prisma.administrativeUnit.findUnique({
@@ -943,7 +942,7 @@ export class CaseService {
             whereClause.caseId = { in: caseIds };
         }
 
-        await prisma.caseAssignment.updateMany({
+        await (prisma.caseAssignment as any).updateMany({
             where: whereClause,
             data: { alertViewed: true }
         });
@@ -1638,34 +1637,33 @@ export class CaseService {
      */
     private async toResponseDto(entity: CaseEntity, deadline?: string, locationPath?: string): Promise<CaseResponseDto> {
         // Find active assignment if available
+        // Find active assignment if available
         // Safety: Explicitly filter and sort in memory to guarantee correctness regardless of DB order
-        let activeAssignments = (entity as any).assignments?.filter((a: any) => a.isActive) || [];
+        const activeAssignments = (entity as any).assignments?.filter((a: any) => a.isActive) || [];
+
+        // Sort Newest First (Desc)
         if (activeAssignments.length > 1) {
-            // Sort Newest First (Desc)
             activeAssignments.sort((a: any, b: any) => {
                 const dA = new Date(a.assignedAt).getTime();
                 const dB = new Date(b.assignedAt).getTime();
                 return dB - dA;
             });
         }
+
         const activeAssignment = activeAssignments.length > 0 ? activeAssignments[0] : undefined;
 
+        // Logging for debugging escalation issues
         if (entity.caseReference) {
+            logger.info(`[Assignment Audit] Case ${entity.caseReference}`, {
+                status: entity.status,
+                level: entity.currentLevel,
+                activeCount: activeAssignments.length,
+                selectedLeader: activeAssignment?.leader?.name || 'NONE',
+                deadline: activeAssignment?.deadlineAt?.toISOString() || 'NONE'
+            });
+
             if (activeAssignments.length > 1) {
-                logger.warn('[Data Anomaly] Multiple active assignments detected', {
-                    caseId: entity.id,
-                    totalActive: activeAssignments.length,
-                    winnerId: activeAssignment?.leaderId,
-                    winnerName: activeAssignment?.leader?.name
-                });
-            } else {
-                logger.info('[Debug Assignment] toResponseDto', {
-                    caseId: entity.id,
-                    totalAssignments: (entity as any).assignments?.length,
-                    foundActive: !!activeAssignment,
-                    activeLeaderId: activeAssignment?.leaderId,
-                    activeLeaderName: activeAssignment?.leader?.name
-                });
+                logger.warn(`[Data Anomaly] Multiple active assignments for Case ${entity.caseReference}`);
             }
         }
 

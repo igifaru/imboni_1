@@ -105,6 +105,7 @@ export class EscalationScheduler {
             // Start transaction
             await prisma.$transaction(async (tx) => {
                 // 1. Mark current assignment as completed (with escalation reason)
+                logger.info(`[Step 1/6] Deactivating assignment ${assignment.id} for case ${caseData.caseReference}`);
                 await tx.caseAssignment.update({
                     where: { id: assignment.id },
                     data: {
@@ -115,6 +116,7 @@ export class EscalationScheduler {
                 });
 
                 // 2. Update case level (Initial status update)
+                logger.info(`[Step 2/6] Escalating case level to ${nextLevel}`);
                 await tx.case.update({
                     where: { id: caseData.id },
                     data: {
@@ -123,6 +125,7 @@ export class EscalationScheduler {
                 });
 
                 // 3. Create escalation event (IMMUTABLE RECORD)
+                logger.debug(`[Step 3/6] Recording escalation event for case ${caseData.id}`);
                 await tx.escalationEvent.create({
                     data: {
                         caseId: caseData.id,
@@ -134,15 +137,18 @@ export class EscalationScheduler {
                 });
 
                 // 4. Find target administrative unit for assignment
+                logger.debug(`[Step 4/6] Finding ancestor unit at level ${nextLevel}`);
                 const targetUnit = await getAncestorAtLevel(tx, caseData.administrativeUnitId, nextLevel);
 
                 if (targetUnit) {
                     // 5. Find nearest active leader starting from the target unit
+                    logger.debug(`[Step 5/6] Finding nearest leader for unit ${targetUnit.id}`);
                     const parentLeader = await findNearestLeader(tx, targetUnit.id);
 
                     if (parentLeader) {
                         // 6. Create new assignment
                         const newDeadline = calculateNewDeadline(caseData.urgency);
+                        logger.info(`[Step 6/6] Creating new assignment for leader ${parentLeader.userId} with deadline ${newDeadline.toISOString()}`);
 
                         await tx.caseAssignment.create({
                             data: {

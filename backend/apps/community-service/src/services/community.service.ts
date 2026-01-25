@@ -91,7 +91,7 @@ export class CommunityService {
                 replyToId: dto.replyToId,
                 attachments: (() => {
                     const atts = dto.attachments ?? [];
-                    console.log(`[CreateMessage] Creating msg for channel ${dto.channelId}. Attachments:`, JSON.stringify(atts));
+                    logger.info(`[CreateMessage] Creating msg for channel ${dto.channelId}. Attachments:`, JSON.stringify(atts));
                     return atts;
                 })()
             },
@@ -698,7 +698,7 @@ export class CommunityService {
      * Update a message content
      */
     async updateMessage(messageId: string, content: string, attachments?: any[]) {
-        console.log(`[UpdateMessage] Updating msg ${messageId}. Attachments count: ${attachments?.length}`);
+        logger.info(`[UpdateMessage] Updating msg ${messageId}. Attachments count: ${attachments?.length}`);
         return prisma.channelMessage.update({
             where: { id: messageId },
             data: {
@@ -752,7 +752,7 @@ export class CommunityService {
      * Vote on a poll attachment
      */
     async voteOnPoll(userId: string, messageId: string, attachmentId: string, votes: number | number[]) {
-        console.log(`[VoteOnPoll] User ${userId} voting on msg ${messageId}, attachment ${attachmentId}, votes:`, votes);
+        logger.info(`[VoteOnPoll] User ${userId} voting on msg ${messageId}, attachment ${attachmentId}, votes:`, votes);
         const message = await prisma.channelMessage.findUnique({ where: { id: messageId } });
         if (!message) throw new Error('Message not found');
 
@@ -779,7 +779,7 @@ export class CommunityService {
         attachment.metadata = metadata;
         attachments[attachmentIndex] = attachment;
 
-        console.log('[VoteOnPoll] Updated metadata:', JSON.stringify(metadata, null, 2));
+        logger.debug('[VoteOnPoll] Updated metadata:', JSON.stringify(metadata, null, 2));
 
         return this.updateMessage(messageId, message.content, JSON.parse(JSON.stringify(attachments)));
     }
@@ -791,7 +791,7 @@ export class CommunityService {
      * Edit an existing list entry (user can only edit their own)
      */
     async editListEntry(userId: string, messageId: string, attachmentId: string, entryIndex: number, entryData: any) {
-        console.log(`[EditListEntry] User ${userId} editing entry ${entryIndex} on msg ${messageId}`);
+        logger.info(`[EditListEntry] User ${userId} editing entry ${entryIndex} on msg ${messageId}`);
         const message = await prisma.channelMessage.findUnique({ where: { id: messageId } });
         if (!message) throw new Error('Message not found');
 
@@ -829,7 +829,7 @@ export class CommunityService {
      * Update List Structure (Title/Columns) - Creator Only
      */
     async updateCollaborativeList(userId: string, messageId: string, attachmentId: string, title: string, columns: string[]) {
-        console.log(`[UpdateList] User ${userId} updating list on msg ${messageId}`);
+        logger.info(`[UpdateList] User ${userId} updating list on msg ${messageId}`);
         const message = await prisma.channelMessage.findUnique({ where: { id: messageId } });
         if (!message) throw new Error('Message not found');
 
@@ -860,7 +860,7 @@ export class CommunityService {
      * Add entry to collaborative list attachment
      */
     async addListEntry(userId: string, messageId: string, attachmentId: string, entryData: any) {
-        console.log(`[AddListEntry] User ${userId} adding entry on msg ${messageId}, attachment ${attachmentId}, data:`, entryData);
+        logger.info(`[AddListEntry] User ${userId} adding entry on msg ${messageId}, attachment ${attachmentId}, data:`, entryData);
         const message = await prisma.channelMessage.findUnique({ where: { id: messageId } });
         if (!message) throw new Error('Message not found');
 
@@ -891,7 +891,7 @@ export class CommunityService {
         attachment.metadata = metadata;
         attachments[attachmentIndex] = attachment;
 
-        console.log('[AddListEntry] Updated attachment metadata:', JSON.stringify(metadata, null, 2));
+        logger.debug('[AddListEntry] Updated attachment metadata:', JSON.stringify(metadata, null, 2));
 
         return this.updateMessage(messageId, message.content, JSON.parse(JSON.stringify(attachments)));
     }
