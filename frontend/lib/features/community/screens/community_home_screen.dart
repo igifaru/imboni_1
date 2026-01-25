@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:imboni/shared/theme/colors.dart';
+import '../../../shared/localization/app_localizations.dart';
 import '../providers/community_provider.dart';
 import '../models/community_models.dart';
 import 'channel_chat_screen.dart';
@@ -27,9 +28,10 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Civic Connect'),
+        title: Text(l10n.communityTitle),
         centerTitle: false,
         actions: [
           IconButton(
