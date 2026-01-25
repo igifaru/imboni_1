@@ -357,6 +357,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
   /// Welcome panel shown when no channel is selected
   Widget _buildWelcomePanel(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final colorScheme = theme.colorScheme;
 
     return Container(
