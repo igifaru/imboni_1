@@ -1,4 +1,4 @@
-import { IsEnum, IsNotEmpty, IsOptional, IsString, IsBoolean } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsOptional, IsString, IsBoolean, IsArray } from 'class-validator';
 import { CaseCategory, ChannelType } from '@prisma/client';
 
 export class CreateChannelDto {
@@ -41,6 +41,7 @@ export class CreateMessageDto {
     replyToId?: string;
 
     @IsOptional()
+    @IsArray()
     attachments?: any[];
 }
 

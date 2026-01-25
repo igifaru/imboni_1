@@ -88,7 +88,11 @@ export class CommunityService {
                 authorId: dto.authorId,
                 isOfficial: dto.isOfficial || false,
                 replyToId: dto.replyToId,
-                attachments: dto.attachments ?? []
+                attachments: (() => {
+                    const atts = dto.attachments ?? [];
+                    console.log(`[CreateMessage] Creating msg for channel ${dto.channelId}. Attachments:`, JSON.stringify(atts));
+                    return atts;
+                })()
             },
             include: {
                 author: {
@@ -531,6 +535,7 @@ export class CommunityService {
      * Update a message content
      */
     async updateMessage(messageId: string, content: string, attachments?: any[]) {
+        console.log(`[UpdateMessage] Updating msg ${messageId}. Attachments count: ${attachments?.length}`);
         return prisma.channelMessage.update({
             where: { id: messageId },
             data: {
@@ -584,6 +589,7 @@ export class CommunityService {
      * Vote on a poll attachment
      */
     async voteOnPoll(userId: string, messageId: string, attachmentId: string, votes: number | number[]) {
+        console.log(`[VoteOnPoll] User ${userId} voting on msg ${messageId}, attachment ${attachmentId}, votes:`, votes);
         const message = await prisma.channelMessage.findUnique({ where: { id: messageId } });
         if (!message) throw new Error('Message not found');
 
@@ -610,13 +616,16 @@ export class CommunityService {
         attachment.metadata = metadata;
         attachments[attachmentIndex] = attachment;
 
-        return this.updateMessage(messageId, message.content, attachments);
+        console.log('[VoteOnPoll] Updated metadata:', JSON.stringify(metadata, null, 2));
+
+        return this.updateMessage(messageId, message.content, JSON.parse(JSON.stringify(attachments)));
     }
 
     /**
      * Add entry to collaborative list attachment
      */
     async addListEntry(userId: string, messageId: string, attachmentId: string, entryData: any) {
+        console.log(`[AddListEntry] User ${userId} adding entry on msg ${messageId}, attachment ${attachmentId}, data:`, entryData);
         const message = await prisma.channelMessage.findUnique({ where: { id: messageId } });
         if (!message) throw new Error('Message not found');
 
@@ -647,7 +656,9 @@ export class CommunityService {
         attachment.metadata = metadata;
         attachments[attachmentIndex] = attachment;
 
-        return this.updateMessage(messageId, message.content, attachments);
+        console.log('[AddListEntry] Updated attachment metadata:', JSON.stringify(metadata, null, 2));
+
+        return this.updateMessage(messageId, message.content, JSON.parse(JSON.stringify(attachments)));
     }
 
     // Traverse up the tree
