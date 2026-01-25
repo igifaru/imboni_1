@@ -222,62 +222,67 @@ class _ListDetailDialogState extends State<_ListDetailDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 600;
-    final maxWidth = isMobile ? 400.0 : 800.0;
-    final screenHeight = MediaQuery.of(context).size.height;
+    final size = MediaQuery.of(context).size;
+    final isMobile = size.width < 600;
+    final dialogWidth = isMobile ? size.width * 0.95 : 900.0;
+    final dialogHeight = size.height * 0.9;
 
     return Dialog(
-      insetPadding: const EdgeInsets.all(16),
+      insetPadding: const EdgeInsets.all(8),
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxWidth: maxWidth,
-          maxHeight: screenHeight * 0.85,
+          maxWidth: dialogWidth,
+          maxHeight: dialogHeight,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             // Header
-            Padding(
-              padding: const EdgeInsets.all(16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
                     child: Text(
                       _currentList.title,
-                      style: Theme.of(context).textTheme.titleLarge,
-                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                       maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  SizedBox(
-                    width: 50,
-                    child: IconButton(
-                      icon: const Icon(Icons.download),
-                      tooltip: 'Export CSV',
-                      onPressed: _isExporting ? null : _exportToCsv,
-                    ),
-                  ),
-                  SizedBox(
-                    width: 50,
-                    child: IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.pop(context),
-                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.download),
+                        tooltip: 'Export CSV',
+                        onPressed: _isExporting ? null : _exportToCsv,
+                        iconSize: 20,
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                        iconSize: 20,
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
             const Divider(height: 1),
-            // Table
+            // Table Content - Fully scrollable
             Expanded(
               child: Container(
-                margin: const EdgeInsets.all(16),
+                margin: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   border: Border.all(
                     color: Colors.grey.withValues(alpha: 0.2),
                   ),
                   borderRadius: BorderRadius.circular(8),
+                  color: Colors.grey.withValues(alpha: 0.02),
                 ),
                 child: _currentList.entries.isEmpty
                     ? Center(
@@ -286,47 +291,21 @@ class _ListDetailDialogState extends State<_ListDetailDialog> {
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                       )
-                    : SingleChildScrollView(
-                        scrollDirection: Axis.vertical,
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: DataTable(
-                            columns: _currentList.columns
-                                .map((c) => DataColumn(
-                                      label: Text(
-                                        c,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ))
-                                .toList(),
-                            rows: _currentList.entries
-                                .map((entry) => DataRow(
-                                      cells: _currentList.columns
-                                          .map((col) => DataCell(
-                                                Text(
-                                                  entry.data[col] ?? '-',
-                                                  overflow: TextOverflow.ellipsis,
-                                                ),
-                                              ))
-                                          .toList(),
-                                    ))
-                                .toList(),
-                          ),
-                        ),
+                    : ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: _buildResponsiveTable(),
                       ),
               ),
             ),
             // Button
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
               child: SizedBox(
                 width: double.infinity,
-                height: 50,
+                height: 48,
                 child: ElevatedButton.icon(
                   onPressed: _addNewEntry,
-                  icon: const Icon(Icons.add),
+                  icon: const Icon(Icons.add, size: 20),
                   label: const Text('Add Your Entry'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.indigo,
@@ -336,6 +315,106 @@ class _ListDetailDialogState extends State<_ListDetailDialog> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResponsiveTable() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final columnWidth = 140.0;
+    final totalTableWidth = columnWidth * _currentList.columns.length;
+
+    return Scrollbar(
+      thumbVisibility: true,
+      trackVisibility: true,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Scrollbar(
+          thumbVisibility: true,
+          trackVisibility: true,
+          notificationPredicate: (notification) => notification.depth == 1,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.vertical,
+            child: SizedBox(
+              width: totalTableWidth,
+              child: Table(
+                border: TableBorder(
+                  top: BorderSide(color: colorScheme.outlineVariant),
+                  bottom: BorderSide(color: colorScheme.outlineVariant),
+                  horizontalInside: BorderSide(
+                    color: colorScheme.outlineVariant.withOpacity(0.5),
+                  ),
+                  verticalInside: BorderSide(
+                    color: colorScheme.outlineVariant.withOpacity(0.3),
+                    width: 0.5,
+                  ),
+                ),
+                columnWidths: {
+                  for (int i = 0; i < _currentList.columns.length; i++)
+                    i: FixedColumnWidth(columnWidth),
+                },
+                children: [
+                  // Header row
+                  TableRow(
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                    ),
+                    children: _currentList.columns
+                        .map((col) => Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 14,
+                              ),
+                              child: Text(
+                                col,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  color: colorScheme.onSurface,
+                              ),
+                                softWrap: true,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ))
+                        .toList(),
+                  ),
+                  // Data rows
+                  ..._currentList.entries.asMap().entries.map((rowEntry) {
+                    final rowIndex = rowEntry.key;
+                    final entry = rowEntry.value;
+                    return TableRow(
+                      decoration: BoxDecoration(
+                        color: rowIndex % 2 == 0
+                            ? colorScheme.surfaceContainerHighest.withOpacity(0.1)
+                            : Colors.transparent,
+                      ),
+                      children: _currentList.columns
+                          .map((col) => Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 12,
+                                ),
+                                child: Text(
+                                  entry.data[col] ?? '-',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: colorScheme.onSurface.withOpacity(0.8),
+                                  ),
+                                  softWrap: true,
+                                  maxLines: 3,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ))
+                          .toList(),
+                    );
+                  }).toList(),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -388,16 +467,17 @@ class _AddEntryDialogState extends State<_AddEntryDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 500;
-    final maxWidth = isMobile ? 350.0 : 450.0;
-    final screenHeight = MediaQuery.of(context).size.height;
+    final size = MediaQuery.of(context).size;
+    final isMobile = size.width < 500;
+    final dialogWidth = isMobile ? size.width * 0.9 : 450.0;
+    final screenHeight = size.height;
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       insetPadding: const EdgeInsets.all(16),
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxWidth: maxWidth,
+          maxWidth: dialogWidth,
           maxHeight: screenHeight * 0.8,
         ),
         child: Column(
@@ -443,7 +523,7 @@ class _AddEntryDialogState extends State<_AddEntryDialog> {
                 ),
               ),
             ),
-            // Buttons - Using Column instead of Row to avoid width issues
+            // Buttons
             Padding(
               padding: const EdgeInsets.all(24),
               child: Column(
