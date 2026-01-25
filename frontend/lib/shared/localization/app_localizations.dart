@@ -369,6 +369,7 @@ class AppLocalizations {
   String get general => get('general');
 
   // Community - Collaborative List
+  String get selectUnitHint => get('select_unit_hint');
   String get viewList => get('view_list');
   String get addYourEntry => get('add_your_entry');
   String get addEntry => get('add_entry');
@@ -771,6 +772,7 @@ const Map<String, Map<String, String>> _translations = {
     'general': 'Rusange',
     
     // Community - Collaborative List RW
+    'select_unit_hint': 'Hitamo urwego ibumoso kugirango urebe ibiganiro',
     'view_list': 'Reba Urutonde',
     'add_your_entry': 'Ongeraho Umurongo Wawe',
     'add_entry': 'Ongeraho Umurongo',
@@ -1137,6 +1139,7 @@ const Map<String, Map<String, String>> _translations = {
     'general': 'General',
     
     // Community - Collaborative List EN
+    'select_unit_hint': 'Select a unit from the left to view discussions',
     'view_list': 'View List',
     'add_your_entry': 'Add Your Entry',
     'add_entry': 'Add Entry',
@@ -1719,5 +1722,6 @@ const Map<String, Map<String, String>> _translations = {
     'community': 'Communauté',
     'community_subtitle': 'Connectez-vous avec vos voisins',
     'channels': 'Chaînes',
+    'select_unit_hint': 'Sélectionnez une unité à gauche pour voir les discussions',
   },
 };

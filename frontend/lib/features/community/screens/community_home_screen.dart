@@ -380,7 +380,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              'Select a unit from the left to view discussions',
+              l10n.selectUnitHint,
               style: theme.textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
             ),
           ],
