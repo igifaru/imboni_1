@@ -293,7 +293,14 @@ class _LeaderCaseDetailsScreenState extends State<LeaderCaseDetailsScreen> {
           ),
           children: [
             // Header Section
-            CaseHeaderCard(caseModel: _case),
+            CaseHeaderCard(
+              caseModel: _case,
+              onExpired: () {
+                debugPrint('Deadline expired, refreshing case details...');
+                _refreshCaseDetails();
+                _fetchActions();
+              },
+            ),
             const SizedBox(height: 20),
 
             // Main Content (Grid-like logic)

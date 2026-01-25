@@ -8,8 +8,9 @@ import 'case_detail_card.dart';
 
 class CaseHeaderCard extends StatelessWidget {
   final CaseModel caseModel;
+  final VoidCallback? onExpired;
 
-  const CaseHeaderCard({super.key, required this.caseModel});
+  const CaseHeaderCard({super.key, required this.caseModel, this.onExpired});
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +43,7 @@ class CaseHeaderCard extends StatelessWidget {
                 CountdownTimer(
                   deadline: caseModel.deadline!,
                   showIcon: true,
+                  onExpired: onExpired,
                 ),
             ],
           ),
