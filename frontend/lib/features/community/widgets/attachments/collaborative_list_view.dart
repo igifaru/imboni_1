@@ -159,37 +159,7 @@ class _ListDetailDialogState extends State<_ListDetailDialog> {
     }
   }
 
-  void _showExportOptions() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.table_chart, color: Colors.green),
-              title: const Text('Export as Excel (.xlsx)'),
-              onTap: () {
-                Navigator.pop(context);
-                _exportToExcel();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.description, color: Colors.blue),
-              title: const Text('Export as CSV (.csv)'),
-              onTap: () {
-                Navigator.pop(context);
-                _exportToCsv();
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
 
   Future<void> _exportToExcel() async {
     if (_isExporting) return;
@@ -352,11 +322,36 @@ class _ListDetailDialogState extends State<_ListDetailDialog> {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      IconButton(
-                        icon: const Icon(Icons.download),
+                      PopupMenuButton<String>(
+                        icon: const Icon(Icons.download, size: 20),
                         tooltip: 'Export',
-                        onPressed: _isExporting ? null : _showExportOptions,
-                        iconSize: 20,
+                        enabled: !_isExporting,
+                        onSelected: (value) {
+                          if (value == 'excel') _exportToExcel();
+                          if (value == 'csv') _exportToCsv();
+                        },
+                        itemBuilder: (context) => [
+                          const PopupMenuItem(
+                            value: 'excel',
+                            child: Row(
+                              children: [
+                                Icon(Icons.table_chart, color: Colors.green, size: 20),
+                                SizedBox(width: 8),
+                                Text('Export as Excel'),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem(
+                            value: 'csv',
+                            child: Row(
+                              children: [
+                                Icon(Icons.description, color: Colors.blue, size: 20),
+                                SizedBox(width: 8),
+                                Text('Export as CSV'),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                       IconButton(
                         icon: const Icon(Icons.close),

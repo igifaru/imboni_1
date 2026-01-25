@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../models/community_models.dart';
 import '../../providers/community_provider.dart';
 import 'collaborative_list_view.dart';
+import 'file_attachment_widget.dart';
 
 class MessageAttachmentList extends StatelessWidget {
   final List<CommunityAttachment> attachments;
@@ -117,31 +118,9 @@ class MessageAttachmentList extends StatelessWidget {
   }
 
   Widget _buildDocument(BuildContext context, CommunityAttachment attachment) {
-    return Container(
-      width: 200,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: isOwnMessage ? Colors.white.withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
-      ),
-      child: Row(
-        children: [
-           Icon(Icons.description, color: isOwnMessage ? Colors.white : Colors.indigo),
-           const SizedBox(width: 8),
-           Expanded(
-             child: Text(
-               attachment.name,
-               style: TextStyle(
-                 color: isOwnMessage ? Colors.white : Colors.black87,
-                 decoration: TextDecoration.underline,
-               ),
-               maxLines: 1,
-               overflow: TextOverflow.ellipsis,
-             ),
-           ),
-        ],
-      ),
+    return FileAttachmentWidget(
+      attachment: attachment,
+      isOwnMessage: isOwnMessage,
     );
   }
 
