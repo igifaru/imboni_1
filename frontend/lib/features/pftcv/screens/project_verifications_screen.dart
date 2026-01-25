@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../shared/widgets/media_viewers.dart';
 import '../../../shared/theme/colors.dart';
 import '../models/pftcv_models.dart';
 import '../services/pftcv_service.dart';
@@ -248,6 +249,7 @@ class _MediaThumbnail extends StatelessWidget {
   Widget build(BuildContext context) {
     var type = item['type'];
     final url = ApiClient.baseUrl.replaceAll('/api', '') + item['url'];
+    final fileName = item['fileName'] ?? 'Media';
     
     // Fallback if type is DOCUMENT but extension suggests otherwise
     if (type == 'DOCUMENT') {
@@ -258,6 +260,9 @@ class _MediaThumbnail extends StatelessWidget {
       } else if (lowerUrl.endsWith('.mp4') || lowerUrl.endsWith('.mov') || 
                  lowerUrl.endsWith('.avi') || lowerUrl.endsWith('.webm')) {
         type = 'VIDEO';
+      } else if (lowerUrl.endsWith('.mp3') || lowerUrl.endsWith('.wav') || 
+                 lowerUrl.endsWith('.m4a') || lowerUrl.endsWith('.aac')) {
+        type = 'AUDIO';
       }
     }
 
@@ -294,34 +299,26 @@ class _MediaThumbnail extends StatelessWidget {
         if (isImage) {
           showDialog(
             context: context,
-            builder: (ctx) => Dialog(
-              backgroundColor: Colors.black54,
-              insetPadding: EdgeInsets.zero,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  InteractiveViewer(
-                    child: Image.network(
-                      url,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return const Center(child: CircularProgressIndicator(color: Colors.white));
-                      },
-                      errorBuilder: (context, error, stackTrace) {
-                         return const Center(child: Icon(Icons.broken_image, color: Colors.white, size: 50));
-                      },
-                    ),
-                  ),
-                  Positioned(
-                    top: 40,
-                    right: 20,
-                    child: IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white, size: 30),
-                      onPressed: () => Navigator.pop(ctx),
-                    ),
-                  ),
-                ],
-              ),
+            builder: (_) => GalleryImageViewerDialog(
+              urls: [url],
+              fileNames: [fileName],
+              initialIndex: 0,
+            ),
+          );
+        } else if (type == 'VIDEO') {
+          showDialog(
+            context: context,
+            builder: (_) => VideoPlayerDialog(
+              url: url,
+              fileName: fileName,
+            ),
+          );
+        } else if (type == 'AUDIO') {
+          showDialog(
+            context: context,
+            builder: (_) => AudioPlayerDialog(
+              url: url,
+              fileName: fileName,
             ),
           );
         } else {
@@ -365,23 +362,31 @@ class _MediaThumbnail extends StatelessWidget {
                 },
               )
             else
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+              Stack(
+                fit: StackFit.expand,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.black26, 
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(icon, color: iconColor, size: 32),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    label,
-                    style: theme.textTheme.labelSmall?.copyWith(color: colorScheme.onSurfaceVariant),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  // Background placeholder based on type
+                   Container(color: Colors.black26),
+                   
+                   Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.black45, 
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(icon, color: iconColor, size: 32),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        label,
+                        style: theme.textTheme.labelSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
                 ],
               ),
