@@ -31,6 +31,11 @@ class _EscalationAlertsScreenState extends State<EscalationAlertsScreen> {
           _alerts = response.data ?? [];
           _isLoading = false;
         });
+
+        // Mark as viewed if there are unread alerts
+        if (_alerts.any((a) => !a.isAlertViewed)) {
+          caseService.markAlertsAsViewed();
+        }
       }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);

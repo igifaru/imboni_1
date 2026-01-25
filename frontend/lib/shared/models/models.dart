@@ -51,6 +51,7 @@ class CaseModel {
 
   final int? extensionCount; // Added for extension tracking
   final CaseResolutionModel? resolution;
+  final bool isAlertViewed;
 
   const CaseModel({
     required this.id,
@@ -78,6 +79,7 @@ class CaseModel {
     this.assignedLeaderPhone,
     this.extensionCount,
     this.resolution,
+    this.isAlertViewed = false,
   });
 
   factory CaseModel.fromJson(Map<String, dynamic> json) {
@@ -110,6 +112,7 @@ class CaseModel {
       assignedLeaderPhone: json['assignedLeaderPhone'] as String?,
       extensionCount: json['extensionCount'] as int?,
       resolution: json['resolution'] != null ? CaseResolutionModel.fromJson(json['resolution']) : null,
+      isAlertViewed: json['isAlertViewed'] as bool? ?? false,
     );
   }
 

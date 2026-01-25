@@ -226,6 +226,30 @@ router.get('/escalation-alerts', async (req: Request, res: Response, next: NextF
 });
 
 /**
+ * POST /cases/alerts/mark-viewed - Mark alerts as viewed
+ */
+router.post('/alerts/mark-viewed', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const userId = (req as any).user?.userId;
+        const { caseIds } = req.body; // Optional list of IDs
+
+        if (!userId) {
+            return res.status(401).json({ error: 'Authentication required' });
+        }
+
+        await caseService.markAlertsViewed(userId, caseIds);
+
+        res.json({
+            success: true,
+            message: 'Alerts marked as viewed'
+        });
+    } catch (error) {
+        logger.error('Failed to mark alerts as viewed', error);
+        next(error);
+    }
+});
+
+/**
  * GET /cases/metrics - Get performance metrics
  */
 router.get('/metrics', async (req: Request, res: Response, next: NextFunction) => {

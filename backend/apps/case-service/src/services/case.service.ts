@@ -696,6 +696,27 @@ export class CaseService {
 
         // Update status if provided
         if (dto.status) {
+            // Auto-Assignment Logic:
+            // If moving to IN_PROGRESS from OPEN or ESCALATED, assign to the acting user
+            if (dto.status === 'IN_PROGRESS' && (existingCase.status === 'OPEN' || existingCase.status === 'ESCALATED')) {
+                logger.info('Auto-assigning case during status update', { caseId, userId });
+
+                // 1. Deactivate existing active assignments if any
+                await this.completeAssignment(caseId);
+
+                // 2. Create new assignment for the acting leader
+                const deadlineAt = this.getDeadlineForUrgency(existingCase.urgency);
+                await prisma.caseAssignment.create({
+                    data: {
+                        caseId,
+                        administrativeUnitId: existingCase.administrativeUnitId,
+                        leaderId: userId,
+                        deadlineAt,
+                        isActive: true,
+                    },
+                });
+            }
+
             await this.repository.updateStatus(caseId, dto.status);
 
             // Log the action
@@ -716,9 +737,11 @@ export class CaseService {
             });
 
             // If resolved, mark assignment as complete
-            if (dto.status === 'RESOLVED') {
+            if (dto.status === 'RESOLVED' || dto.status === 'CLOSED') {
                 await this.completeAssignment(caseId);
-                await publishEvent(CHANNELS.CASE_RESOLVED, { caseId });
+                if (dto.status === 'RESOLVED') {
+                    await publishEvent(CHANNELS.CASE_RESOLVED, { caseId });
+                }
             }
         }
 
@@ -877,7 +900,6 @@ export class CaseService {
      */
     async getEscalationAlerts(leaderId: string): Promise<CaseResponseDto[]> {
         // Find active assignments with approaching deadlines (< 24 hours)
-        // const now = new Date();
         const tomorrow = new Date();
         tomorrow.setHours(tomorrow.getHours() + 24);
 
@@ -886,11 +908,21 @@ export class CaseService {
                 leaderId,
                 isActive: true,
                 deadlineAt: {
-                    lte: tomorrow, // Deadline is before tomorrow (so it's today or past due)
+                    lte: tomorrow,
                 },
             },
             include: {
-                case: true,
+                case: {
+                    include: {
+                        assignments: {
+                            where: { isActive: true },
+                            include: { leader: { select: { name: true, phone: true } } }
+                        },
+                        administrativeUnit: true,
+                        evidence: true,
+                        resolution: { include: { evidence: true } }
+                    }
+                },
             },
             orderBy: {
                 deadlineAt: 'asc',
@@ -898,6 +930,28 @@ export class CaseService {
         });
 
         return Promise.all(assignments.map(a => this.toResponseDto(a.case as unknown as CaseEntity)));
+    }
+
+    /**
+     * Mark alerts as viewed for a leader
+     */
+    async markAlertsViewed(leaderId: string, caseIds?: string[]): Promise<void> {
+        const whereClause: any = {
+            leaderId,
+            isActive: true,
+            alertViewed: false
+        };
+
+        if (caseIds && caseIds.length > 0) {
+            whereClause.caseId = { in: caseIds };
+        }
+
+        await prisma.caseAssignment.updateMany({
+            where: whereClause,
+            data: { alertViewed: true }
+        });
+
+        logger.info('Alerts marked as viewed', { leaderId, caseIds });
     }
 
     /**
@@ -1691,7 +1745,8 @@ export class CaseService {
                     fileName: (entity as any).resolution.evidence.fileName,
                     mimeType: (entity as any).resolution.evidence.mimeType,
                 } : undefined,
-            } : undefined
+            } : undefined,
+            isAlertViewed: activeAssignment?.alertViewed
         };
     }
 

@@ -326,6 +326,17 @@ class CaseService {
     return ApiResponse.success([]);
   }
 
+  /// Mark alerts as viewed
+  Future<ApiResponse<void>> markAlertsAsViewed({List<String>? caseIds}) async {
+    final response = await apiClient.post('/cases/alerts/mark-viewed', {
+      if (caseIds != null) 'caseIds': caseIds,
+    });
+    if (response.isSuccess) {
+      return ApiResponse.success(null);
+    }
+    return ApiResponse.error(response.error ?? 'Failed to mark alerts as viewed');
+  }
+
   /// Get performance metrics (for leaders)
   Future<ApiResponse<PerformanceMetrics>> getPerformanceMetrics({
     DateTimeRange? dateRange,

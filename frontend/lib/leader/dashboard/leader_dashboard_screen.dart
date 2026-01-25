@@ -32,11 +32,26 @@ class _LeaderDashboardScreenState extends State<LeaderDashboardScreen> {
   int _currentIndex = 0;
   String? _currentLevel;
   bool _isLevelLoading = true;
+  int _alertsCount = 0;
 
   @override
   void initState() {
     super.initState();
     _fetchLevel();
+    _fetchAlertsCount();
+  }
+
+  Future<void> _fetchAlertsCount() async {
+    try {
+      final response = await caseService.getEscalationAlerts();
+      if (mounted && response.isSuccess && response.data != null) {
+        // Only count unread alerts
+        final unreadCount = response.data!.where((c) => !c.isAlertViewed).length;
+        setState(() => _alertsCount = unreadCount);
+      }
+    } catch (e) {
+      debugPrint('Error fetching alerts count: $e');
+    }
   }
 
   Future<void> _fetchLevel() async {
@@ -127,7 +142,15 @@ class _LeaderDashboardScreenState extends State<LeaderDashboardScreen> {
         NavigationDestination(icon: const Icon(Icons.people_outline), selectedIcon: const Icon(Icons.people), label: AppLocalizations.of(context).communityTitle),
         NavigationDestination(icon: const Icon(Icons.account_balance_outlined), selectedIcon: const Icon(Icons.account_balance), label: AppLocalizations.of(context).publicFunds),
         NavigationDestination(icon: const Icon(Icons.folder_outlined), selectedIcon: const Icon(Icons.folder), label: AppLocalizations.of(context).myCases),
-        NavigationDestination(icon: const Icon(Icons.warning_amber_outlined), selectedIcon: const Icon(Icons.warning_amber), label: AppLocalizations.of(context).alerts),
+        NavigationDestination(
+          icon: _alertsCount > 0 
+            ? Badge(label: Text('$_alertsCount'), child: const Icon(Icons.warning_amber_outlined))
+            : const Icon(Icons.warning_amber_outlined),
+          selectedIcon: _alertsCount > 0
+            ? Badge(label: Text('$_alertsCount'), child: const Icon(Icons.warning_amber))
+            : const Icon(Icons.warning_amber),
+          label: AppLocalizations.of(context).alerts
+        ),
         NavigationDestination(icon: const Icon(Icons.analytics_outlined), selectedIcon: const Icon(Icons.analytics), label: AppLocalizations.of(context).performance),
         // Register button moved to FAB
       ],
@@ -205,7 +228,9 @@ class _LeaderDashboardScreenState extends State<LeaderDashboardScreen> {
           borderRadius: BorderRadius.circular(12),
         ),
         child: ListTile(
-          leading: Icon(item.$1, color: isSelected ? ImboniColors.primary : theme.colorScheme.onSurfaceVariant, size: 22),
+          leading: (item.$3 == 4 && _alertsCount > 0)
+              ? Badge(label: Text('$_alertsCount'), child: Icon(item.$1, color: isSelected ? ImboniColors.primary : theme.colorScheme.onSurfaceVariant, size: 22))
+              : Icon(item.$1, color: isSelected ? ImboniColors.primary : theme.colorScheme.onSurfaceVariant, size: 22),
           title: Text(item.$2, style: TextStyle(color: isSelected ? ImboniColors.primary : theme.colorScheme.onSurface, fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal)),
           selected: isSelected,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

@@ -89,6 +89,7 @@ export interface CaseResponseDto {
             mimeType: string;
         };
     };
+    isAlertViewed?: boolean;
 }
 
 export interface CaseListResponseDto {
