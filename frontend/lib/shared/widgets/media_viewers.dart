@@ -497,67 +497,112 @@ class _VideoPlayerDialogState extends State<VideoPlayerDialog> {
 
     await showDialog(
       context: this.context,
-      barrierColor: Colors.black26,
-      builder: (context) => Stack(
-        children: [
-          Positioned(
-            right: 20,
-            bottom: 80, // Positioned closer to the gear icon area
-            child: Material(
-              color: Colors.transparent,
-              child: Container(
-                width: 200,
-                decoration: BoxDecoration(
+      barrierColor: Colors.black12,
+      builder: (context) => Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Stack(
+          children: [
+            // Click outside to close
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(color: Colors.transparent),
+              ),
+            ),
+            Positioned(
+              right: 24,
+              bottom: 100, // Floating above the gear icon area
+              child: Hero(
+                tag: 'video-settings',
+                child: Material(
+                  elevation: 12,
                   color: Theme.of(this.context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withAlpha(50),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
+                  borderRadius: BorderRadius.circular(20),
+                  clipBehavior: Clip.antiAlias,
+                  child: Container(
+                    width: 180,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Theme.of(this.context).dividerColor.withAlpha(40)),
                     ),
-                  ],
-                  border: Border.all(color: Theme.of(this.context).dividerColor.withAlpha(50)),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: Text(
-                        'Playback Speed',
-                        style: Theme.of(this.context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-                      ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            color: Theme.of(this.context).colorScheme.primaryContainer.withAlpha(30),
+                          ),
+                          child: Center(
+                            child: Text(
+                              'Playback Speed',
+                              style: Theme.of(this.context).textTheme.labelLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(this.context).colorScheme.primary,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const Divider(height: 1),
+                        ...speeds.map((speed) {
+                          final isSelected = currentSpeed == speed;
+                          return InkWell(
+                            onTap: () {
+                              _videoPlayerController.setPlaybackSpeed(speed);
+                              Navigator.pop(context);
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.check_rounded,
+                                    size: 18,
+                                    color: isSelected ? Theme.of(this.context).colorScheme.primary : Colors.transparent,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    '${speed}x',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                      color: isSelected ? Theme.of(this.context).colorScheme.primary : null,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }),
+                        const Divider(height: 1),
+                        InkWell(
+                          onTap: () => Navigator.pop(context),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.close_rounded, size: 16, color: Theme.of(this.context).colorScheme.error),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Close',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Theme.of(this.context).colorScheme.error,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    const Divider(height: 1),
-                    ...speeds.map((speed) => ListTile(
-                      dense: true,
-                      visualDensity: VisualDensity.compact,
-                      leading: Icon(
-                        Icons.check_rounded,
-                        size: 18,
-                        color: currentSpeed == speed ? Theme.of(this.context).colorScheme.primary : Colors.transparent,
-                      ),
-                      title: Text('${speed}x', style: const TextStyle(fontSize: 14)),
-                      onTap: () {
-                        _videoPlayerController.setPlaybackSpeed(speed);
-                        Navigator.pop(context);
-                      },
-                    )),
-                    const Divider(height: 1),
-                    ListTile(
-                      dense: true,
-                      visualDensity: VisualDensity.compact,
-                      leading: const Icon(Icons.close_rounded, size: 18),
-                      title: const Text('Close', style: TextStyle(fontSize: 14)),
-                      onTap: () => Navigator.pop(context),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
