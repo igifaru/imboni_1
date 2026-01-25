@@ -110,13 +110,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
             ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _isLoading ? null : _saveProfile,
-        icon: const Icon(Icons.save),
-        label: Text(l10n.saveChanges),
-        backgroundColor: colorScheme.primary,
-        foregroundColor: colorScheme.onPrimary,
-      ),
+
     );
   }
 
