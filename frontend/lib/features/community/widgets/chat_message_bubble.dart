@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:imboni/shared/theme/colors.dart';
+import '../../../shared/localization/app_localizations.dart';
 import '../providers/community_provider.dart';
 import '../models/community_models.dart';
 import '../utils/community_utils.dart';
@@ -85,7 +86,7 @@ class ChatMessageBubble extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              message.author?.displayName ?? 'Unknown',
+                              message.author?.displayName ?? AppLocalizations.of(context).unknown,
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 12,
@@ -187,7 +188,7 @@ class ChatMessageBubble extends StatelessWidget {
                                     children: [
                                       Icon(Icons.push_pin, size: 12, color: isOwnMessage ? Colors.white70 : Colors.grey),
                                       const SizedBox(width: 4),
-                                      Text('Pinned', style: TextStyle(fontSize: 10, color: isOwnMessage ? Colors.white70 : Colors.grey, fontStyle: FontStyle.italic)),
+                                      Text(AppLocalizations.of(context).pinned, style: TextStyle(fontSize: 10, color: isOwnMessage ? Colors.white70 : Colors.grey, fontStyle: FontStyle.italic)),
                                     ],
                                   ),
                                 ),
@@ -203,7 +204,7 @@ class ChatMessageBubble extends StatelessWidget {
                                   channelId: channelId,
                                   messageId: message.id,
                                   currentUserId: currentUserId ?? 'unknown',
-                                  currentUserName: context.read<CommunityProvider>().getCurrentUserName() ?? 'User',
+                                  currentUserName: context.read<CommunityProvider>().getCurrentUserName() ?? AppLocalizations.of(context).user,
                                 ),
                               ),
 
@@ -380,7 +381,7 @@ class ChatMessageBubble extends StatelessWidget {
                            actions: [
                                TextButton(
                                    onPressed: () => Navigator.pop(context),
-                                   child: const Text('Close'),
+                                   child: Text(AppLocalizations.of(context).close),
                                )
                            ],
                        ));

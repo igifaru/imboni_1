@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../../../shared/localization/app_localizations.dart';
 import '../../models/community_models.dart';
 
 class CollaborativeListView extends StatelessWidget {
@@ -68,7 +69,7 @@ class CollaborativeListView extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              '${list.entries.length} entries',
+              '${list.entries.length} ${AppLocalizations.of(context).entries}',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: colorScheme.onSurfaceVariant,
               ),
@@ -82,7 +83,7 @@ class CollaborativeListView extends StatelessWidget {
                   side: const BorderSide(color: Colors.indigo),
                   foregroundColor: Colors.indigo,
                 ),
-                child: const Text('View List'),
+                child: Text(AppLocalizations.of(context).viewList),
               ),
             ),
           ],
@@ -224,7 +225,7 @@ class _ListDetailDialogState extends State<_ListDetailDialog> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Excel Export failed: $e'),
+          content: Text('${AppLocalizations.of(context).excelExportFailed}: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -278,7 +279,7 @@ class _ListDetailDialogState extends State<_ListDetailDialog> {
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Export failed: $e'),
+          content: Text('${AppLocalizations.of(context).exportFailed}: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -350,23 +351,23 @@ class _ListDetailDialogState extends State<_ListDetailDialog> {
                           if (value == 'csv') _exportToCsv();
                         },
                         itemBuilder: (context) => [
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: 'excel',
                             child: Row(
                               children: [
-                                Icon(Icons.table_chart, color: Colors.green, size: 20),
-                                SizedBox(width: 8),
-                                Text('Export as Excel'),
+                                const Icon(Icons.table_chart, color: Colors.green, size: 20),
+                                const SizedBox(width: 8),
+                                Text(AppLocalizations.of(context).exportAsExcel),
                               ],
                             ),
                           ),
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: 'csv',
                             child: Row(
                               children: [
-                                Icon(Icons.description, color: Colors.blue, size: 20),
-                                SizedBox(width: 8),
-                                Text('Export as CSV'),
+                                const Icon(Icons.description, color: Colors.blue, size: 20),
+                                const SizedBox(width: 8),
+                                Text(AppLocalizations.of(context).exportAsCsv),
                               ],
                             ),
                           ),
@@ -396,7 +397,7 @@ class _ListDetailDialogState extends State<_ListDetailDialog> {
                 child: _currentList.entries.isEmpty
                     ? Center(
                         child: Text(
-                          'No entries yet',
+                          AppLocalizations.of(context).noEntriesYet,
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                       )
@@ -414,7 +415,7 @@ class _ListDetailDialogState extends State<_ListDetailDialog> {
                 child: ElevatedButton.icon(
                   onPressed: _addNewEntry,
                   icon: const Icon(Icons.add, size: 20),
-                  label: const Text('Add Your Entry'),
+                  label: Text(AppLocalizations.of(context).addYourEntry),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.indigo,
                     foregroundColor: Colors.white,
@@ -446,24 +447,24 @@ class _ListDetailDialogState extends State<_ListDetailDialog> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Edit List Structure',
+                    AppLocalizations.of(context).editListStructure,
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   const SizedBox(height: 24),
                   TextField(
                     controller: titleController,
-                    decoration: const InputDecoration(
-                      labelText: 'List Title',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: AppLocalizations.of(context).listTitle,
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: columnsController,
-                    decoration: const InputDecoration(
-                      labelText: 'Columns (comma separated)',
-                      helperText: 'Changing columns may affect existing data display',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: AppLocalizations.of(context).columnsCommaSeparated,
+                      helperText: AppLocalizations.of(context).columnsDataWarning,
+                      border: const OutlineInputBorder(),
                     ),
                     maxLines: 2,
                   ),
@@ -472,7 +473,7 @@ class _ListDetailDialogState extends State<_ListDetailDialog> {
                     width: double.infinity,
                     child: TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel'),
+                      child: Text(AppLocalizations.of(context).cancel),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -489,7 +490,7 @@ class _ListDetailDialogState extends State<_ListDetailDialog> {
                         backgroundColor: Colors.green,
                         foregroundColor: Colors.white,
                       ),
-                      child: const Text('Save'),
+                      child: Text(AppLocalizations.of(context).save),
                     ),
                   ),
                 ],
@@ -726,7 +727,7 @@ class _AddEntryDialogContentState extends State<_AddEntryDialogContent> {
     
     if (data.values.every((v) => v.isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill at least one field')),
+        SnackBar(content: Text(AppLocalizations.of(context).fillAtLeastOneField)),
       );
       return;
     }
@@ -752,7 +753,7 @@ class _AddEntryDialogContentState extends State<_AddEntryDialogContent> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  widget.initialData != null ? 'Edit Entry' : 'Add Entry',
+                  widget.initialData != null ? AppLocalizations.of(context).editEntry : AppLocalizations.of(context).addEntry,
                   style: Theme.of(context).textTheme.headlineSmall,
                   textAlign: TextAlign.center,
                 ),
@@ -791,7 +792,7 @@ class _AddEntryDialogContentState extends State<_AddEntryDialogContent> {
                       ),
                     ),
                     child: Text(
-                      widget.initialData != null ? 'Save Changes' : 'Add Entry',
+                      widget.initialData != null ? AppLocalizations.of(context).saveChanges : AppLocalizations.of(context).addEntry,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
@@ -811,9 +812,9 @@ class _AddEntryDialogContentState extends State<_AddEntryDialogContent> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: const Text(
-                      'Cancel',
-                      style: TextStyle(fontSize: 14),
+                    child: Text(
+                      AppLocalizations.of(context).cancel,
+                      style: const TextStyle(fontSize: 14),
                     ),
                   ),
                 ),

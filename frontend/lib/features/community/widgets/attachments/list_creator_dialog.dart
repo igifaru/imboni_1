@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../shared/localization/app_localizations.dart';
 import '../../models/community_models.dart';
 
 class ListCreatorDialog extends StatefulWidget {
@@ -50,14 +51,14 @@ class _ListCreatorDialogState extends State<ListCreatorDialog> {
 
     if (title.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a list title')),
+        SnackBar(content: Text(AppLocalizations.of(context).enterListTitle)),
       );
       return;
     }
 
     if (columns.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please provide at least one column')),
+        SnackBar(content: Text(AppLocalizations.of(context).provideAtLeastOneColumn)),
       );
       return;
     }
@@ -96,21 +97,21 @@ class _ListCreatorDialogState extends State<ListCreatorDialog> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Create Collaborative List',
+                AppLocalizations.of(context).createCollaborativeList,
                 style: theme.textTheme.headlineSmall,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
               TextField(
                 controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'List Title',
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context).listTitle,
                   hintText: 'e.g., Event Signup',
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 16),
-              const Text('Columns', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text(AppLocalizations.of(context).columnsLabel, style: const TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               ...List.generate(_columnControllers.length, (index) {
                 return Padding(
@@ -121,7 +122,7 @@ class _ListCreatorDialogState extends State<ListCreatorDialog> {
                         child: TextField(
                           controller: _columnControllers[index],
                           decoration: InputDecoration(
-                            hintText: 'Column ${index + 1}',
+                            hintText: '${AppLocalizations.of(context).columnHint} ${index + 1}',
                             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                           ),
@@ -140,7 +141,7 @@ class _ListCreatorDialogState extends State<ListCreatorDialog> {
                 TextButton.icon(
                   onPressed: () => _addColumn(),
                   icon: const Icon(Icons.add),
-                  label: const Text('Add Column'),
+                  label: Text(AppLocalizations.of(context).addColumn),
                   style: TextButton.styleFrom(alignment: Alignment.centerLeft),
                 ),
               const SizedBox(height: 24),
@@ -149,7 +150,7 @@ class _ListCreatorDialogState extends State<ListCreatorDialog> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel'),
+                    child: Text(AppLocalizations.of(context).cancel),
                   ),
                   const SizedBox(width: 8),
                   SizedBox(
@@ -162,7 +163,7 @@ class _ListCreatorDialogState extends State<ListCreatorDialog> {
                         foregroundColor: colorScheme.onPrimary,
                         elevation: 0,
                       ),
-                      child: const Text('Create List'),
+                      child: Text(AppLocalizations.of(context).createList),
                     ),
                   ),
                 ],

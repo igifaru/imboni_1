@@ -359,16 +359,78 @@ class AppLocalizations {
   String get extensionsRemaining => get('extensions_remaining');
 
 
-
-
-
-  
   // Community
   String get communityTitle => get('community_title');
   String get channels => get('channels');
   String get typeMessage => get('type_message');
   String get members => get('members');
   String get general => get('general');
+
+  // Community - Collaborative List
+  String get viewList => get('view_list');
+  String get addYourEntry => get('add_your_entry');
+  String get addEntry => get('add_entry');
+  String get editEntry => get('edit_entry');
+  String get noEntriesYet => get('no_entries_yet');
+  String get editListStructure => get('edit_list_structure');
+  String get listTitle => get('list_title');
+  String get columnsLabel => get('columns_label');
+  String get addColumn => get('add_column');
+  String get createList => get('create_list');
+  String get createCollaborativeList => get('create_collaborative_list');
+  String get columnsCommaSeparated => get('columns_comma_separated');
+  String get columnsDataWarning => get('columns_data_warning');
+  String get entries => get('entries');
+  String get exportAsExcel => get('export_as_excel');
+  String get exportAsCsv => get('export_as_csv');
+  String get exportFailed => get('export_failed');
+  String get excelExportFailed => get('excel_export_failed');
+  String get editTitleColumns => get('edit_title_columns');
+  String get fillAtLeastOneField => get('fill_at_least_one_field');
+  String get enterListTitle => get('enter_list_title');
+  String get provideAtLeastOneColumn => get('provide_at_least_one_column');
+
+  // Community - Poll
+  String get createPoll => get('create_poll');
+  String get question => get('question');
+  String get askSomething => get('ask_something');
+  String get options => get('options');
+  String get addOption => get('add_option');
+  String get allowMultipleAnswers => get('allow_multiple_answers');
+  String get enterQuestion => get('enter_question');
+  String get provideAtLeastTwoOptions => get('provide_at_least_two_options');
+  String get poll => get('poll');
+  String get newPoll => get('new_poll');
+  String get votes => get('votes');
+  String get vote => get('vote');
+  String get voted => get('voted');
+
+  // Community - Message Actions
+  String get actionCopy => get('action_copy');
+  String get actionReply => get('action_reply');
+  String get actionPin => get('action_pin');
+  String get actionEdit => get('action_edit');
+  String get actionDelete => get('action_delete');
+  String get actionInfo => get('action_info');
+  String get close => get('close');
+  String get pinned => get('pinned');
+  String get unknown => get('unknown');
+  String get you => get('you');
+  String get user => get('user');
+  String get clickToRemove => get('click_to_remove');
+  String get all => get('all');
+  String get userNotFound => get('user_not_found');
+
+  // Community - Emoji Picker
+  String get searchEmoji => get('search_emoji');
+  String get noEmojisFound => get('no_emojis_found');
+
+  // Community - Attachments
+  String get documentLabel => get('document_label');
+  String get listLabel => get('list_label');
+  String get newList => get('new_list');
+  String get columnHint => get('column_hint');
+  String get optionHint => get('option_hint');
 
   // PFTCV - Public Fund Transparency
   String get publicFunds => get('public_funds');
@@ -703,6 +765,73 @@ const Map<String, Map<String, String>> _translations = {
     'type_message': 'Andika ubutumwa...',
     'members': 'Abanyamuryango',
     'general': 'Rusange',
+    
+    // Community - Collaborative List RW
+    'view_list': 'Reba Urutonde',
+    'add_your_entry': 'Ongeraho Umurongo Wawe',
+    'add_entry': 'Ongeraho Umurongo',
+    'edit_entry': 'Hindura Umurongo',
+    'no_entries_yet': 'Nta murongo uriho',
+    'edit_list_structure': 'Hindura Imiterere y\'Urutonde',
+    'list_title': 'Izina ry\'Urutonde',
+    'columns_label': 'Inkingi',
+    'add_column': 'Ongeraho Inkingi',
+    'create_list': 'Kora Urutonde',
+    'create_collaborative_list': 'Kora Urutonde rw\'Ubufatanye',
+    'columns_comma_separated': 'Inkingi (zitandukanywa na koma)',
+    'columns_data_warning': 'Guhindura inkingi bishobora kugira ingaruka ku makuru ahari',
+    'entries': 'imirongo',
+    'export_as_excel': 'Kuramo nka Excel',
+    'export_as_csv': 'Kuramo nka CSV',
+    'export_failed': 'Gukuramo byanze',
+    'excel_export_failed': 'Gukuramo Excel byanze',
+    'edit_title_columns': 'Hindura Izina/Inkingi',
+    'fill_at_least_one_field': 'Uzuza nibura umurongo umwe',
+    'enter_list_title': 'Andika izina ry\'urutonde',
+    'provide_at_least_one_column': 'Tanga nibura inkingi imwe',
+
+    // Community - Poll RW
+    'create_poll': 'Kora Itora',
+    'question': 'Ikibazo',
+    'ask_something': 'Baza ikintu...',
+    'options': 'Amahitamo',
+    'add_option': 'Ongeraho Ihitamo',
+    'allow_multiple_answers': 'Emera ibisubizo byinshi',
+    'enter_question': 'Andika ikibazo',
+    'provide_at_least_two_options': 'Tanga nibura amahitamo abiri',
+    'poll': 'Itora',
+    'new_poll': 'Itora Rishya',
+    'votes': 'amajwi',
+    'vote': 'Tora',
+    'voted': 'Watowe',
+
+    // Community - Message Actions RW
+    'action_copy': 'Gukoporora',
+    'action_reply': 'Gusubiza',
+    'action_pin': 'Gufatanisha',
+    'action_edit': 'Guhindura',
+    'action_delete': 'Gusiba',
+    'action_info': 'Amakuru',
+    'close': 'Funga',
+    'pinned': 'Byafatanishijwe',
+    'unknown': 'Kitazwi',
+    'you': 'Wowe',
+    'user': 'Umukoresha',
+    'click_to_remove': 'Kanda kugirango ukureho',
+    'all': 'Byose',
+    'user_not_found': 'Umukoresha ntabonetse',
+
+    // Community - Emoji Picker RW
+    'search_emoji': 'Shakisha emoji',
+    'no_emojis_found': 'Nta emoji yabonetse',
+
+    // Community - Attachments RW
+    'document_label': 'Inyandiko',
+    'list_label': 'Urutonde',
+    'new_list': 'Urutonde Rushya',
+    'column_hint': 'Inkingi',
+    'option_hint': 'Ihitamo',
+
     // PFTCV RW
     'public_funds': 'Imari ya Leta',
     'public_funds_subtitle': 'Genzura imishinga ya Leta',
@@ -1000,10 +1129,77 @@ const Map<String, Map<String, String>> _translations = {
     'type_message': 'Type a message...',
     'members': 'members',
     'general': 'General',
+    
+    // Community - Collaborative List EN
+    'view_list': 'View List',
+    'add_your_entry': 'Add Your Entry',
+    'add_entry': 'Add Entry',
+    'edit_entry': 'Edit Entry',
+    'save_changes': 'Save Changes',
+    'no_entries_yet': 'No entries yet',
+    'edit_list_structure': 'Edit List Structure',
+    'list_title': 'List Title',
+    'columns_label': 'Columns',
+    'add_column': 'Add Column',
+    'create_list': 'Create List',
+    'create_collaborative_list': 'Create Collaborative List',
+    'columns_comma_separated': 'Columns (comma separated)',
+    'columns_data_warning': 'Changing columns may affect existing data display',
+    'entries': 'entries',
+    'export_as_excel': 'Export as Excel',
+    'export_as_csv': 'Export as CSV',
+    'export_failed': 'Export failed',
+    'excel_export_failed': 'Excel export failed',
+    'edit_title_columns': 'Edit Title/Columns',
+    'fill_at_least_one_field': 'Please fill at least one field',
+    'enter_list_title': 'Please enter a list title',
+    'provide_at_least_one_column': 'Please provide at least one column',
+
+    // Community - Poll EN
+    'create_poll': 'Create Poll',
+    'question': 'Question',
+    'ask_something': 'Ask something...',
+    'options': 'Options',
+    'add_option': 'Add Option',
+    'allow_multiple_answers': 'Allow multiple answers',
+    'enter_question': 'Please enter a question',
+    'provide_at_least_two_options': 'Please provide at least 2 options',
+    'poll': 'Poll',
+    'new_poll': 'New Poll',
+    'votes': 'votes',
+    'vote': 'Vote',
+    'voted': 'Voted',
+
+    // Community - Message Actions EN
+    'action_copy': 'Copy',
+    'action_reply': 'Reply',
+    'action_pin': 'Pin',
+    'action_edit': 'Edit',
+    'action_delete': 'Delete',
+    'action_info': 'Info',
+    'close': 'Close',
+    'pinned': 'Pinned',
+    'unknown': 'Unknown',
+    'you': 'You',
+    'user': 'User',
+    'click_to_remove': 'Click to remove',
+    'all': 'All',
+    'user_not_found': 'User not found',
+
+    // Community - Emoji Picker EN
+    'search_emoji': 'Search emoji',
+    'no_emojis_found': 'No emojis found',
+
+    // Community - Attachments EN
+    'document_label': 'Document',
+    'list_label': 'List',
+    'new_list': 'New List',
+    'column_hint': 'Column',
+    'option_hint': 'Option',
+
     'registered_on': 'Registered on',
     'residence_location': 'Residence Location',
     'edit_profile': 'Edit Profile',
-    'save_changes': 'Save Changes',
     'terms_and_conditions': 'Terms and Conditions',
     'logout_confirm': 'Are you sure you want to logout?',
     'yes': 'Yes',
@@ -1438,6 +1634,72 @@ const Map<String, Map<String, String>> _translations = {
     'total_cases': 'Total Affaires',
     'res_rate': 'Taux Rés.',
     'avg_time': 'Temps Moyen',
+    // Community - Collaborative List FR
+    'view_list': 'Voir la Liste',
+    'add_your_entry': 'Ajouter Votre Entrée',
+    'add_entry': 'Ajouter une Entrée',
+    'edit_entry': 'Modifier l\'Entrée',
+    'no_entries_yet': 'Aucune entrée pour le moment',
+    'edit_list_structure': 'Modifier la Structure de la Liste',
+    'list_title': 'Titre de la Liste',
+    'columns_label': 'Colonnes',
+    'add_column': 'Ajouter une Colonne',
+    'create_list': 'Créer la Liste',
+    'create_collaborative_list': 'Créer une Liste Collaborative',
+    'columns_comma_separated': 'Colonnes (séparées par des virgules)',
+    'columns_data_warning': 'La modification des colonnes peut affecter l\'affichage des données existantes',
+    'entries': 'entrées',
+    'export_as_excel': 'Exporter en Excel',
+    'export_as_csv': 'Exporter en CSV',
+    'export_failed': 'Échec de l\'exportation',
+    'excel_export_failed': 'Échec de l\'exportation Excel',
+    'edit_title_columns': 'Modifier Titre/Colonnes',
+    'fill_at_least_one_field': 'Veuillez remplir au moins un champ',
+    'enter_list_title': 'Veuillez entrer un titre de liste',
+    'provide_at_least_one_column': 'Veuillez fournir au moins une colonne',
+
+    // Community - Poll FR
+    'create_poll': 'Créer un Sondage',
+    'question': 'Question',
+    'ask_something': 'Posez une question...',
+    'options': 'Options',
+    'add_option': 'Ajouter une Option',
+    'allow_multiple_answers': 'Autoriser plusieurs réponses',
+    'enter_question': 'Veuillez entrer une question',
+    'provide_at_least_two_options': 'Veuillez fournir au moins 2 options',
+    'poll': 'Sondage',
+    'new_poll': 'Nouveau Sondage',
+    'votes': 'votes',
+    'vote': 'Voter',
+    'voted': 'Voté',
+
+    // Community - Message Actions FR
+    'action_copy': 'Copier',
+    'action_reply': 'Répondre',
+    'action_pin': 'Épingler',
+    'action_edit': 'Modifier',
+    'action_delete': 'Supprimer',
+    'action_info': 'Infos',
+    'close': 'Fermer',
+    'pinned': 'Épinglé',
+    'unknown': 'Inconnu',
+    'you': 'Vous',
+    'user': 'Utilisateur',
+    'click_to_remove': 'Cliquez pour supprimer',
+    'all': 'Tous',
+    'user_not_found': 'Utilisateur introuvable',
+
+    // Community - Emoji Picker FR
+    'search_emoji': 'Rechercher un emoji',
+    'no_emojis_found': 'Aucun emoji trouvé',
+
+    // Community - Attachments FR
+    'document_label': 'Document',
+    'list_label': 'Liste',
+    'new_list': 'Nouvelle Liste',
+    'column_hint': 'Colonne',
+    'option_hint': 'Option',
+
     // Case Edit
     'edit_case': 'Modifier l\'Affaire',
     'edit_case_title': 'Modifier le Titre',

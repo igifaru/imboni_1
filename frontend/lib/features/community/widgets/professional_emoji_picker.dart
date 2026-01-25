@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:imboni/features/community/data/emoji_data.dart';
+import '../../../shared/localization/app_localizations.dart';
 
 class ProfessionalEmojiPicker extends StatefulWidget {
   final Function(String) onEmojiSelected;
@@ -91,7 +92,7 @@ class _ProfessionalEmojiPickerState extends State<ProfessionalEmojiPicker> with 
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Search emoji',
+                hintText: AppLocalizations.of(context).searchEmoji,
                 hintStyle: TextStyle(
                   color: isDark ? Colors.grey[400] : Colors.grey[600],
                   fontSize: 14,
@@ -142,7 +143,7 @@ class _ProfessionalEmojiPickerState extends State<ProfessionalEmojiPicker> with 
                  final emojis = _filteredCategories[category] ?? [];
                  
                  if (emojis.isEmpty) {
-                   return Center(child: Text('No emojis found', style: TextStyle(color: Colors.grey)));
+                   return Center(child: Text(AppLocalizations.of(context).noEmojisFound, style: TextStyle(color: Colors.grey)));
                  }
 
                  return GridView.builder(

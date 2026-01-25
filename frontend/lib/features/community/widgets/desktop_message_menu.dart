@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../shared/localization/app_localizations.dart';
 import 'message_actions_widget.dart'; // For MessageAction enum
 import 'professional_emoji_picker.dart';
 
@@ -67,15 +68,15 @@ class DesktopMessageMenu {
           ),
         ),
         const PopupMenuDivider(height: 1),
-        _buildPopupMenuItem(context, Icons.content_copy, 'Copy', MessageAction.copy),
-        _buildPopupMenuItem(context, Icons.reply, 'Reply', MessageAction.reply),
-        _buildPopupMenuItem(context, Icons.push_pin_outlined, 'Pin', MessageAction.pin),
+        _buildPopupMenuItem(context, Icons.content_copy, AppLocalizations.of(context).actionCopy, MessageAction.copy),
+        _buildPopupMenuItem(context, Icons.reply, AppLocalizations.of(context).actionReply, MessageAction.reply),
+        _buildPopupMenuItem(context, Icons.push_pin_outlined, AppLocalizations.of(context).actionPin, MessageAction.pin),
         if (isOwnMessage) ...[
-          _buildPopupMenuItem(context, Icons.edit_outlined, 'Edit', MessageAction.edit),
-          _buildPopupMenuItem(context, Icons.delete_outline, 'Delete', MessageAction.delete),
+          _buildPopupMenuItem(context, Icons.edit_outlined, AppLocalizations.of(context).actionEdit, MessageAction.edit),
+          _buildPopupMenuItem(context, Icons.delete_outline, AppLocalizations.of(context).actionDelete, MessageAction.delete),
           const PopupMenuDivider(height: 1),
         ],
-        _buildPopupMenuItem(context, Icons.info_outline, 'Info', MessageAction.info),
+        _buildPopupMenuItem(context, Icons.info_outline, AppLocalizations.of(context).actionInfo, MessageAction.info),
       ],
     ).then((value) {
       if (value != null && value is MessageAction) {

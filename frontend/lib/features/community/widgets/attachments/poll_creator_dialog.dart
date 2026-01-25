@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../shared/localization/app_localizations.dart';
 import '../../models/community_models.dart';
 
 class PollCreatorDialog extends StatefulWidget {
@@ -51,14 +52,14 @@ class _PollCreatorDialogState extends State<PollCreatorDialog> {
 
     if (question.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a question')),
+        SnackBar(content: Text(AppLocalizations.of(context).enterQuestion)),
       );
       return;
     }
 
     if (options.length < 2) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please provide at least 2 options')),
+        SnackBar(content: Text(AppLocalizations.of(context).provideAtLeastTwoOptions)),
       );
       return;
     }
@@ -97,23 +98,23 @@ class _PollCreatorDialogState extends State<PollCreatorDialog> {
             crossAxisAlignment: CrossAxisAlignment.start, // Don't stretch indiscriminately
             children: [
               Text(
-                'Create Poll',
+                AppLocalizations.of(context).createPoll,
                 style: theme.textTheme.headlineSmall,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
               TextField(
                 controller: _questionController,
-                decoration: const InputDecoration(
-                  labelText: 'Question',
-                  hintText: 'Ask something...',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context).question,
+                  hintText: AppLocalizations.of(context).askSomething,
+                  border: const OutlineInputBorder(),
                 ),
                 maxLines: 2,
                 minLines: 1,
               ),
               const SizedBox(height: 16),
-              const Text('Options', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text(AppLocalizations.of(context).options, style: const TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               ...List.generate(_optionControllers.length, (index) {
                 return Padding(
@@ -124,7 +125,7 @@ class _PollCreatorDialogState extends State<PollCreatorDialog> {
                         child: TextField(
                           controller: _optionControllers[index],
                           decoration: InputDecoration(
-                            hintText: 'Option ${index + 1}',
+                            hintText: '${AppLocalizations.of(context).optionHint} ${index + 1}',
                             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                           ),
@@ -143,12 +144,12 @@ class _PollCreatorDialogState extends State<PollCreatorDialog> {
                 TextButton.icon(
                   onPressed: _addOption,
                   icon: const Icon(Icons.add),
-                  label: const Text('Add Option'),
+                  label: Text(AppLocalizations.of(context).addOption),
                   style: TextButton.styleFrom(alignment: Alignment.centerLeft),
                 ),
               const SizedBox(height: 16),
               SwitchListTile(
-                title: const Text('Allow multiple answers'),
+                title: Text(AppLocalizations.of(context).allowMultipleAnswers),
                 value: _allowMultiple,
                 onChanged: (val) => setState(() => _allowMultiple = val),
                 contentPadding: EdgeInsets.zero,
@@ -159,7 +160,7 @@ class _PollCreatorDialogState extends State<PollCreatorDialog> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel'),
+                    child: Text(AppLocalizations.of(context).cancel),
                   ),
                   const SizedBox(width: 8),
                   SizedBox(
@@ -172,7 +173,7 @@ class _PollCreatorDialogState extends State<PollCreatorDialog> {
                         foregroundColor: colorScheme.onPrimary,
                         elevation: 0, // Simplify shadow to reduce RenderPhysicalShape complexity
                       ),
-                      child: const Text('Create Poll'),
+                      child: Text(AppLocalizations.of(context).createPoll),
                     ),
                   ),
                 ],

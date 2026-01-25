@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../../../../shared/localization/app_localizations.dart';
 import '../../models/community_models.dart';
 
 class AttachmentPreviewList extends StatelessWidget {
@@ -75,20 +76,20 @@ class AttachmentPreviewList extends StatelessWidget {
       case AttachmentType.document:
         accentColor = Colors.orange;
         icon = Icons.description;
-        typeLabel = 'Document';
+        typeLabel = AppLocalizations.of(context).documentLabel;
         detailText = attachment.name;
         break;
       case AttachmentType.poll:
         accentColor = Colors.green;
         icon = Icons.bar_chart_rounded;
-        typeLabel = 'Poll';
-        detailText = (attachment.metadata?['question'] as String?) ?? 'New Poll';
+        typeLabel = AppLocalizations.of(context).poll;
+        detailText = (attachment.metadata?['question'] as String?) ?? AppLocalizations.of(context).newPoll;
         break;
       case AttachmentType.collaborativeList:
         accentColor = Colors.indigo;
         icon = Icons.checklist_rounded;
-        typeLabel = 'List';
-        detailText = (attachment.metadata?['title'] as String?) ?? 'New List';
+        typeLabel = AppLocalizations.of(context).listLabel;
+        detailText = (attachment.metadata?['title'] as String?) ?? AppLocalizations.of(context).newList;
         break;
     }
 

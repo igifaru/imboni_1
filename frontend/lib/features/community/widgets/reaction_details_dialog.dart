@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../shared/localization/app_localizations.dart';
 import '../models/community_models.dart';
 import '../providers/community_provider.dart';
 import '../utils/community_utils.dart'; // Import utils
@@ -103,7 +104,7 @@ class ReactionDetailsDialog extends StatelessWidget {
                      labelPadding: const EdgeInsets.symmetric(horizontal: 16),
                      tabs: tabs.map((key) {
                        final count = groupedReactions[key]!.length;
-                       final label = key == 'All' ? 'All' : key; 
+                       final label = key == 'All' ? AppLocalizations.of(context).all : key; 
                        
                        return Tab(
                          child: Row(
@@ -170,7 +171,7 @@ class ReactionDetailsDialog extends StatelessWidget {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          isMe ? 'You' : (user?.name ?? 'Unknown'),
+                                          isMe ? AppLocalizations.of(context).you : (user?.name ?? AppLocalizations.of(context).unknown),
                                           style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -178,7 +179,7 @@ class ReactionDetailsDialog extends StatelessWidget {
                                           Row(
                                             children: [
                                                Text(
-                                                'Click to remove',
+                                                AppLocalizations.of(context).clickToRemove,
                                                 style: TextStyle(
                                                   fontSize: 11, 
                                                   color: isDark ? Colors.grey[400] : Colors.grey[600]
