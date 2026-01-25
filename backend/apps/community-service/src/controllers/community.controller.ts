@@ -19,7 +19,7 @@ router.get('/channels', async (req: Request, res: Response) => {
 
         let channels = await communityService.getUserChannels(userId);
 
-        if (channels.length < 5 || req.query.refresh === 'true') {
+        if (channels.length < 6 || req.query.refresh === 'true') {
             try {
                 // 1. Try Leader Assignment Enrollment first (for Leaders)
                 await communityService.enrollLeaderByAssignment(userId);

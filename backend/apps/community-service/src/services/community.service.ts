@@ -1,7 +1,8 @@
 import { prisma } from '../../../../libs/database/prisma.service';
 import { createServiceLogger } from '../../../../libs/logging/logger.service';
 import { CreateMessageDto } from '../dto/community.dto';
-import { AdministrativeUnit, CaseCategory, ChannelType, ChannelRole } from '@prisma/client';
+import { AdministrativeUnit, CaseCategory, ChannelType, ChannelRole, AdministrativeLevel } from '@prisma/client';
+import locationData from '../data/locations.json';
 
 const logger = createServiceLogger('community-service');
 
@@ -159,128 +160,290 @@ export class CommunityService {
 
     /**
      * Finds the most specific administrative unit matching the user's profile hierarchy.
-     * Starts from Village and walks up to verify the parent chain matches.
+     * Uses a scoring system and optimized eager loading to handle data inconsistencies efficiently.
      */
     private async findUnitByHierarchy(profile: any): Promise<AdministrativeUnit | null> {
         const { village, cell, sector, district, province } = profile;
+        const THRESHOLD = -100;
+
+        logger.info(`[findUnitByHierarchy] Searching for profile: ${JSON.stringify(profile)}`);
+
+        // Helper to find best candidate with ID check and Suffix Cleaning
+        const findBestCandidate = async (level: string, val: string) => {
+            if (!val) return null;
+            const originalName = val.trim();
+
+            // 1. Try generic search (ID or Name)
+            let candidates = await this.searchUnits(level, originalName);
+
+            // 2. If no candidates, try cleaning suffixes (e.g. "Ubumwe Village" -> "Ubumwe")
+            if (candidates.length === 0) {
+                const cleaned = this.stripSuffixes(originalName);
+                if (cleaned !== originalName) {
+                    logger.info(`[findUnitByHierarchy] Retrying with cleaned name: '${cleaned}'`);
+                    candidates = await this.searchUnits(level, cleaned);
+                }
+            }
+
+            logger.info(`[findUnitByHierarchy] Found ${candidates.length} candidates for ${level}='${originalName}'`);
+
+            let bestUnit = null;
+            let maxScore = -999;
+
+            for (const unit of candidates) {
+                const lineage: AdministrativeUnit[] = [];
+                let current: any = unit;
+                while (current) {
+                    lineage.push(current as AdministrativeUnit);
+                    current = current.parent;
+                }
+
+                const score = this.calculateMatchScore(lineage, profile);
+                logger.debug(`[findUnitByHierarchy] Candidate ${unit.name} (${unit.id}) Score: ${score}`);
+
+                if (score > maxScore) {
+                    maxScore = score;
+                    bestUnit = unit;
+                }
+            }
+
+            if (bestUnit && maxScore >= THRESHOLD) {
+                logger.info(`[findUnitByHierarchy] Selected ${bestUnit.name} for ${level}`);
+                return bestUnit as AdministrativeUnit;
+            }
+            return null;
+        };
 
         // Priority: Village > Cell > Sector > District > Province
-        // We try to find the most specific level first
 
         if (village) {
-            // Find all villages with this name (fuzzy match)
-            const villages = await prisma.administrativeUnit.findMany({
-                where: { name: { contains: village, mode: 'insensitive' }, level: 'VILLAGE' }
-            });
+            const match = await findBestCandidate('VILLAGE', village);
+            if (match) return match;
 
-            // Filter to find the one whose parent chain matches
-            for (const v of villages) {
-                const lineage = await this.getUnitLineage(v.id);
-                if (this.matchesProfile(lineage, profile)) {
-                    return v;
-                }
+            // --- JIT SEEDING attempt if Village missing ---
+            logger.warn(`[findUnitByHierarchy] Village '${village}' not found or matched. Attempting JIT Seeding...`);
+            const seeded = await this.seedUnitFromProfile(profile);
+            if (seeded) {
+                logger.info(`[findUnitByHierarchy] JIT Seeding SUCCESS. Created/Found: ${seeded.name}`);
+                return seeded;
             }
         }
 
-        // If no village match, try Cell
         if (cell) {
-            const cells = await prisma.administrativeUnit.findMany({
-                where: { name: { contains: cell, mode: 'insensitive' }, level: 'CELL' }
-            });
-            for (const c of cells) {
-                const lineage = await this.getUnitLineage(c.id);
-                if (this.matchesProfile(lineage, profile)) {
-                    return c;
-                }
-            }
+            const match = await findBestCandidate('CELL', cell);
+            if (match) return match;
         }
 
-        // If no cell match, try Sector
         if (sector) {
-            const sectors = await prisma.administrativeUnit.findMany({
-                where: { name: { contains: sector, mode: 'insensitive' }, level: 'SECTOR' }
-            });
-            for (const s of sectors) {
-                const lineage = await this.getUnitLineage(s.id);
-                if (this.matchesProfile(lineage, profile)) {
-                    return s;
-                }
-            }
+            const match = await findBestCandidate('SECTOR', sector);
+            if (match) return match;
         }
 
-        // If no sector match, try District
         if (district) {
-            const districts = await prisma.administrativeUnit.findMany({
-                where: { name: { equals: district, mode: 'insensitive' }, level: 'DISTRICT' }
-            });
-            for (const d of districts) {
-                const lineage = await this.getUnitLineage(d.id);
-                if (this.matchesProfile(lineage, profile)) {
-                    return d;
-                }
-            }
+            const match = await findBestCandidate('DISTRICT', district);
+            if (match) return match;
         }
 
-        // If no district match, try Province
         if (province) {
             const provinces = await prisma.administrativeUnit.findMany({
                 where: { name: { equals: province, mode: 'insensitive' }, level: 'PROVINCE' }
             });
-            if (provinces.length > 0) {
-                return provinces[0]; // Provinces should be unique by name
-            }
+            if (provinces.length > 0) return provinces[0];
         }
 
         return null;
     }
 
     /**
-     * Checks if the unit's lineage matches the user's profile.
-     * Uses flexible matching for provinces (North matches Northern Province).
+     * Cross-checks profile against location.json data.
+     * If valid, creates the missing hierarchy in DB.
      */
-    private matchesProfile(lineage: AdministrativeUnit[], profile: any): boolean {
+    private async seedUnitFromProfile(profile: any): Promise<AdministrativeUnit | null> {
+        try {
+            logger.info('[seedUnitFromProfile] Starting traversal for:', JSON.stringify(profile));
+
+            // Traverse JSON
+            const findKey = (obj: any, target: string, levelName: string) => {
+                if (!obj) {
+                    logger.warn(`[seedUnitFromProfile] ${levelName} object is null/undefined`);
+                    return null;
+                }
+                const targetClean = this.stripSuffixes(target || '').toLowerCase();
+                const key = Object.keys(obj).find(k => this.stripSuffixes(k).toLowerCase() === targetClean);
+                if (!key) {
+                    logger.warn(`[seedUnitFromProfile] Could not find ${levelName} key for '${target}' (clean: '${targetClean}') in keys: ${Object.keys(obj).slice(0, 5)}...`);
+                } else {
+                    logger.info(`[seedUnitFromProfile] Found ${levelName}: ${key}`);
+                }
+                return key;
+            };
+
+            const findInArray = (arr: string[], target: string, levelName: string) => {
+                if (!arr) {
+                    logger.warn(`[seedUnitFromProfile] ${levelName} array is null/undefined`);
+                    return null;
+                }
+                const targetClean = this.stripSuffixes(target || '').toLowerCase();
+                const val = arr.find(v => this.stripSuffixes(v).toLowerCase() === targetClean);
+                if (!val) {
+                    logger.warn(`[seedUnitFromProfile] Could not find ${levelName} value for '${target}' (clean: '${targetClean}') in array: ${arr.slice(0, 5)}...`);
+                } else {
+                    logger.info(`[seedUnitFromProfile] Found ${levelName}: ${val}`);
+                }
+                return val;
+            }
+
+            const provKey = findKey(locationData, profile.province, 'PROVINCE');
+            if (!provKey) return null;
+            const districtsObj = (locationData as any)[provKey];
+
+            const distKey = findKey(districtsObj, profile.district, 'DISTRICT');
+            if (!distKey) return null;
+            const sectorsObj = districtsObj[distKey];
+
+            const sectKey = findKey(sectorsObj, profile.sector, 'SECTOR');
+            if (!sectKey) return null;
+            const cellsObj = sectorsObj[sectKey];
+
+            const cellKey = findKey(cellsObj, profile.cell, 'CELL');
+            if (!cellKey) return null;
+            const villagesArr = cellsObj[cellKey];
+
+            const villName = findInArray(villagesArr, profile.village, 'VILLAGE');
+            if (!villName) return null;
+
+            // If we are here, the path is VALID. Let's create it.
+            logger.info(`[seedUnitFromProfile] Valid path found in JSON: ${provKey} -> ${distKey} -> ${sectKey} -> ${cellKey} -> ${villName}`);
+
+            const ensureUnit = async (name: string, level: AdministrativeLevel, parentId: string | null) => {
+                const existing = await prisma.administrativeUnit.findFirst({
+                    where: {
+                        name: { equals: name, mode: 'insensitive' },
+                        level,
+                        parentId
+                    }
+                });
+                if (existing) return existing;
+
+                return prisma.administrativeUnit.create({
+                    data: {
+                        name: name, // Use proper casing from JSON if possible, but simple name is fine
+                        level,
+                        code: `${name.toUpperCase().replace(/\s+/g, '_')}_${level}_${Date.now().toString(36)}`,
+                        parentId
+                    }
+                });
+            };
+
+            const provUnit = await ensureUnit(provKey, 'PROVINCE', null);
+            const distUnit = await ensureUnit(distKey, 'DISTRICT', provUnit.id);
+            const sectUnit = await ensureUnit(sectKey, 'SECTOR', distUnit.id);
+            const cellUnit = await ensureUnit(cellKey, 'CELL', sectUnit.id);
+            const villUnit = await ensureUnit(villName, 'VILLAGE', cellUnit.id);
+
+            return villUnit;
+
+        } catch (e) {
+            logger.error('[seedUnitFromProfile] Error seeding:', e);
+            return null;
+        }
+    }
+
+
+    /**
+     * Calculate a match score: +1 for match, -1 for mismatch
+     */
+    private calculateMatchScore(lineage: AdministrativeUnit[], profile: any): number {
         const lineageMap: Record<string, string> = {};
         for (const unit of lineage) {
             lineageMap[unit.level] = unit.name.toLowerCase();
         }
 
-        // Check each profile field against the lineage
-        // Cell matching (exact)
-        if (profile.cell && lineageMap['CELL']) {
-            if (!this.fuzzyMatch(lineageMap['CELL'], profile.cell)) {
-                return false;
-            }
-        }
-        // Sector matching (exact)
-        if (profile.sector && lineageMap['SECTOR']) {
-            if (!this.fuzzyMatch(lineageMap['SECTOR'], profile.sector)) {
-                return false;
-            }
-        }
-        // District matching (exact)
-        if (profile.district && lineageMap['DISTRICT']) {
-            if (!this.fuzzyMatch(lineageMap['DISTRICT'], profile.district)) {
-                return false;
-            }
-        }
-        // Province matching (flexible - "North" should match "Northern Province")
-        if (profile.province && lineageMap['PROVINCE']) {
-            if (!this.provinceMatches(lineageMap['PROVINCE'], profile.province)) {
-                return false;
-            }
-        }
+        let score = 0;
 
-        return true;
+        // Helper to check level
+        const checkLevel = (levelKey: string, profileVal: string) => {
+            // If lineage has this level, we compare
+            if (lineageMap[levelKey]) {
+                let match = false;
+                if (levelKey === 'PROVINCE') {
+                    match = this.provinceMatches(lineageMap[levelKey], profileVal);
+                } else {
+                    match = this.fuzzyMatch(lineageMap[levelKey], profileVal);
+                }
+                const levelScore = match ? 1 : -1;
+                logger.debug(`[calculateMatchScore] Level ${levelKey}: Profile '${profileVal}' vs Lineage '${lineageMap[levelKey]}' -> Match: ${match}, Score: ${levelScore}`);
+                return levelScore;
+            }
+            logger.debug(`[calculateMatchScore] Level ${levelKey}: Not found in lineage. Score: 0`);
+            return 0; // Neutral if level missing in lineage (shouldn't happen for parents)
+        };
+
+        if (profile.village) score += checkLevel('VILLAGE', profile.village);
+        if (profile.cell) score += checkLevel('CELL', profile.cell);
+        if (profile.sector) score += checkLevel('SECTOR', profile.sector);
+        if (profile.district) score += checkLevel('DISTRICT', profile.district);
+        if (profile.province) score += checkLevel('PROVINCE', profile.province);
+
+        logger.debug(`[calculateMatchScore] Total score for lineage: ${score}`);
+        return score;
     }
 
-    /**
-     * Fuzzy match for names - handles minor variations
-     */
+
+
     private fuzzyMatch(dbName: string, profileName: string): boolean {
         const db = dbName.toLowerCase().trim();
         const prof = profileName.toLowerCase().trim();
+        const cleanedProf = this.stripSuffixes(prof);
         // Exact match or contains
-        return db === prof || db.includes(prof) || prof.includes(db);
+        return db === prof || db.includes(prof) || prof.includes(db) || db === cleanedProf || db.includes(cleanedProf) || cleanedProf.includes(db);
+    }
+
+    private stripSuffixes(name: string): string {
+        let cleaned = name;
+        const suffixes = [' village', ' cell', ' sector', ' district', ' province', ' umudugudu', ' akagari', ' umurenge', ' akarere', ' intara'];
+        for (const suffix of suffixes) {
+            if (cleaned.toLowerCase().endsWith(suffix)) {
+                cleaned = cleaned.substring(0, cleaned.length - suffix.length).trim();
+            }
+        }
+        return cleaned;
+    }
+
+    private async searchUnits(level: string, val: string) {
+        const name = val.trim();
+        const isId = name.length > 20 && name.startsWith('c');
+
+        logger.info(`[searchUnits] Searching ${level} for '${name}' (IsID: ${isId})`);
+
+        const whereClause: any = { level: level as any };
+        if (isId) {
+            whereClause.OR = [
+                { id: name },
+                { name: { contains: name, mode: 'insensitive' } }
+            ];
+        } else {
+            whereClause.name = { contains: name, mode: 'insensitive' };
+        }
+
+        return prisma.administrativeUnit.findMany({
+            where: whereClause,
+            include: {
+                parent: {
+                    include: {
+                        parent: {
+                            include: {
+                                parent: {
+                                    include: {
+                                        parent: true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
     }
 
     /**
