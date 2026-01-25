@@ -31,7 +31,6 @@ class CollaborativeListView extends StatelessWidget {
     try {
       if (attachment.type != AttachmentType.collaborativeList || 
           attachment.metadata == null) {
-        debugPrint('[CollaborativeListView] Hidden. Type=${attachment.type}');
         return const SizedBox.shrink();
       }
 
@@ -90,7 +89,6 @@ class CollaborativeListView extends StatelessWidget {
         ),
       );
     } catch (e) {
-      debugPrint('[CollaborativeListView] Error: $e');
       return const SizedBox.shrink();
     }
   }
@@ -137,11 +135,20 @@ class _ListDetailDialog extends StatefulWidget {
 class _ListDetailDialogState extends State<_ListDetailDialog> {
   late CollaborativeList _currentList;
   bool _isExporting = false;
+  final ScrollController _horizontalController = ScrollController();
+  final ScrollController _verticalController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     _currentList = widget.list;
+  }
+
+  @override
+  void dispose() {
+    _horizontalController.dispose();
+    _verticalController.dispose();
+    super.dispose();
   }
 
   void _addNewEntry() async {
@@ -174,8 +181,6 @@ class _ListDetailDialogState extends State<_ListDetailDialog> {
     }
   }
 
-
-
   Future<void> _exportToExcel() async {
     if (_isExporting) return;
     setState(() => _isExporting = true);
@@ -184,19 +189,11 @@ class _ListDetailDialogState extends State<_ListDetailDialog> {
       var excel = Excel.createExcel();
       Sheet sheetObject = excel['Sheet1'];
 
-      // Style for header
-      CellStyle headerStyle = CellStyle(
-        bold: true,
-        horizontalAlign: HorizontalAlign.Center,
-      );
-
-      // Header
       List<CellValue> headerRow = _currentList.columns
           .map((c) => TextCellValue(c))
           .toList();
       sheetObject.appendRow(headerRow);
 
-      // Data
       for (var entry in _currentList.entries) {
         List<CellValue> row = _currentList.columns.map((col) {
           return TextCellValue(entry.data[col] ?? '');
@@ -246,14 +243,12 @@ class _ListDetailDialogState extends State<_ListDetailDialog> {
     try {
       final buffer = StringBuffer();
 
-      // Header with proper CSV escaping
       buffer.writeln(
         _currentList.columns
             .map((col) => _escapeCsvField(col))
             .join(','),
       );
 
-      // Rows with proper CSV escaping
       for (final entry in _currentList.entries) {
         final row = _currentList.columns
             .map((col) => _escapeCsvField(entry.data[col] ?? ''))
@@ -310,15 +305,12 @@ class _ListDetailDialogState extends State<_ListDetailDialog> {
 
     return Dialog(
       insetPadding: const EdgeInsets.all(8),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: dialogWidth,
-          maxHeight: dialogHeight,
-        ),
+      child: SizedBox(
+        width: dialogWidth,
+        height: dialogHeight,
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: MainAxisSize.max,
           children: [
-            // Header
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
@@ -391,7 +383,6 @@ class _ListDetailDialogState extends State<_ListDetailDialog> {
               ),
             ),
             const Divider(height: 1),
-            // Table Content - Fully scrollable
             Expanded(
               child: Container(
                 margin: const EdgeInsets.all(12),
@@ -415,7 +406,6 @@ class _ListDetailDialogState extends State<_ListDetailDialog> {
                       ),
               ),
             ),
-            // Button
             Padding(
               padding: const EdgeInsets.all(12),
               child: SizedBox(
@@ -444,41 +434,69 @@ class _ListDetailDialogState extends State<_ListDetailDialog> {
     
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit List Structure'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: titleController,
-              decoration: const InputDecoration(labelText: 'List Title'),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: columnsController,
-              decoration: const InputDecoration(
-                labelText: 'Columns (comma separated)',
-                helperText: 'Changing columns may affect existing data display',
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        insetPadding: const EdgeInsets.all(16),
+        child: SizedBox(
+          width: 400,
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Edit List Structure',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  const SizedBox(height: 24),
+                  TextField(
+                    controller: titleController,
+                    decoration: const InputDecoration(
+                      labelText: 'List Title',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: columnsController,
+                    decoration: const InputDecoration(
+                      labelText: 'Columns (comma separated)',
+                      helperText: 'Changing columns may affect existing data display',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 2,
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context, {
+                          'title': titleController.text.trim(),
+                          'columns': columnsController.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
+                        });
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Save'),
+                    ),
+                  ),
+                ],
               ),
-              maxLines: 2,
             ),
-          ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context, {
-                'title': titleController.text.trim(),
-                'columns': columnsController.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
-              });
-            },
-            child: const Text('Save'),
-          ),
-        ],
       ),
     );
 
@@ -488,7 +506,6 @@ class _ListDetailDialogState extends State<_ListDetailDialog> {
       
       widget.onUpdateList!(newTitle, newColumns);
       
-      // Local update
       if (mounted) {
         setState(() {
           _currentList = CollaborativeList(
@@ -514,14 +531,13 @@ class _ListDetailDialogState extends State<_ListDetailDialog> {
     if (result != null && widget.onEditEntry != null) {
       widget.onEditEntry!(index, result);
       
-      // Local update
       if (mounted) {
         setState(() {
           final newEntries = List<ListEntry>.from(_currentList.entries);
           newEntries[index] = ListEntry(
              userId: entry.userId,
              userName: entry.userName,
-             timestamp: DateTime.now(), // or keep original
+             timestamp: DateTime.now(),
              data: result,
           );
           
@@ -539,18 +555,22 @@ class _ListDetailDialogState extends State<_ListDetailDialog> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final columnWidth = 140.0;
-    final totalTableWidth = columnWidth * _currentList.columns.length + 50; // +50 for action column
+    final totalTableWidth = columnWidth * _currentList.columns.length + 50;
 
     return Scrollbar(
+      controller: _horizontalController,
       thumbVisibility: true,
       trackVisibility: true,
       child: SingleChildScrollView(
+        controller: _horizontalController,
         scrollDirection: Axis.horizontal,
         child: Scrollbar(
+          controller: _verticalController,
           thumbVisibility: true,
           trackVisibility: true,
-          notificationPredicate: (notification) => notification.depth == 1,
+          notificationPredicate: (notification) => notification.depth == 0,
           child: SingleChildScrollView(
+            controller: _verticalController,
             scrollDirection: Axis.vertical,
             child: SizedBox(
               width: totalTableWidth,
@@ -569,10 +589,9 @@ class _ListDetailDialogState extends State<_ListDetailDialog> {
                 columnWidths: {
                   for (int i = 0; i < _currentList.columns.length; i++)
                     i: FixedColumnWidth(columnWidth),
-                  _currentList.columns.length: const FixedColumnWidth(50), // Action Action column
+                  _currentList.columns.length: const FixedColumnWidth(50),
                 },
                 children: [
-                  // Header row
                   TableRow(
                     decoration: BoxDecoration(
                       color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
@@ -595,10 +614,9 @@ class _ListDetailDialogState extends State<_ListDetailDialog> {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               )),
-                      const SizedBox(), // Empty header for actions
+                      const SizedBox(),
                     ],
                   ),
-                  // Data rows
                   ..._currentList.entries.asMap().entries.map((rowEntry) {
                     final rowIndex = rowEntry.key;
                     final entry = rowEntry.value;
@@ -625,10 +643,9 @@ class _ListDetailDialogState extends State<_ListDetailDialog> {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               )),
-                              // Action Cell
                               if (entry.userId == widget.currentUserId)
-                                TableCell(
-                                  verticalAlignment: TableCellVerticalAlignment.middle,
+                                Container(
+                                  alignment: Alignment.center,
                                   child: IconButton(
                                     icon: const Icon(Icons.edit, size: 16, color: Colors.blue),
                                     onPressed: () => _editEntry(rowIndex),
@@ -637,7 +654,7 @@ class _ListDetailDialogState extends State<_ListDetailDialog> {
                                   ),
                                 )
                               else 
-                                const SizedBox(height: 48),
+                                const SizedBox(),
                         ],
                       );
                   }).toList(),
@@ -651,7 +668,7 @@ class _ListDetailDialogState extends State<_ListDetailDialog> {
   }
 }
 
-class _AddEntryDialog extends StatefulWidget {
+class _AddEntryDialog extends StatelessWidget {
   final List<String> columns;
   final Map<String, String>? initialData;
 
@@ -661,10 +678,28 @@ class _AddEntryDialog extends StatefulWidget {
   });
 
   @override
-  State<_AddEntryDialog> createState() => _AddEntryDialogState();
+  Widget build(BuildContext context) {
+    return _AddEntryDialogContent(
+      columns: columns,
+      initialData: initialData,
+    );
+  }
 }
 
-class _AddEntryDialogState extends State<_AddEntryDialog> {
+class _AddEntryDialogContent extends StatefulWidget {
+  final List<String> columns;
+  final Map<String, String>? initialData;
+
+  const _AddEntryDialogContent({
+    required this.columns,
+    this.initialData,
+  });
+
+  @override
+  State<_AddEntryDialogContent> createState() => _AddEntryDialogContentState();
+}
+
+class _AddEntryDialogContentState extends State<_AddEntryDialogContent> {
   final Map<String, TextEditingController> _controllers = {};
 
   @override
@@ -704,95 +739,87 @@ class _AddEntryDialogState extends State<_AddEntryDialog> {
     final size = MediaQuery.of(context).size;
     final isMobile = size.width < 500;
     final dialogWidth = isMobile ? size.width * 0.9 : 450.0;
-    final screenHeight = size.height;
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       insetPadding: const EdgeInsets.all(16),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: dialogWidth,
-          maxHeight: screenHeight * 0.8,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Text(
-                widget.initialData != null ? 'Edit Entry' : 'Add Entry',
-                style: Theme.of(context).textTheme.headlineSmall,
-                textAlign: TextAlign.center,
-              ),
-            ),
-            // Form Fields
-            Flexible(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: widget.columns
-                        .map((col) => Padding(
-                              padding: const EdgeInsets.only(bottom: 16),
-                              child: TextField(
-                                controller: _controllers[col],
-                                decoration: InputDecoration(
-                                  labelText: col,
-                                  hintText: 'Enter $col',
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  filled: true,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 16,
-                                  ),
-                                ),
+      child: SizedBox(
+        width: dialogWidth,
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  widget.initialData != null ? 'Edit Entry' : 'Add Entry',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ...widget.columns
+                    .map((col) => Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: TextField(
+                            controller: _controllers[col],
+                            decoration: InputDecoration(
+                              labelText: col,
+                              hintText: 'Enter $col',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                            ))
-                        .toList(),
+                              filled: true,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 16,
+                              ),
+                            ),
+                          ),
+                        ))
+                    .toList(),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _submit,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Text(
+                      widget.initialData != null ? 'Save Changes' : 'Add Entry',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
-            // Buttons
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  SizedBox(
-                    height: 44,
-                    child: ElevatedButton(
-                      onPressed: _submit,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: Text(
-                        widget.initialData != null ? 'Save Changes' : 'Add',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.grey),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    height: 44,
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel'),
+                    child: const Text(
+                      'Cancel',
+                      style: TextStyle(fontSize: 14),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
