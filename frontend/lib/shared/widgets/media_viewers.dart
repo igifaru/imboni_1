@@ -458,6 +458,13 @@ class _VideoPlayerDialogState extends State<VideoPlayerDialog> {
         looping: false,
         aspectRatio: _videoPlayerController.value.aspectRatio,
         placeholder: const Center(child: CircularProgressIndicator()),
+        additionalOptions: (context) => [
+          OptionItem(
+            onTap: (context) => _showSpeedMenu(context),
+            iconData: Icons.speed_rounded,
+            title: 'Playback speed',
+          ),
+        ],
         errorBuilder: (context, errorMessage) {
           return Center(
             child: Text(
@@ -479,6 +486,80 @@ class _VideoPlayerDialogState extends State<VideoPlayerDialog> {
         });
       }
     }
+  }
+
+  Future<void> _showSpeedMenu(BuildContext context) async {
+    final List<double> speeds = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
+    final currentSpeed = _videoPlayerController.value.playbackSpeed;
+
+    // Close the original Chewie menu first
+    Navigator.pop(context);
+
+    await showDialog(
+      context: this.context,
+      barrierColor: Colors.black26,
+      builder: (context) => Stack(
+        children: [
+          Positioned(
+            right: 20,
+            bottom: 80, // Positioned closer to the gear icon area
+            child: Material(
+              color: Colors.transparent,
+              child: Container(
+                width: 200,
+                decoration: BoxDecoration(
+                  color: Theme.of(this.context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(50),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                  border: Border.all(color: Theme.of(this.context).dividerColor.withAlpha(50)),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Text(
+                        'Playback Speed',
+                        style: Theme.of(this.context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    ...speeds.map((speed) => ListTile(
+                      dense: true,
+                      visualDensity: VisualDensity.compact,
+                      leading: Icon(
+                        Icons.check_rounded,
+                        size: 18,
+                        color: currentSpeed == speed ? Theme.of(this.context).colorScheme.primary : Colors.transparent,
+                      ),
+                      title: Text('${speed}x', style: const TextStyle(fontSize: 14)),
+                      onTap: () {
+                        _videoPlayerController.setPlaybackSpeed(speed);
+                        Navigator.pop(context);
+                      },
+                    )),
+                    const Divider(height: 1),
+                    ListTile(
+                      dense: true,
+                      visualDensity: VisualDensity.compact,
+                      leading: const Icon(Icons.close_rounded, size: 18),
+                      title: const Text('Close', style: TextStyle(fontSize: 14)),
+                      onTap: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
