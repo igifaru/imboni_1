@@ -110,15 +110,15 @@ export class EscalationScheduler {
                     data: {
                         isActive: false,
                         escalationReason: 'TIME_EXPIRED',
+                        completedAt: new Date(), // RECORD COMPLETION TIME
                     },
                 });
 
-                // 2. Update case level and status
+                // 2. Update case level (Initial status update)
                 await tx.case.update({
                     where: { id: caseData.id },
                     data: {
                         currentLevel: nextLevel,
-                        status: 'IN_PROGRESS',
                     },
                 });
 
@@ -134,7 +134,6 @@ export class EscalationScheduler {
                 });
 
                 // 4. Find target administrative unit for assignment
-                // Since we keep administrativeUnitId as the Origin, we must find the ancestor at the destination level
                 const targetUnit = await getAncestorAtLevel(tx, caseData.administrativeUnitId, nextLevel);
 
                 if (targetUnit) {
@@ -142,20 +141,27 @@ export class EscalationScheduler {
                     const parentLeader = await findNearestLeader(tx, targetUnit.id);
 
                     if (parentLeader) {
-                        // 6. Create new assignment at parent level (or nearest available)
+                        // 6. Create new assignment
                         const newDeadline = calculateNewDeadline(caseData.urgency);
 
                         await tx.caseAssignment.create({
                             data: {
                                 caseId: caseData.id,
-                                administrativeUnitId: parentLeader.administrativeUnitId, // Use the unit where leader was found
+                                administrativeUnitId: parentLeader.administrativeUnitId,
                                 leaderId: parentLeader.userId,
                                 deadlineAt: newDeadline,
                                 isActive: true,
                             },
                         });
 
-                        // 7. Send notification to new leader
+                        // Set status to ESCALATED to allow any unit leader to take it 
+                        // even if we found a "primary" leader to notify
+                        await tx.case.update({
+                            where: { id: caseData.id },
+                            data: { status: 'ESCALATED' },
+                        });
+
+                        // 7. Send notification
                         await tx.notification.create({
                             data: {
                                 userId: parentLeader.userId,
@@ -164,14 +170,16 @@ export class EscalationScheduler {
                                 message: `Case escalated to you (Time Expired): ${caseData.title}`,
                             },
                         });
-
-                        // NOTE: administrativeUnitId update block was removed to preserve origin
-
                     } else {
-                        // Log warn: Escaled but no leader found
-                        logger.warn(`Case ${caseData.id} escalated to ${nextLevel} but no leader found in upstream hierarchy!`);
+                        // NO LEADER FOUND: Set status to ESCALATED so it appears in the unit's queue
+                        await tx.case.update({
+                            where: { id: caseData.id },
+                            data: { status: 'ESCALATED' },
+                        });
+                        logger.warn(`Case ${caseData.id} escalated to ${nextLevel} but no leader found. Status set to ESCALATED.`);
                     }
-                } else {
+                }
+                else {
                     logger.error(`Cannot escalate case ${caseData.id}: No ancestor found at level ${nextLevel}`);
                 }
             });
