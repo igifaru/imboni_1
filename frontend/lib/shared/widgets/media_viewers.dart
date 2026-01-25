@@ -440,6 +440,7 @@ class _VideoPlayerDialogState extends State<VideoPlayerDialog> {
   ChewieController? _chewieController;
   bool _isLoading = true;
   String? _error;
+  bool _showSettings = false;
 
   @override
   void initState() {
@@ -458,13 +459,10 @@ class _VideoPlayerDialogState extends State<VideoPlayerDialog> {
         looping: false,
         aspectRatio: _videoPlayerController.value.aspectRatio,
         placeholder: const Center(child: CircularProgressIndicator()),
-        additionalOptions: (context) => [
-          OptionItem(
-            onTap: (context) => _showSpeedMenu(context),
-            iconData: Icons.speed_rounded,
-            title: 'Playback speed',
-          ),
-        ],
+        showOptions: true,
+        optionsBuilder: (context, defaultOptions) async {
+          _showSpeedMenu(context);
+        },
         errorBuilder: (context, errorMessage) {
           return Center(
             child: Text(
@@ -488,120 +486,90 @@ class _VideoPlayerDialogState extends State<VideoPlayerDialog> {
     }
   }
 
-  Future<void> _showSpeedMenu(BuildContext context) async {
+  void _showSpeedMenu(BuildContext context) {
+    setState(() => _showSettings = !_showSettings);
+  }
+
+  Widget _buildSpeedMenu() {
     final List<double> speeds = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
     final currentSpeed = _videoPlayerController.value.playbackSpeed;
 
-    // Close the original Chewie menu first
-    Navigator.pop(context);
-
-    await showDialog(
-      context: this.context,
-      barrierColor: Colors.black12,
-      builder: (context) => Scaffold(
-        backgroundColor: Colors.transparent,
-        body: Stack(
-          children: [
-            // Click outside to close
-            Positioned.fill(
-              child: GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Container(color: Colors.transparent),
+    return Positioned(
+      right: 32, // More aggressive positioning for Linux desktop
+      bottom: 40, 
+      child: Material(
+        elevation: 12,
+        color: Theme.of(this.context).colorScheme.surface.withAlpha(250),
+        borderRadius: BorderRadius.circular(12),
+        clipBehavior: Clip.antiAlias,
+        child: Container(
+          width: 110, // Slimmer for professional look
+          decoration: BoxDecoration(
+            border: Border.all(color: Theme.of(this.context).dividerColor.withAlpha(60)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  'Speed',
+                  style: Theme.of(this.context).textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(this.context).colorScheme.primary,
+                  ),
+                ),
               ),
-            ),
-            Positioned(
-              right: 24,
-              bottom: 100, // Floating above the gear icon area
-              child: Hero(
-                tag: 'video-settings',
-                child: Material(
-                  elevation: 12,
-                  color: Theme.of(this.context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(20),
-                  clipBehavior: Clip.antiAlias,
-                  child: Container(
-                    width: 180,
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Theme.of(this.context).dividerColor.withAlpha(40)),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
+              const Divider(height: 1),
+              ...speeds.map((speed) {
+                final isSelected = currentSpeed == speed;
+                return InkWell(
+                  onTap: () {
+                    _videoPlayerController.setPlaybackSpeed(speed);
+                    setState(() => _showSettings = false);
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    child: Row(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          decoration: BoxDecoration(
-                            color: Theme.of(this.context).colorScheme.primaryContainer.withAlpha(30),
-                          ),
-                          child: Center(
-                            child: Text(
-                              'Playback Speed',
-                              style: Theme.of(this.context).textTheme.labelLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(this.context).colorScheme.primary,
-                              ),
-                            ),
-                          ),
+                        Icon(
+                          Icons.check_rounded,
+                          size: 14,
+                          color: isSelected ? Theme.of(this.context).colorScheme.primary : Colors.transparent,
                         ),
-                        const Divider(height: 1),
-                        ...speeds.map((speed) {
-                          final isSelected = currentSpeed == speed;
-                          return InkWell(
-                            onTap: () {
-                              _videoPlayerController.setPlaybackSpeed(speed);
-                              Navigator.pop(context);
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.check_rounded,
-                                    size: 18,
-                                    color: isSelected ? Theme.of(this.context).colorScheme.primary : Colors.transparent,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    '${speed}x',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                      color: isSelected ? Theme.of(this.context).colorScheme.primary : null,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        }),
-                        const Divider(height: 1),
-                        InkWell(
-                          onTap: () => Navigator.pop(context),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.close_rounded, size: 16, color: Theme.of(this.context).colorScheme.error),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Close',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Theme.of(this.context).colorScheme.error,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${speed}x',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            color: isSelected ? Theme.of(this.context).colorScheme.primary : null,
                           ),
                         ),
                       ],
                     ),
                   ),
+                );
+              }),
+              const Divider(height: 1),
+              InkWell(
+                onTap: () => setState(() => _showSettings = false),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Center(
+                    child: Text(
+                      'Close',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(this.context).colorScheme.error,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -692,7 +660,17 @@ class _VideoPlayerDialogState extends State<VideoPlayerDialog> {
                            )
                          : AspectRatio(
                              aspectRatio: _videoPlayerController.value.aspectRatio,
-                             child: Chewie(controller: _chewieController!),
+                             child: Stack(
+                               children: [
+                                 GestureDetector(
+                                   onTap: () {
+                                     if (_showSettings) setState(() => _showSettings = false);
+                                   },
+                                   child: Chewie(controller: _chewieController!),
+                                 ),
+                                 if (_showSettings) _buildSpeedMenu(),
+                               ],
+                             ),
                            ),
                ),
              ),
