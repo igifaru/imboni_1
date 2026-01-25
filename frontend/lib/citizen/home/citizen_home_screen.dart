@@ -333,7 +333,7 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
       ]),
       const SizedBox(height: 12),
       Row(children: [
-        Expanded(child: _QuickActionCard(icon: Icons.people_outline, label: 'Abaturage', subtitle: 'Huza n\'abaturanyi', color: ImboniColors.categorySocial, theme: theme, onTap: () => _navigateTo(const CommunityHomeScreen()))),
+        Expanded(child: _QuickActionCard(icon: Icons.people_outline, label: l10n.community, subtitle: l10n.communitySubtitle, color: ImboniColors.categorySocial, theme: theme, onTap: () => _navigateTo(const CommunityHomeScreen()))),
         const SizedBox(width: 12),
         Expanded(child: _QuickActionCard(icon: Icons.account_balance, label: l10n.publicFunds, subtitle: l10n.publicFundsSubtitle, color: Colors.teal, theme: theme, onTap: () => _navigateTo(const PftcvHomeScreen()))),
       ]),
@@ -350,7 +350,7 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
       const SizedBox(width: 16),
       Expanded(child: _QuickActionCard(icon: Icons.folder_copy_outlined, label: l10n.myCasesTitle, subtitle: l10n.myCasesSubtitle, color: ImboniColors.info, theme: theme, onTap: () => _navigateTo(const MyCasesScreen()))),
       const SizedBox(width: 16),
-      Expanded(child: _QuickActionCard(icon: Icons.people_outline, label: 'Abaturage', subtitle: 'Huza n\'abaturanyi', color: ImboniColors.categorySocial, theme: theme, onTap: () => _navigateTo(const CommunityHomeScreen()))),
+      Expanded(child: _QuickActionCard(icon: Icons.people_outline, label: l10n.community, subtitle: l10n.communitySubtitle, color: ImboniColors.categorySocial, theme: theme, onTap: () => _navigateTo(const CommunityHomeScreen()))),
       const SizedBox(width: 16),
       Expanded(child: _QuickActionCard(icon: Icons.account_balance, label: l10n.publicFunds, subtitle: l10n.publicFundsSubtitle, color: Colors.teal, theme: theme, onTap: () => _navigateTo(const PftcvHomeScreen()))),
     ]);

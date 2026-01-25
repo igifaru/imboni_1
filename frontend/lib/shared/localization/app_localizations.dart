@@ -361,6 +361,8 @@ class AppLocalizations {
 
   // Community
   String get communityTitle => get('community_title');
+  String get community => get('community');
+  String get communitySubtitle => get('community_subtitle');
   String get channels => get('channels');
   String get typeMessage => get('type_message');
   String get members => get('members');
@@ -761,6 +763,8 @@ const Map<String, Map<String, String>> _translations = {
     'status_changed_to': 'Imiterere yahindutse ikaba',
     // Community RW
     'community_title': 'Ihuza ry\'Abaturage',
+    'community': 'Abaturage',
+    'community_subtitle': 'Huza n\'abaturanyi',
     'channels': 'Imiyoboro',
     'type_message': 'Andika ubutumwa...',
     'members': 'Abanyamuryango',
@@ -1125,6 +1129,8 @@ const Map<String, Map<String, String>> _translations = {
     'status_changed_to': 'Status changed to',
     // Community EN
     'community_title': 'Civic Connect',
+    'community': 'Community',
+    'community_subtitle': 'Connect with neighbors',
     'channels': 'Channels',
     'type_message': 'Type a message...',
     'members': 'members',
@@ -1708,5 +1714,10 @@ const Map<String, Map<String, String>> _translations = {
     'cannot_edit_case': 'Impossible de modifier cette affaire',
     'case_must_be_open': 'L\'affaire doit être ouverte pour la modifier',
 
+    // Community FR
+    'community_title': 'Connexion Civique',
+    'community': 'Communauté',
+    'community_subtitle': 'Connectez-vous avec vos voisins',
+    'channels': 'Chaînes',
   },
 };
