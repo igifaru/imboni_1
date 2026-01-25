@@ -265,7 +265,15 @@ class ChannelMessage {
       isOfficial: json['isOfficial'] as bool? ?? false,
       createdAt: DateTime.parse(json['createdAt'] as String),
       attachments: (json['attachments'] as List<dynamic>?)
-          ?.map((e) => CommunityAttachment.fromJson(e))
+          ?.map((e) {
+            try {
+              return CommunityAttachment.fromJson(e);
+            } catch (_) {
+              return null;
+            }
+          })
+          .where((e) => e != null)
+          .cast<CommunityAttachment>()
           .toList() ?? [],
       reactions: (json['reactions'] as List<dynamic>?)
           ?.map((e) => MessageReaction.fromJson(e))

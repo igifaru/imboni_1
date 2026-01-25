@@ -211,11 +211,17 @@ class _ChannelChatScreenState extends State<ChannelChatScreen> {
 
   void _sendMessage() async {
     final content = _controller.text.trim();
-    if (content.isEmpty) return;
+    if (content.isEmpty && _attachments.isEmpty) return;
+
+    // If content is empty but we have attachments, use the attachment name as content
+    // This satisfies the backend requirement for non-empty content
+    final effectiveContent = content.isEmpty 
+        ? (_attachments.isNotEmpty ? _attachments.first.name : 'Attachment') 
+        : content;
 
     final success = await context.read<CommunityProvider>().sendMessage(
       widget.channel.id, 
-      content,
+      effectiveContent,
       replyToId: _replyingToMessage?.id,
       attachments: _attachments,
     );

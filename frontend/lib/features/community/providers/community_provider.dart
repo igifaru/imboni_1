@@ -79,9 +79,18 @@ class CommunityProvider extends ChangeNotifier {
       final response = await _api.get('/community/channels/$channelId/messages');
       final data = response.data;
       if (data != null && data is List) {
-        final newMessages = data.map((e) => ChannelMessage.fromJson(e)).toList();
+        debugPrint('CommunityProvider: fetchMessages received ${data.length} messages for $channelId');
+        final newMessages = <ChannelMessage>[];
+        for (var e in data) {
+           try {
+             newMessages.add(ChannelMessage.fromJson(e));
+           } catch (err) {
+             debugPrint('CommunityProvider: Failed to parse message: $err. Data: $e');
+           }
+        }
         _messages[channelId] = newMessages; 
       } else {
+        debugPrint('CommunityProvider: fetchMessages received null/invalid data for $channelId');
         _messages[channelId] = [];
       }
     } catch (e) {
@@ -101,18 +110,23 @@ class CommunityProvider extends ChangeNotifier {
          finalAttachments = await mediaService.uploadAttachments(attachments);
       }
 
-      final response = await _api.post('/community/messages', {
+      final payload = {
         'channelId': channelId,
         'content': content,
         if (replyToId != null) 'replyToId': replyToId,
         if (finalAttachments.isNotEmpty) 'attachments': finalAttachments.map((a) => {
+           'id': a.id,
            'type': a.type.toString().split('.').last, // 'image', 'video', 'poll'
            'path': a.path,
            'name': a.name,
            'size': a.size,
            if (a.metadata != null) 'metadata': a.metadata, 
         }).toList(),
-      });
+      };
+      
+      debugPrint('CommunityProvider: sendMessage payload attachments: ${payload['attachments']}');
+
+      final response = await _api.post('/community/messages', payload);
       
       debugPrint('CommunityProvider: sendMessage response isSuccess=${response.isSuccess}, data=${response.data}');
       
@@ -428,11 +442,18 @@ class CommunityProvider extends ChangeNotifier {
 
       if (response.isSuccess && response.data != null) {
          final updatedMsg = ChannelMessage.fromJson(response.data);
+         
+         // Debug print to check if backend returned the vote
+         final attachments = updatedMsg.attachments;
+         final poll = attachments.firstWhere((a) => a.id == attachmentId, orElse: () => attachments.first);
+         debugPrint('[CommunityProvider] Vote Response for msg $messageId. Poll votes: ${poll.metadata?['votes']}');
+
          // Update local cache
          final msgs = _messages[channelId] ?? [];
          final idx = msgs.indexWhere((m) => m.id == messageId);
          if (idx != -1) {
             msgs[idx] = updatedMsg;
+            _messages[channelId] = List.from(msgs);
             notifyListeners();
          }
          return true;
@@ -454,10 +475,17 @@ class CommunityProvider extends ChangeNotifier {
 
       if (response.isSuccess && response.data != null) {
          final updatedMsg = ChannelMessage.fromJson(response.data);
+         
+         // Debug print
+         final attachments = updatedMsg.attachments;
+         final list = attachments.firstWhere((a) => a.id == attachmentId, orElse: () => attachments.first);
+         debugPrint('[CommunityProvider] List Entry Response. Entries count: ${(list.metadata?['entries'] as List?)?.length}');
+
          final msgs = _messages[channelId] ?? [];
          final idx = msgs.indexWhere((m) => m.id == messageId);
          if (idx != -1) {
             msgs[idx] = updatedMsg;
+            _messages[channelId] = List.from(msgs);
             notifyListeners();
          }
          return true;

@@ -40,6 +40,7 @@ class MessageAttachmentList extends StatelessWidget {
   }
 
   Widget _buildAttachmentItem(BuildContext context, CommunityAttachment attachment) {
+    debugPrint('[AttachmentList] Rendering ${attachment.type} ID=${attachment.id} Metadata=${attachment.metadata != null}');
     switch (attachment.type) {
       case AttachmentType.image:
         return _buildImage(context, attachment);

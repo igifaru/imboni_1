@@ -21,6 +21,7 @@ class CollaborativeListView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (attachment.type != AttachmentType.collaborativeList || attachment.metadata == null) {
+      debugPrint('[CollaborativeListView] Hidden. Type=${attachment.type}, Metadata=${attachment.metadata}');
       return const SizedBox.shrink();
     }
 
