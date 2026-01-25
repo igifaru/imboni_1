@@ -1,7 +1,9 @@
 import 'dart:io';
+import 'package:excel/excel.dart' hide Border;
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+
 import '../../models/community_models.dart';
 
 class CollaborativeListView extends StatelessWidget {
@@ -157,6 +159,100 @@ class _ListDetailDialogState extends State<_ListDetailDialog> {
     }
   }
 
+  void _showExportOptions() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.table_chart, color: Colors.green),
+              title: const Text('Export as Excel (.xlsx)'),
+              onTap: () {
+                Navigator.pop(context);
+                _exportToExcel();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.description, color: Colors.blue),
+              title: const Text('Export as CSV (.csv)'),
+              onTap: () {
+                Navigator.pop(context);
+                _exportToCsv();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _exportToExcel() async {
+    if (_isExporting) return;
+    setState(() => _isExporting = true);
+
+    try {
+      var excel = Excel.createExcel();
+      Sheet sheetObject = excel['Sheet1'];
+
+      // Style for header
+      CellStyle headerStyle = CellStyle(
+        bold: true,
+        horizontalAlign: HorizontalAlign.Center,
+      );
+
+      // Header
+      List<CellValue> headerRow = _currentList.columns
+          .map((c) => TextCellValue(c))
+          .toList();
+      sheetObject.appendRow(headerRow);
+
+      // Data
+      for (var entry in _currentList.entries) {
+        List<CellValue> row = _currentList.columns.map((col) {
+          return TextCellValue(entry.data[col] ?? '');
+        }).toList();
+        sheetObject.appendRow(row);
+      }
+
+      var fileBytes = excel.save();
+      final fileName = _currentList.title
+          .replaceAll(RegExp(r'[<>:"/\\|?*]'), '_')
+          .replaceAll(' ', '_');
+
+      final directory = await getTemporaryDirectory();
+      final path = '${directory.path}/$fileName.xlsx';
+      final file = File(path);
+
+      if (fileBytes != null) {
+        await file.writeAsBytes(fileBytes);
+
+        if (!mounted) return;
+
+        await Share.shareXFiles(
+          [XFile(path)],
+          text: 'Exported List: ${_currentList.title}',
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Excel Export failed: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isExporting = false);
+      }
+    }
+  }
+
   Future<void> _exportToCsv() async {
     if (_isExporting) return;
     
@@ -258,8 +354,8 @@ class _ListDetailDialogState extends State<_ListDetailDialog> {
                     children: [
                       IconButton(
                         icon: const Icon(Icons.download),
-                        tooltip: 'Export CSV',
-                        onPressed: _isExporting ? null : _exportToCsv,
+                        tooltip: 'Export',
+                        onPressed: _isExporting ? null : _showExportOptions,
                         iconSize: 20,
                       ),
                       IconButton(
