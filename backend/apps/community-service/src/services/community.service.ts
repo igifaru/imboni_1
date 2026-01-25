@@ -168,9 +168,9 @@ export class CommunityService {
         // We try to find the most specific level first
 
         if (village) {
-            // Find all villages with this name
+            // Find all villages with this name (fuzzy match)
             const villages = await prisma.administrativeUnit.findMany({
-                where: { name: { equals: village, mode: 'insensitive' }, level: 'VILLAGE' }
+                where: { name: { contains: village, mode: 'insensitive' }, level: 'VILLAGE' }
             });
 
             // Filter to find the one whose parent chain matches
@@ -185,7 +185,7 @@ export class CommunityService {
         // If no village match, try Cell
         if (cell) {
             const cells = await prisma.administrativeUnit.findMany({
-                where: { name: { equals: cell, mode: 'insensitive' }, level: 'CELL' }
+                where: { name: { contains: cell, mode: 'insensitive' }, level: 'CELL' }
             });
             for (const c of cells) {
                 const lineage = await this.getUnitLineage(c.id);
@@ -198,7 +198,7 @@ export class CommunityService {
         // If no cell match, try Sector
         if (sector) {
             const sectors = await prisma.administrativeUnit.findMany({
-                where: { name: { equals: sector, mode: 'insensitive' }, level: 'SECTOR' }
+                where: { name: { contains: sector, mode: 'insensitive' }, level: 'SECTOR' }
             });
             for (const s of sectors) {
                 const lineage = await this.getUnitLineage(s.id);

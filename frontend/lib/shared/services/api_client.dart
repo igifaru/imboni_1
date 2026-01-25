@@ -11,8 +11,8 @@ class ApiClient {
     if (envUrl.isNotEmpty) return envUrl;
 
     // For Web: use localhost
-    if (kIsWeb) return 'http://localhost:3000/api';
-    // if (kIsWeb) return 'https://imboni-pscv.onrender.com/api';
+    // if (kIsWeb) return 'http://localhost:3000/api';
+    if (kIsWeb) return 'https://imboni-pscv.onrender.com/api';
     
     // For Desktop (Linux, macOS, Windows): use localhost since both are on same machine
     if (Platform.isLinux || Platform.isMacOS || Platform.isWindows) {
@@ -21,13 +21,13 @@ class ApiClient {
     
     // For Android Emulator: use 10.0.2.2 (standard loopback)
    if (Platform.isAndroid || Platform.isIOS) {
-   return 'http://172.31.112.90:3000/api'; // Local IP (Old)
-   // return 'https://imboni-pscv.onrender.com/api'; // Live Render Backend
+  //  return 'http://172.31.112.90:3000/api'; // Local IP (Old)
+   return 'https://imboni-pscv.onrender.com/api'; // Live Render Backend
    }
     
     // For iOS / fallback: use localhost (though iOS simulator uses localhost, physical needs IP)
-    return 'http://localhost:3000/api';
-    // return 'https://imboni-pscv.onrender.com/api';
+    // return 'http://localhost:3000/api';
+    return 'https://imboni-pscv.onrender.com/api';
   }
    
   static String get baseUrl => _baseUrl;
