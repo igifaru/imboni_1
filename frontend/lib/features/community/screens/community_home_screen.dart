@@ -375,7 +375,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
             ),
             const SizedBox(height: 24),
             Text(
-              'Hitamo Urwego',
+              l10n.selectLevel,
               style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
