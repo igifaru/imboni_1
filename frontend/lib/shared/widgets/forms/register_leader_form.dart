@@ -187,7 +187,6 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
     _passwordController.dispose();
     _nationalIdController.dispose();
     _phoneController.dispose();
-    _phoneController.dispose();
     _startDateController.dispose();
     _positionTitleController.dispose(); // Dispose
     super.dispose();
