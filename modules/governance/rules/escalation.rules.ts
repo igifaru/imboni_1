@@ -3,7 +3,7 @@
  * 
  * CRITICAL: No leader can block or override system escalation
  */
-import { config } from '@config/config.service';
+import { config } from '@config/environment';
 
 export type AdministrativeLevel =
     | 'VILLAGE'

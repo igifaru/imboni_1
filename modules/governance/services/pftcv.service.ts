@@ -3,7 +3,7 @@
  * Ref: Type definitions validated
  */
 import { prisma } from '@shared/database/prisma.service';
-import { publishEvent, CHANNELS } from '../../../../libs/messaging/messaging.service';
+import { publishEvent, CHANNELS } from '@core/notifications/messaging.service';
 import { createServiceLogger } from '@shared/helpers/logging/logger.service';
 import { DeliveryStatus, RiskLevel } from '@prisma/client';
 

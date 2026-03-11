@@ -4,12 +4,12 @@
 import { caseRepository, CaseRepository } from '../repositories/case.repository';
 import { CreateCaseDto, UpdateCaseDto, CitizenUpdateCaseDto, CaseResponseDto } from '../dto/case.dto';
 import { CaseEntity } from '../entities/case.entity';
-import { publishEvent, CHANNELS } from '../../../../libs/messaging/messaging.service';
+import { publishEvent, CHANNELS } from '@core/notifications/messaging.service';
 import { createServiceLogger } from '@shared/helpers/logging/logger.service';
 import { prisma } from '@shared/database/prisma.service';
-import { findNearestLeader, getAncestorAtLevel } from '../../../../libs/database/assignment.utils';
+import { findNearestLeader, getAncestorAtLevel } from '@modules/governance/repositories/assignment.utils';
 import { getNextEscalationLevel } from '../../../escalation-service/src/rules/escalation.rules';
-import { config } from '@config/config.service';
+import { config } from '@config/environment';
 import { AdministrativeLevel, CaseStatus } from '@prisma/client';
 
 const logger = createServiceLogger('case-service');

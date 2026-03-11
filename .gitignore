@@ -26,3 +26,12 @@ logs/
 # Editor
 .vscode/
 .idea/
+
+backend/dist/
+*.js.map
+
+# Temp / debug scripts output
+scripts/*.js
+
+# Docker build context excludes
+.dockerignore

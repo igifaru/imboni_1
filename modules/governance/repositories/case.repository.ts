@@ -4,7 +4,7 @@
 import { prisma } from '@shared/database/prisma.service';
 import { CaseEntity, generateCaseReference, AdministrativeLevel } from '../entities/case.entity';
 import { CreateCaseDto } from '../dto/case.dto';
-import { config } from '@config/config.service';
+import { config } from '@config/environment';
 
 export class CaseRepository {
     /**

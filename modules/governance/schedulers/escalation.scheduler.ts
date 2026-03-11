@@ -7,7 +7,7 @@
 import cron from 'node-cron';
 import { prisma } from '@shared/database/prisma.service';
 import { createServiceLogger } from '@shared/helpers/logging/logger.service';
-import { publishEvent, CHANNELS } from '../../../../libs/messaging/messaging.service';
+import { publishEvent, CHANNELS } from '@core/notifications/messaging.service';
 import {
     getNextEscalationLevel,
     isEligibleForEscalation,
@@ -15,7 +15,7 @@ import {
     getEmergencyNotificationLevels,
     AdministrativeLevel,
 } from '../rules/escalation.rules';
-import { findNearestLeader, getAncestorAtLevel } from '../../../../libs/database/assignment.utils';
+import { findNearestLeader, getAncestorAtLevel } from '@modules/governance/repositories/assignment.utils';
 
 const logger = createServiceLogger('escalation-scheduler');
 

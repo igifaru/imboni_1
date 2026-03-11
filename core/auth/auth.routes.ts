@@ -7,7 +7,7 @@ import { generateToken } from '../../../../libs/auth/jwt.service';
 import { hashPassword, verifyPassword } from '../../../../libs/auth/password.service';
 import { prisma } from '@shared/database/prisma.service';
 import { createServiceLogger } from '@shared/helpers/logging/logger.service';
-import { authMiddleware } from './jwt.middleware';
+import { authMiddleware } from './auth.middleware';
 
 const logger = createServiceLogger('auth-routes');
 const router = Router();
