@@ -136,6 +136,31 @@ class AppLocalizations {
   String get users => get('users');
   String get userManagement => get('user_management');
   String get registerLeader => get('register_leader');
+  String get banks => get('banks');
+  String get bankManagement => get('bank_management');
+  String get financialServices => get('financial_services');
+  String get secureBankingSupport => get('secure_banking_support');
+  String get bankingSupportDesc => get('banking_support_desc');
+  String get selectBank => get('select_bank');
+  String get bankingComplaints => get('banking_complaints');
+  String get financialHelp => get('financial_help');
+  String get myRecentComplaints => get('my_recent_complaints');
+  String get bankComplaint => get('bank_complaint');
+  String get registerNewBank => get('register_new_bank');
+  String get addBank => get('add_bank');
+  String get bankName => get('bank_name');
+  String get bankCode => get('bank_code');
+  String get headOfficeLocationLabel => get('head_office_location');
+  String get contactEmail => get('contact_email');
+  String get contactPhone => get('contact_phone');
+  String get totalBanks => get('total_banks');
+  String get activeBranches => get('active_branches');
+  String get noBanksYet => get('no_banks_yet');
+  String get addBankHint => get('add_bank_hint');
+  String get bankCodeLabel => get('bank_code_label');
+  String get statusReceived => get('status_received');
+  String get statusUnderReview => get('status_under_review');
+  String get statusInvestigation => get('status_investigation');
   String get searchUsersHint => get('search_users_hint');
   String get allUsers => get('all_users');
   String get leaders => get('leaders');
@@ -146,6 +171,37 @@ class AppLocalizations {
   String get status => get('status');
   String get actions => get('actions');
   String get imboniAdmin => get('imboni_admin');
+  String get fillAllFields => get('fill_all_fields');
+  String get submissionFailed => get('submission_failed');
+  String get complaintSubmittedSuccess => get('complaint_submitted_success');
+  String get referenceCode => get('reference_code');
+  String get backToHome => get('back_to_home');
+  String get reportTo => get('report_to');
+  String get bankCaseDetails => get('bank_case_details');
+  String get selectBranch => get('select_branch');
+  String get serviceCategory => get('service_category');
+  String get describeIssueHint => get('describe_issue_hint');
+  String get branchNameLabel => get('branch_name');
+  String get serviceExampleHint => get('service_example_hint');
+  String get enterDetailsHint => get('enter_details_hint');
+  String get submitComplaint => get('submit_complaint');
+  String get addBankService => get('add_bank_service');
+  String get serviceNameHint => get('service_name_hint');
+  String get addBtn => get('add_btn');
+  String get registerNewBranch => get('register_new_branch');
+  String get detailedAddress => get('detailed_address');
+  String get branchPhone => get('branch_phone');
+  String get branchesList => get('branches_list');
+  String get servicesList => get('services_list');
+  String get noBranchesHint => get('no_branches_hint');
+  String get noServicesHint => get('no_services_hint');
+  String get branchesTab => get('branches_tab');
+  String get serviceCatalogTab => get('service_catalog_tab');
+  String get authorizedBranches => get('authorized_branches');
+  String get newBranchBtn => get('new_branch_btn');
+  String get registeredServices => get('registered_services');
+  String get hqLabel => get('hq_label');
+  String get noDescription => get('no_description');
   
   // Dashboard Widgets
   String get searchCases => get('search_cases');
@@ -563,6 +619,20 @@ const Map<String, Map<String, String>> _translations = {
     'invalid_phone': 'Nimero ntabwo ariyo (urugero: 078...)',
     // User Management RW
     'user_management': 'Imicungire y\'Abakoresha',
+    'register_leader': 'Kwinjiza Umuyobozi',
+    'banks': 'Amabanki',
+    'bank_management': 'Imicungire y\'Amabanki',
+    'financial_services': 'Serivisi z\'Imari',
+    'secure_banking_support': 'Ubufasha mu by\'Imari',
+    'banking_support_desc': 'Tanga ikibazo ufite muri banki yawe binyuze kuri Imboni.',
+    'select_bank': 'Hitamo Banki',
+    'banking_complaints': 'Ibibazo bya Banki',
+    'financial_help': 'Ubufasha mu by\'Imari',
+    'my_recent_complaints': 'Ibibazo biheruka',
+    'bank_complaint': 'Ikirego cya Banki',
+    'status_received': 'Iyakiriwe',
+    'status_under_review': 'Irasuzumwa',
+    'status_investigation': 'Irakurikiranwa',
     'search_users_hint': 'Shakisha izina, imeri, cyangwa inshingano...',
     'no_users_found': 'Nta mukoresha ubonetse',
     'all_users': 'Bose',
@@ -572,6 +642,49 @@ const Map<String, Map<String, String>> _translations = {
     'status': 'Status',
     'actions': 'Ibikorwa',
     'imboni_admin': 'Admin',
+    'register_new_bank': 'Kwandika Banki Nshya',
+    'add_bank': 'Ongeraho Banki',
+    'bank_name': 'Izina rya Banki',
+    'bank_code': 'Icode ya Banki',
+    'head_office_location': 'Icyicaro Gikuru',
+    'contact_email': 'Imeri yo kuvugana',
+    'contact_phone': 'Telefoni yo kuvugana',
+    'total_banks': 'Amabanki Yose',
+    'active_branches': 'Amashami Akora',
+    'no_banks_yet': 'Nta banki zanditswe ziraboneka.',
+    'add_bank_hint': 'Kanda "Ongeraho Banki" kugirango utangire.',
+    'bank_code_label': 'Icode',
+    'fill_all_fields': 'Uzuza imyanya yose',
+    'submission_failed': 'Kohereza byanze',
+    'complaint_submitted_success': 'Ikirego cyoherejwe neza',
+    'reference_code': 'Nimero y\'ikirego',
+    'back_to_home:': 'Subira Ahabanza',
+    'report_to': 'Tanga ikirego kuri',
+    'bank_case_details': 'Ibigize ikirego cya banki',
+    'select_branch': 'Hitamo Ishami',
+    'service_category': 'Icyiciro cya Serivisi',
+    'describe_issue_hint': 'Andika ibyabaye...',
+    'branch_name': 'Izina ry\'Ishami',
+    'service_example_hint': 'Urugero: ATM, Konti...',
+    'enter_details_hint': 'Andika ibisobanuro hano...',
+    'submit_complaint': 'Ohereza Ikirego',
+    'add_bank_service': 'Ongeraho Serivisi',
+    'service_name_hint': 'Izina rya Serivisi (urugero: ATM Dispute)',
+    'add_btn': 'Ongeraho',
+    'register_new_branch': 'Kwinjiza Ishami Rishya',
+    'detailed_address': 'Aderese Imbere',
+    'branch_phone': 'Telefoni y\'Ishami',
+    'branches_list': 'Urutonde rw\'Amashami',
+    'services_list': 'Urutonde rwa Serivisi',
+    'no_branches_hint': 'Nta mashami yanditswe.',
+    'no_services_hint': 'Nta serivisi zanditswe.',
+    'branches_tab': 'Amashami',
+    'service_catalog_tab': 'Serivisi',
+    'authorized_branches': 'Amashami Yemewe',
+    'new_branch_btn': 'Ishami Rishya',
+    'registered_services': 'Serivisi Zanditswe',
+    'hq_label': 'Icyicaro',
+    'no_description': 'Nta bisobanuro',
     // Settings RW
     'settings': 'Igenamiterere',
     'my_account': 'Konti Yanjye',
@@ -587,7 +700,7 @@ const Map<String, Map<String, String>> _translations = {
     'about_imboni': 'Ibyerekeye Imboni',
     'version': 'Verisiyo',
     'role': 'Inshingano',
-    'jurisdiction': 'Ifasi',
+    'jurisdiction': 'urwego',
     'logout_confirm_title': 'Gusohoka',
     'logout_confirm_content': 'Urahamya ko ushaka gusohoka?',
     'email_notifications': 'Ubutumwa bwa Email',
@@ -617,8 +730,8 @@ const Map<String, Map<String, String>> _translations = {
     'ai_insights': 'Isesengura rya AI',
     'cases_by_province': 'Ibibazo mu Ntara',
     'total': 'Yose',
-    'open': 'Gifunguye',
-    // resolved defined above
+    'open': 'Biracyakora',
+    // resolved and closed defined above
     // Attachments RW
     'attach_evidence': 'Ongeraho Ibimenyetso',
     'take_photo': 'Fata Ifoto',
@@ -980,6 +1093,20 @@ const Map<String, Map<String, String>> _translations = {
     'invalid_phone': 'Invalid Rwanda number (e.g. 078...)',
     // User Management EN
     'user_management': 'User Management',
+    'register_leader': 'Register Leader',
+    'banks': 'Banks',
+    'bank_management': 'Bank Management',
+    'financial_services': 'Financial Services',
+    'secure_banking_support': 'Secure Banking Support',
+    'banking_support_desc': 'Submit and track issues with your bank directly through Imboni.',
+    'select_bank': 'Select Bank',
+    'banking_complaints': 'Banking Complaints',
+    'financial_help': 'Financial Help',
+    'my_recent_complaints': 'My Recent Complaints',
+    'bank_complaint': 'Bank Complaint',
+    'status_received': 'Received',
+    'status_under_review': 'Under Review',
+    'status_investigation': 'Investigation',
     'search_users_hint': 'Search by name, email, or role...',
     'no_users_found': 'No users found',
     'all_users': 'All Users',
@@ -989,6 +1116,49 @@ const Map<String, Map<String, String>> _translations = {
     'status': 'Status',
     'actions': 'Actions',
     'imboni_admin': 'Admin',
+    'register_new_bank': 'Register New Bank',
+    'add_bank': 'Add Bank',
+    'bank_name': 'Bank Name',
+    'bank_code': 'Bank Code',
+    'head_office_location': 'Head Office Location',
+    'contact_email': 'Contact Email',
+    'contact_phone': 'Contact Phone',
+    'total_banks': 'Total Banks',
+    'active_branches': 'Active Branches',
+    'no_banks_yet': 'No bank partners registered yet.',
+    'add_bank_hint': 'Click "Add Bank" to begin onboarding financial partners.',
+    'bank_code_label': 'Code',
+    'fill_all_fields': 'Please fill all fields',
+    'submission_failed': 'Submission failed',
+    'complaint_submitted_success': 'Complaint Submitted Successfully',
+    'reference_code': 'Reference Code',
+    'back_to_home': 'Back to Home',
+    'report_to': 'Report to',
+    'bank_case_details': 'Bank Case Details',
+    'select_branch': 'Select Branch',
+    'service_category': 'Service Category',
+    'describe_issue_hint': 'Describe the issue...',
+    'branch_name': 'Branch Name',
+    'service_example_hint': 'Example: ATM, Account...',
+    'enter_details_hint': 'Enter details here...',
+    'submit_complaint': 'Submit Complaint',
+    'add_bank_service': 'Add Bank Service',
+    'service_name_hint': 'Service Name (e.g. ATM Dispute)',
+    'add_btn': 'Add',
+    'register_new_branch': 'Register New Branch',
+    'detailed_address': 'Detailed Address',
+    'branch_phone': 'Branch Phone',
+    'branches_list': 'Branches List',
+    'services_list': 'Services List',
+    'no_branches_hint': 'No branches registered.',
+    'no_services_hint': 'No services registered.',
+    'branches_tab': 'Branches',
+    'service_catalog_tab': 'Service Catalog',
+    'authorized_branches': 'Authorized Branches',
+    'new_branch_btn': 'New Branch',
+    'registered_services': 'Registered Services',
+    'hq_label': 'HQ',
+    'no_description': 'No description',
     // Settings EN
     'settings': 'Settings',
     'my_account': 'My Account',
@@ -1388,6 +1558,20 @@ const Map<String, Map<String, String>> _translations = {
     'hint_role_select': 'Sélectionner le Rôle (ex: Chef de Village)',
     // User Management FR
     'user_management': 'Gestion des Utilisateurs',
+    'register_leader': 'Inscrire un Chef',
+    'banks': 'Banques',
+    'bank_management': 'Gestion des Banques',
+    'financial_services': 'Services Financiers',
+    'secure_banking_support': 'Support Bancaire Sécurisé',
+    'banking_support_desc': 'Soumettez et suivez vos problèmes bancaires directement via Imboni.',
+    'select_bank': 'Sélectionner une Banque',
+    'banking_complaints': 'Plaintes Bancaires',
+    'financial_help': 'Aide Financière',
+    'my_recent_complaints': 'Mes Plaintes Récentes',
+    'bank_complaint': 'Plainte Bancaire',
+    'status_received': 'Reçu',
+    'status_under_review': 'En cours d\'examen',
+    'status_investigation': 'Enquête',
     'search_users_hint': 'Rechercher par nom, email ou rôle...',
     'no_users_found': 'Aucun utilisateur trouvé',
     'all_users': 'Tous',
@@ -1397,6 +1581,49 @@ const Map<String, Map<String, String>> _translations = {
     'status': 'Statut',
     'actions': 'Actions',
     'imboni_admin': 'Admin',
+    'register_new_bank': 'Enregistrer une nouvelle banque',
+    'add_bank': 'Ajouter une banque',
+    'bank_name': 'Nom de la banque',
+    'bank_code': 'Code de la banque',
+    'head_office_location': 'Lieu du siège social',
+    'contact_email': 'Email de contact',
+    'contact_phone': 'Téléphone de contact',
+    'total_banks': 'Total des banques',
+    'active_branches': 'Agences actives',
+    'no_banks_yet': 'Aucun partenaire bancaire enregistré.',
+    'add_bank_hint': 'Cliquez sur "Ajouter une banque" pour commencer.',
+    'bank_code_label': 'Code',
+    'fill_all_fields': 'Veuillez remplir tous les champs',
+    'submission_failed': 'Échec de l\'envoi',
+    'complaint_submitted_success': 'Plainte envoyée avec succès',
+    'reference_code': 'Code de référence',
+    'back_to_home': 'Retour à l\'accueil',
+    'report_to': 'Signaler à',
+    'bank_case_details': 'Détails du dossier bancaire',
+    'select_branch': 'Sélectionner l\'agence',
+    'service_category': 'Catégorie de service',
+    'describe_issue_hint': 'Décrire le problème...',
+    'branch_name': 'Nom de l\'agence',
+    'service_example_hint': 'Exemple: ATM, Compte...',
+    'enter_details_hint': 'Entrez les détails ici...',
+    'submit_complaint': 'Soumettre la plainte',
+    'add_bank_service': 'Ajouter un service bancaire',
+    'service_name_hint': 'Nom du service (ex: Litige ATM)',
+    'add_btn': 'Ajouter',
+    'register_new_branch': 'Enregistrer une nouvelle agence',
+    'detailed_address': 'Adresse détaillée',
+    'branch_phone': 'Téléphone de l\'agence',
+    'branches_list': 'Liste des agences',
+    'services_list': 'Liste des services',
+    'no_branches_hint': 'Aucune agence enregistrée.',
+    'no_services_hint': 'Aucun service enregistré.',
+    'branches_tab': 'Agences',
+    'service_catalog_tab': 'Catalogue des services',
+    'authorized_branches': 'Agences autorisées',
+    'new_branch_btn': 'Nouvelle agence',
+    'registered_services': 'Services enregistrés',
+    'hq_label': 'Siège',
+    'no_description': 'Aucune description',
     // Settings FR
     'settings': 'Paramètres',
     'my_account': 'Mon Compte',

@@ -187,6 +187,9 @@ class UserModel {
   final String? assignedUnitName; // Name of unit they lead
   final String? assignedUnitId; // ID of unit they lead
   final String? administrativeLevel; // Level of the unit (VILLAGE, CELL, etc.)
+  final String? bankId;
+  final String? branchId;
+  final String? branchRole;
 
   const UserModel({
     required this.id,
@@ -208,9 +211,14 @@ class UserModel {
     this.assignedUnitName,
     this.assignedUnitId,
     this.administrativeLevel,
+    this.bankId,
+    this.branchId,
+    this.branchRole,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
+    final staffProfile = json['bankStaffProfile'] as Map<String, dynamic>?;
+
     return UserModel(
       id: json['id'] as String,
       role: json['role'] as String,
@@ -231,6 +239,9 @@ class UserModel {
       assignedUnitName: json['assignedUnitName'] as String?,
       assignedUnitId: json['assignedUnitId'] as String?,
       administrativeLevel: json['administrativeLevel'] as String?,
+      bankId: staffProfile?['bankId'] as String?,
+      branchId: staffProfile?['branchId'] as String?,
+      branchRole: staffProfile?['role'] as String?,
     );
   }
 

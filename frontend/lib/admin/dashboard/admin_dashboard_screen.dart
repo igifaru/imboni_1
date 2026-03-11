@@ -11,6 +11,13 @@ import '../users/user_management_screen.dart';
 import 'widgets/province_cases_widget.dart';
 import 'settings/admin_settings_screen.dart';
 import '../../shared/localization/app_localizations.dart';
+import '../../shared/services/admin_units_service.dart';
+import '../../bank/views/bank_management_screen.dart';
+import '../../institutions/views/institution_management_screen.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+// For professional Web Routing without breaking Desktop:
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html if (dart.library.io) 'package:imboni/shared/stubs/html_stub.dart'; 
 
 class AdminDashboardScreen extends StatefulWidget {
   final VoidCallback onLogout;
@@ -23,62 +30,104 @@ class AdminDashboardScreen extends StatefulWidget {
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   int _currentIndex = 0;
+  List<Widget>? _screens;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize screens here once
+    _screens = [
+      const _AdminHome(),
+      const UserManagementScreen(), 
+      const RegisterLeaderForm(), // Index 2
+      const AdminSettingsScreen(), // Index 3
+      const BankManagementScreen(), // Index 4 - Bank Module
+      const InstitutionManagementScreen(), // Index 5 - Institutions Module
+    ];
+  }
+
+  String _getSafeTitle() {
+    try {
+      final l10n = AppLocalizations.of(context);
+      if (_currentIndex == 0) return l10n.dashboard;
+      if (_currentIndex == 1) return l10n.userManagement;
+      if (_currentIndex == 2) return l10n.registerLeader;
+      if (_currentIndex == 4) return l10n.bankManagement;
+      if (_currentIndex == 5) return 'Institutions';
+      return l10n.settings;
+    } catch (_) {
+      if (_currentIndex == 4) return 'Bank Management';
+      if (_currentIndex == 5) return 'Institutions';
+      return 'Admin Dashboard';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDesktop = Responsive.isDesktop(context);
+    final screens = _screens ?? [const Center(child: CircularProgressIndicator())];
     
-    // Screens for each navigation item
-    final screens = [
-      const _AdminHome(),
-      const UserManagementScreen(), // Using const is fine if the widget handles its own state properly
-      const RegisterLeaderForm(), // Index 2
-      const AdminSettingsScreen(), // Index 3
-    ];
-
     return isDesktop ? _buildDesktop(theme, screens) : _buildMobile(theme, screens);
   }
 
   Widget _buildMobile(ThemeData theme, List<Widget> screens) {
     final l10n = AppLocalizations.of(context);
     
-    // Dynamic titles for mobile AppBar
-    final titles = [
-      l10n.home,
-      l10n.users,
-      l10n.register,
-      l10n.settings,
-    ];
-    
     return Scaffold(
       appBar: AppBar(
-        title: Text(titles[_currentIndex]),
+        title: Text(_getSafeTitle()),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: widget.onLogout,
+          ),
+        ],
       ),
       body: screens[_currentIndex],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
-        onDestinationSelected: (i) => setState(() => _currentIndex = i),
+        onDestinationSelected: (i) {
+          setState(() => _currentIndex = i);
+          if (kIsWeb) {
+            final hash = i == 0 ? 'dashboard' : 
+                         i == 1 ? 'users' :
+                         i == 2 ? 'leaders' :
+                         i == 3 ? 'settings' :
+                         i == 4 ? 'banks' : 'institutions';
+            html.window.location.hash = hash;
+          }
+        },
         destinations: [
           NavigationDestination(
             icon: const Icon(Icons.dashboard_outlined),
             selectedIcon: const Icon(Icons.dashboard),
-            label: AppLocalizations.of(context).home,
+            label: l10n.home,
           ),
           NavigationDestination(
             icon: const Icon(Icons.people_outline),
             selectedIcon: const Icon(Icons.people),
-            label: AppLocalizations.of(context).users,
+            label: l10n.users,
           ),
           NavigationDestination(
             icon: const Icon(Icons.person_add_outlined),
             selectedIcon: const Icon(Icons.person_add),
-            label: AppLocalizations.of(context).register,
+            label: l10n.register,
           ),
           NavigationDestination(
-             icon: const Icon(Icons.settings_outlined),
-             selectedIcon: const Icon(Icons.settings),
-             label: AppLocalizations.of(context).settings,
+            icon: const Icon(Icons.settings_outlined),
+            selectedIcon: const Icon(Icons.settings),
+            label: l10n.settings,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.account_balance_outlined),
+            selectedIcon: const Icon(Icons.account_balance),
+            label: l10n.banks,
+          ),
+          const NavigationDestination(
+            icon: Icon(Icons.business_outlined),
+            selectedIcon: Icon(Icons.business),
+            label: 'Institutions',
           ),
         ],
       ),
@@ -128,13 +177,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 _buildNavItem(theme, Icons.people_outline, AppLocalizations.of(context).userManagement, 1),
                 _buildNavItem(theme, Icons.person_add_outlined, AppLocalizations.of(context).registerLeader, 2),
                 _buildNavItem(theme, Icons.settings_outlined, AppLocalizations.of(context).settings, 3),
+                _buildNavItem(theme, Icons.account_balance, AppLocalizations.of(context).banks, 4),
+                _buildNavItem(theme, Icons.business, 'Institutions', 5),
               ],
             ),
           ),
           Expanded(
             child: Column(
               children: [
-                // Desktop App Bar (optional, or just header)
                 Container(
                   height: 64,
                   padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -145,11 +195,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   child: Row(
                     children: [
                       Text(
-                        _currentIndex == 0 ? AppLocalizations.of(context).dashboard : 
-                        _currentIndex == 1 ? AppLocalizations.of(context).userManagement : 
-                        _currentIndex == 2 ? AppLocalizations.of(context).registerLeader :
-                        AppLocalizations.of(context).settings,
-                        style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                        _getSafeTitle(),
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface,
+                        ) ?? const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                       ),
                       const Spacer(),
                       const CircleAvatar(
@@ -160,7 +210,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     ],
                   ),
                 ),
-                Expanded(child: screens[_currentIndex]),
+                Expanded(
+                  child: Material(
+                    color: theme.scaffoldBackgroundColor,
+                    child: _screens == null 
+                      ? const Center(child: CircularProgressIndicator())
+                      : IndexedStack(
+                          index: _currentIndex,
+                          children: _screens!,
+                        ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -195,7 +255,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         ),
         selected: isSelected,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        onTap: () => setState(() => _currentIndex = index),
+        onTap: () {
+          setState(() => _currentIndex = index);
+          if (kIsWeb) {
+            final hash = index == 0 ? 'dashboard' : 
+                         index == 1 ? 'users' :
+                         index == 2 ? 'leaders' :
+                         index == 3 ? 'settings' :
+                         index == 4 ? 'banks' : 'institutions';
+            html.window.location.hash = hash;
+          }
+        },
       ),
     );
   }
@@ -210,7 +280,6 @@ class _AdminHome extends StatefulWidget {
 
 class _AdminHomeState extends State<_AdminHome> {
   List<CaseModel> _assignedCases = [];
-  // ignore: unused_field
   List<CaseModel> _escalationAlerts = [];
   bool _isLoading = true;
   String _searchQuery = '';
@@ -223,7 +292,7 @@ class _AdminHomeState extends State<_AdminHome> {
 
   Map<String, int> get _casesByDistrict {
     final map = <String, int>{};
-    final locationService = LocationService();
+    final locationService = AdminUnitsService.instance;
     
     for (final c in _assignedCases) {
       final district = locationService.extractDistrict(c.currentLevel);
@@ -237,9 +306,13 @@ class _AdminHomeState extends State<_AdminHome> {
   Map<String, dynamic> _globalStats = {};
 
   Future<void> _loadDashboardData() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
-      await LocationService().load();
+      if (!AdminUnitsService.instance.isLoaded) {
+        await AdminUnitsService.instance.load();
+      }
+
       final results = await Future.wait([
         caseService.getAllCases(limit: 50),
         caseService.getGlobalStats(),
@@ -247,9 +320,9 @@ class _AdminHomeState extends State<_AdminHome> {
       ]);
       if (mounted) {
         setState(() {
-          _assignedCases = (results[0].data as List).cast<CaseModel>();
-          _globalStats = results[1].data as Map<String, dynamic>;
-          _escalationAlerts = (results[2].data as List).cast<CaseModel>();
+          _assignedCases = (results[0].data as List?)?.cast<CaseModel>() ?? [];
+          _globalStats = (results[1].data as Map<String, dynamic>?) ?? {};
+          _escalationAlerts = (results[2].data as List?)?.cast<CaseModel>() ?? [];
           _isLoading = false;
         });
       }
@@ -270,95 +343,78 @@ class _AdminHomeState extends State<_AdminHome> {
     final padding = Responsive.horizontalPadding(context);
     final isDesktop = Responsive.isDesktop(context);
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: _buildAppBar(theme, isDesktop),
-      body: RefreshIndicator(
-        onRefresh: _loadDashboardData,
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : SingleChildScrollView(
-                padding: EdgeInsets.all(padding),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  _buildStatsRow(theme),
-                  const SizedBox(height: 32),
-                  if (isDesktop)
-                    Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      // Left: Rwanda Map
-                      Expanded(
-                        flex: 5,
-                        child: RwandaMapWidget(
-                          casesByDistrict: _casesByDistrict,
-                          onDistrictSelected: (d) => debugPrint('Selected District: $d'),
-                        ),
-                      ),
-                      const SizedBox(width: 24),
-                      // Right: Province Cases Stats
-                      Expanded(
-                        flex: 3,
-                        child: ProvinceCasesWidget(
-                          cases: _assignedCases,
-                          isLoading: _isLoading,
-                        ),
-                      ),
-                    ])
-                  else ...[
-                    RwandaMapWidget(
-                      casesByDistrict: _casesByDistrict,
-                      onDistrictSelected: (d) => debugPrint('Selected District: $d'),
-                    ),
-                    const SizedBox(height: 24),
-                    ProvinceCasesWidget(cases: _assignedCases, isLoading: _isLoading),
-                  ],
-                  const SizedBox(height: 32),
-                  // Case search and table below
-                  _buildSearchAndTable(theme, isDark),
-                ]),
-              ),
+    return RefreshIndicator(
+      onRefresh: _loadDashboardData,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.all(padding),
+        child: _isLoading && _assignedCases.isEmpty 
+          ? const SizedBox(
+              height: 400,
+              child: Center(child: CircularProgressIndicator()))
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start, 
+              children: [
+                 _buildStatsRow(theme),
+                 const SizedBox(height: 32),
+                 if (isDesktop)
+                   Row(
+                     crossAxisAlignment: CrossAxisAlignment.start, 
+                     children: [
+                       // Left: Rwanda Map
+                       Expanded(
+                         flex: 5,
+                         child: ConstrainedBox(
+                           constraints: const BoxConstraints(maxHeight: 600, minHeight: 400),
+                           child: _buildMapSafe(),
+                         ),
+                       ),
+                       const SizedBox(width: 24),
+                       // Right: Province Cases Stats
+                       Expanded(
+                         flex: 3,
+                         child: ProvinceCasesWidget(
+                           cases: _assignedCases,
+                           isLoading: _isLoading,
+                         ),
+                       ),
+                     ],
+                   )
+                 else ...[
+                   _buildMapSafe(),
+                   const SizedBox(height: 24),
+                   ProvinceCasesWidget(cases: _assignedCases, isLoading: _isLoading),
+                 ],
+                 const SizedBox(height: 32),
+                 _buildSearchAndTable(theme, isDark),
+              ],
             ),
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar(ThemeData theme, bool isDesktop) {
-    return AppBar(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      surfaceTintColor: Colors.transparent,
-      elevation: 0,
-      title: SizedBox(
-        height: 44,
-        child: TextField(
-          onChanged: (v) => setState(() => _searchQuery = v),
-          decoration: InputDecoration(
-            hintText: 'Search cases...',
-            prefixIcon: const Icon(Icons.search),
-            filled: true,
-            fillColor: theme.cardColor,
-            contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: theme.dividerColor),
             ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: theme.dividerColor),
-            ),
-          ),
-        ),
-      ),
-      actions: [
-        IconButton(icon: Icon(Icons.refresh, color: theme.colorScheme.onSurface), onPressed: _loadDashboardData),
-      ],
     );
   }
 
   Widget _buildStatsRow(ThemeData theme) {
-    return Row(children: [
-      Expanded(child: StatCard(icon: Icons.assignment_late, iconColor: ImboniColors.urgencyEmergency, label: AppLocalizations.of(context).urgent, value: '${_globalStats['urgent'] ?? 0}')),
-      const SizedBox(width: 12),
-      Expanded(child: StatCard(icon: Icons.radio_button_checked, iconColor: ImboniColors.info, label: AppLocalizations.of(context).active, value: '${_globalStats['active'] ?? 0}')),
-      const SizedBox(width: 12),
-      Expanded(child: StatCard(icon: Icons.warning_amber, iconColor: ImboniColors.warning, label: AppLocalizations.of(context).escalated, value: '${_globalStats['escalated'] ?? 0}')),
-    ]);
+    String urgentLabel = 'Urgent';
+    String activeLabel = 'Active';
+    String escalatedLabel = 'Escalated';
+    
+    try {
+      final l10n = AppLocalizations.of(context);
+      urgentLabel = l10n.urgent;
+      activeLabel = l10n.active;
+      escalatedLabel = l10n.escalated;
+    } catch (_) {}
+
+    return SizedBox(
+      height: 120,
+      child: Row(children: [
+        Expanded(child: StatCard(icon: Icons.assignment_late, iconColor: ImboniColors.urgencyEmergency, label: urgentLabel, value: '${_globalStats['urgent'] ?? 0}')),
+        const SizedBox(width: 12),
+        Expanded(child: StatCard(icon: Icons.radio_button_checked, iconColor: ImboniColors.info, label: activeLabel, value: '${_globalStats['active'] ?? 0}')),
+        const SizedBox(width: 12),
+        Expanded(child: StatCard(icon: Icons.warning_amber, iconColor: ImboniColors.warning, label: escalatedLabel, value: '${_globalStats['escalated'] ?? 0}')),
+      ]),
+    );
   }
 
   Widget _buildSearchAndTable(ThemeData theme, bool isDark) {
@@ -370,6 +426,24 @@ class _AdminHomeState extends State<_AdminHome> {
     );
   }
 
+  Widget _buildMapSafe() {
+    try {
+      return RwandaMapWidget(
+        casesByDistrict: _casesByDistrict,
+        onDistrictSelected: (d) => debugPrint('Selected District: $d'),
+      );
+    } catch (e) {
+      return Container(
+        height: 400,
+        decoration: BoxDecoration(
+          color: Colors.grey.withAlpha(20),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: const Center(child: Text('Map currently unavailable')),
+      );
+    }
+  }
+
   Widget _buildDataTable(ThemeData theme, bool isDark) {
     final cases = _filteredCases;
     if (cases.isEmpty) {
@@ -378,7 +452,6 @@ class _AdminHomeState extends State<_AdminHome> {
         child: Center(child: Text('No cases found', style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSurfaceVariant))),
       );
     }
-
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: DataTable(

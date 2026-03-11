@@ -642,7 +642,7 @@ class _RegisterLeaderFormState extends State<RegisterLeaderForm> {
     required ThemeData theme,
   }) {
     return DropdownButtonFormField<String>(
-      initialValue: value,
+      value: value,
       isExpanded: true,
       items: items.map((name) => DropdownMenuItem(
         value: name,

@@ -6,6 +6,9 @@ class AdminUnitsService {
   static AdminUnitsService? _instance;
   Map<String, dynamic>? _data;
   bool _isLoaded = false;
+  final Map<String, String> _sectorToDistrict = {};
+  final Map<String, String> _districtToProvince = {};
+  final Set<String> _districts = {};
 
   AdminUnitsService._();
   static AdminUnitsService get instance => _instance ??= AdminUnitsService._();
@@ -15,6 +18,7 @@ class AdminUnitsService {
     try {
       final jsonString = await rootBundle.loadString('assets/data.json');
       _data = json.decode(jsonString) as Map<String, dynamic>;
+      _parseHierarchy();
       _isLoaded = true;
     } catch (e) {
       _data = {};
@@ -22,8 +26,48 @@ class AdminUnitsService {
     }
   }
 
+  void _parseHierarchy() {
+    if (_data == null) return;
+    _districts.clear();
+    _districtToProvince.clear();
+    _sectorToDistrict.clear();
+
+    _data!.forEach((provinceName, districtsMap) {
+      if (districtsMap is Map) {
+        districtsMap.forEach((districtName, sectorsMap) {
+          _districts.add(districtName);
+          _districtToProvince[districtName] = provinceName;
+          if (sectorsMap is Map) {
+            sectorsMap.forEach((sectorName, cells) {
+              _sectorToDistrict[sectorName] = districtName;
+            });
+          }
+        });
+      }
+    });
+  }
+
+  /// Tries to find the District name from a location string.
+  String? extractDistrict(String location) {
+    if (_data == null) return null;
+    final normalized = location.trim();
+    for (final d in _districts) {
+      if (normalized.contains(d)) return d;
+    }
+    for (final s in _sectorToDistrict.keys) {
+      if (normalized.contains(s)) return _sectorToDistrict[s];
+    }
+    return null;
+  }
+
+  String? getProvinceForDistrict(String district) {
+    return _districtToProvince[district];
+  }
+
+  bool get isLoaded => _isLoaded;
+
   /// Get all provinces
-  List<String> get provinces {
+  List<String> getProvinces() {
     if (_data == null) return [];
     return _data!.keys.toList()..sort();
   }

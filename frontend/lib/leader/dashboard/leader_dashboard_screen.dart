@@ -16,6 +16,8 @@ import '../../admin/services/admin_service.dart';
 import '../../shared/localization/app_localizations.dart';
 import '../case_management/case_details_screen.dart';
 import '../../shared/services/auth_service.dart';
+import '../../shared/services/admin_units_service.dart';
+
 
 import '../../features/community/screens/community_home_screen.dart';
 import '../../features/pftcv/pftcv.dart';
@@ -358,7 +360,7 @@ class _DashboardHomeState extends State<_DashboardHome> {
 
   Map<String, int> get _casesByDistrict {
     final map = <String, int>{};
-    final locationService = LocationService();
+    final locationService = adminUnitsService;
     
     // Use metrics data if available, otherwise fallback to assigned cases (less accurate)
     if (_metrics != null && _metrics!.subUnitBreakdown.isNotEmpty) {
@@ -404,7 +406,7 @@ class _DashboardHomeState extends State<_DashboardHome> {
 
   Future<void> _loadLocationData() async {
     try {
-      await LocationService().load();
+      await adminUnitsService.load();
     } catch (e) {
       // Non-critical
     }

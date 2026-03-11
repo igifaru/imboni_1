@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../services/location_service.dart';
+import 'package:imboni/shared/services/admin_units_service.dart';
+
+
 import '../../models/location_selection.dart';
 import 'grid_selector.dart';
 import 'list_selector.dart';
@@ -45,7 +47,7 @@ class HierarchicalMapView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final service = LocationService();
+    final service = adminUnitsService;
 
     // Province level view
     if (selection.province == null) {
@@ -136,7 +138,7 @@ class HierarchicalMapView extends StatelessWidget {
           Text(
             selection.village!,
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 20, // Reverted to original as 'value: value' is not valid for TextStyle
               fontWeight: FontWeight.bold,
               color: isDark ? Colors.white : Colors.black87,
             ),

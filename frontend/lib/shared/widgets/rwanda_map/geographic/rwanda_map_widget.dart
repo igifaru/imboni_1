@@ -94,9 +94,10 @@ class _RwandaMapWidgetState extends State<RwandaMapWidget> {
     super.initState();
     _provincesFuture = GeoJsonParser.parseRwandaProvinces();
     _districtsFuture = GeoJsonParser.parseRwandaDistricts();
-    _sectorsFuture = GeoJsonParser.parseRwandaSectors();
-    _cellsFuture = GeoJsonParser.parseRwandaCells();
-    _villagesFuture = GeoJsonParser.parseRwandaVillages();
+    // Optimization: Don't parse deep layers in general dashboard view unless zoomed
+    _sectorsFuture = Future.value(<MapRegion>[]);
+    _cellsFuture = Future.value(<MapRegion>[]);
+    _villagesFuture = Future.value(<MapRegion>[]);
   }
 
   @override
@@ -609,8 +610,8 @@ class _RwandaMapWidgetState extends State<RwandaMapWidget> {
                                                  (oldZ <= 12.0 && newZ > 12.0) || (oldZ > 12.0 && newZ <= 12.0) ||
                                                  (oldZ <= 13.5 && newZ > 13.5) || (oldZ > 13.5 && newZ <= 13.5);
                          if (crossedThreshold) {
-                           setState(() {
-                             _currentZoom = newZ;
+                           WidgetsBinding.instance.addPostFrameCallback((_) {
+                             if (mounted) setState(() { _currentZoom = newZ; });
                            });
                          } else {
                            _currentZoom = newZ;

@@ -12,6 +12,7 @@ import 'package:imboni/leader/dashboard/leader_dashboard_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:imboni/features/community/providers/community_provider.dart';
 import 'package:imboni/features/pftcv/providers/pftcv_provider.dart';
+import 'package:imboni/bank/views/bank_staff_dashboard.dart';
 
 import 'package:fvp/fvp.dart' as fvp;
 
@@ -120,6 +121,11 @@ class _ImboniAppState extends State<ImboniApp> {
 
     if (_isAdmin) {
       return AdminDashboardScreen(onLogout: _onLogout);
+    }
+
+    // Bank Staff Routing
+    if (authService.currentUser?.role == 'BANK_ADMIN' || authService.currentUser?.role == 'BANK_OFFICER') {
+       return BankStaffDashboard(branchId: authService.currentUser?.branchId ?? 'hq');
     }
 
     if (_isLeader) {

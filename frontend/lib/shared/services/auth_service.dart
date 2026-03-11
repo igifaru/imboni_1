@@ -101,6 +101,7 @@ class AuthService extends ChangeNotifier {
     _currentUser = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
+    notifyListeners();
   }
 
   /// Update user profile with all fields

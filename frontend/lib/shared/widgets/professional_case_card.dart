@@ -4,7 +4,6 @@ import 'package:imboni/shared/theme/colors.dart';
 import 'package:imboni/shared/localization/app_localizations.dart';
 import 'package:imboni/shared/widgets/countdown_timer.dart';
 import 'package:imboni/shared/utils/case_helper.dart';
-import 'package:intl/intl.dart';
 
 class ProfessionalCaseCard extends StatelessWidget {
   final CaseModel caseData;

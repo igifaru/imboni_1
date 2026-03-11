@@ -12,6 +12,8 @@ import '../../shared/widgets/professional_case_card.dart';
 import '../../features/community/screens/community_home_screen.dart';
 import '../../features/pftcv/pftcv.dart';
 import '../my_cases/citizen_case_details_screen.dart';
+import '../../bank/views/financial_services_screen.dart';
+import '../../institutions/views/institution_request_screen.dart';
 /// Citizen Home Screen - Professional design with theme support
 class CitizenHomeScreen extends StatefulWidget {
   const CitizenHomeScreen({super.key});
@@ -335,7 +337,13 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
       Row(children: [
         Expanded(child: _QuickActionCard(icon: Icons.people_outline, label: l10n.community, subtitle: l10n.communitySubtitle, color: ImboniColors.categorySocial, theme: theme, onTap: () => _navigateTo(const CommunityHomeScreen()))),
         const SizedBox(width: 12),
-        Expanded(child: _QuickActionCard(icon: Icons.account_balance, label: l10n.publicFunds, subtitle: l10n.publicFundsSubtitle, color: Colors.teal, theme: theme, onTap: () => _navigateTo(const PftcvHomeScreen()))),
+        Expanded(child: _QuickActionCard(icon: Icons.account_balance_wallet_outlined, label: l10n.financialServices, subtitle: l10n.bankingComplaints, color: Colors.indigo, theme: theme, onTap: () => _navigateTo(const FinancialServicesScreen()))),
+      ]),
+      const SizedBox(height: 12),
+      Row(children: [
+        Expanded(child: _QuickActionCard(icon: Icons.business_center_outlined, label: 'Institution Services', subtitle: 'Submit requests to institutions', color: Colors.teal, theme: theme, onTap: () => _navigateTo(const InstitutionRequestScreen()))),
+        const SizedBox(width: 12),
+        const Expanded(child: SizedBox()), // Spacer
       ]),
     ]);
   }
@@ -352,7 +360,9 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
       const SizedBox(width: 16),
       Expanded(child: _QuickActionCard(icon: Icons.people_outline, label: l10n.community, subtitle: l10n.communitySubtitle, color: ImboniColors.categorySocial, theme: theme, onTap: () => _navigateTo(const CommunityHomeScreen()))),
       const SizedBox(width: 16),
-      Expanded(child: _QuickActionCard(icon: Icons.account_balance, label: l10n.publicFunds, subtitle: l10n.publicFundsSubtitle, color: Colors.teal, theme: theme, onTap: () => _navigateTo(const PftcvHomeScreen()))),
+      Expanded(child: _QuickActionCard(icon: Icons.account_balance_wallet_outlined, label: l10n.financialServices, subtitle: l10n.financialHelp, color: Colors.indigo, theme: theme, onTap: () => _navigateTo(const FinancialServicesScreen()))),
+      const SizedBox(width: 16),
+      Expanded(child: _QuickActionCard(icon: Icons.business_center_outlined, label: 'Institutions', subtitle: 'Submit requests', color: Colors.teal, theme: theme, onTap: () => _navigateTo(const InstitutionRequestScreen()))),
     ]);
   }
 

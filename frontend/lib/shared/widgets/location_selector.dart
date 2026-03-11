@@ -51,7 +51,7 @@ class _LocationSelectorState extends State<LocationSelector> {
         _buildDropdown(
           label: 'Province / Intara',
           value: _selection.province,
-          items: adminUnitsService.provinces,
+          items: adminUnitsService.getProvinces(),
           onChanged: (value) {
             setState(() => _selection = LocationSelection(province: value));
             widget.onLocationChanged(_selection);
@@ -126,7 +126,7 @@ class _LocationSelectorState extends State<LocationSelector> {
         Text(label, style: Theme.of(context).textTheme.labelLarge),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          initialValue: value,
+          value: value,
           decoration: InputDecoration(
             filled: true,
             enabled: enabled,
